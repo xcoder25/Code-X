@@ -83,7 +83,7 @@ export default function CoursesPage() {
                   <div className="bg-primary h-2.5 rounded-full" style={{width: `${course.progress}%`}}></div>
               </div>
               <Button asChild className="w-full">
-                <Link href={`/courses/${course.id}`}>
+                <Link href={`/dashboard`}>
                    {course.status === 'not-started' ? 'Start Course' : 'Continue Course'} <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>

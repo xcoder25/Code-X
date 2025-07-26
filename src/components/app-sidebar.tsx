@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   PencilRuler,
   FileQuestion,
+  Bot,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -54,6 +55,14 @@ export default function AppSidebar() {
               <Link href="/courses">
                 <BookOpen />
                 <span>Courses</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/path')}>
+              <Link href="/path">
+                <Bot />
+                <span>Learning Path</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
