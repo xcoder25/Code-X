@@ -16,6 +16,7 @@ import {
   ClipboardList,
   Target,
   FileQuestion,
+  Bell,
 } from 'lucide-react';
 import {
   Table,
@@ -26,6 +27,7 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const courses = [
   {
@@ -116,8 +118,15 @@ export default function DashboardPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-      <div className="flex items-center">
+      <div className="flex items-center justify-between">
         <h1 className="font-semibold text-3xl">Student Dashboard</h1>
+        <div className="flex items-center gap-2">
+            <ThemeToggle />
+             <Button variant="outline" size="icon">
+                <Bell className="h-4 w-4" />
+                <span className="sr-only">Notifications</span>
+            </Button>
+        </div>
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>

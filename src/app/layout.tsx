@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import AppProvider from './app-provider';
 import PageProvider from './page-provider';
+import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
   title: 'Code-X',
@@ -26,10 +27,17 @@ export default function RootLayout({
         ></link>
       </head>
       <body className={cn('font-body antialiased')}>
-        <PageProvider>
-          <AppProvider>{children}</AppProvider>
-        </PageProvider>
-        <Toaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <PageProvider>
+            <AppProvider>{children}</AppProvider>
+          </PageProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
