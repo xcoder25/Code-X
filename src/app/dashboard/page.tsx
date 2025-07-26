@@ -41,7 +41,7 @@ export default function DashboardPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground">
               classes scheduled for this week
             </p>
@@ -55,7 +55,7 @@ export default function DashboardPage() {
             <ClipboardList className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground">
               due by the end of the month
             </p>
@@ -67,7 +67,7 @@ export default function DashboardPage() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground">
               currently enrolled bootcamps
             </p>
@@ -79,7 +79,7 @@ export default function DashboardPage() {
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Full-Stack Dev</div>
+            <div className="text-2xl font-bold">Not Set</div>
             <p className="text-xs text-muted-foreground">
               your primary learning track
             </p>
@@ -96,45 +96,9 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Type</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell>Oct 28</TableCell>
-                  <TableCell>React Hooks Workshop</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">Class</Badge>
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Oct 29</TableCell>
-                  <TableCell>State Management Assignment</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">Due</Badge>
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Oct 30</TableCell>
-                  <TableCell>Mid-term Exam</TableCell>
-                  <TableCell>
-                    <Badge variant="destructive">Exam</Badge>
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Nov 2</TableCell>
-                  <TableCell>Advanced TypeScript</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">Class</Badge>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+           <div className="text-center text-muted-foreground py-8">
+                No upcoming events. Enroll in a course to get started.
+           </div>
           </CardContent>
         </Card>
 
@@ -146,50 +110,9 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center">
-              <Activity className="h-5 w-5 mr-3" />
-              <div className="flex-1">
-                <p>
-                  Submitted{' '}
-                  <span className="font-semibold">
-                    Component Lifecycle Assignment
-                  </span>
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  2 days ago
-                </p>
-              </div>
-              <Badge variant="default">Graded: A-</Badge>
-            </div>
-            <div className="flex items-center">
-              <Activity className="h-5 w-5 mr-3" />
-              <div className="flex-1">
-                <p>
-                  Completed{' '}
-                  <span className="font-semibold">
-                    JavaScript Fundamentals Quiz
-                  </span>
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  4 days ago
-                </p>
-              </div>
-              <Badge variant="secondary">Score: 92%</Badge>
-            </div>
-             <div className="flex items-center">
-              <Activity className="h-5 w-5 mr-3" />
-              <div className="flex-1">
-                <p>
-                  Enrolled in{' '}
-                  <span className="font-semibold">
-                    Advanced Next.js Bootcamp
-                  </span>
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  1 week ago
-                </p>
-              </div>
-            </div>
+             <div className="text-center text-muted-foreground py-8">
+                No recent activity.
+             </div>
           </CardContent>
         </Card>
       </div>
@@ -202,44 +125,14 @@ export default function DashboardPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
-           <Card>
-            <CardHeader>
-              <CardTitle>Web Development Bootcamp</CardTitle>
-              <CardDescription>Master HTML, CSS, JavaScript, React, and Node.js to build full-stack web applications.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-2">Progress: 75%</p>
-              <div className="w-full bg-muted rounded-full h-2.5">
-                  <div className="bg-primary h-2.5 rounded-full" style={{width: '75%'}}></div>
-              </div>
-            </CardContent>
-            <CardFooter>
-               <Button asChild className="w-full">
-                <Link href="/courses/web-development">
-                  Continue Learning <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-           <Card>
-            <CardHeader>
-              <CardTitle>Advanced Next.js Bootcamp</CardTitle>
-              <CardDescription>Dive deep into server components, data fetching, and advanced routing in Next.js.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-2">Progress: 20%</p>
-               <div className="w-full bg-muted rounded-full h-2.5">
-                  <div className="bg-primary h-2.5 rounded-full" style={{width: '20%'}}></div>
-              </div>
-            </CardContent>
-             <CardFooter>
-               <Button asChild className="w-full">
-                <Link href="/courses/advanced-nextjs">
-                  Continue Learning <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
+           <div className="text-center text-muted-foreground py-12 col-span-2">
+                <p>You are not enrolled in any courses yet.</p>
+                <Button asChild variant="link">
+                    <Link href="/courses">
+                        Browse Courses
+                    </Link>
+                </Button>
+           </div>
         </CardContent>
       </Card>
     </main>

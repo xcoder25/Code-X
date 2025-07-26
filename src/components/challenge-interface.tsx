@@ -72,7 +72,7 @@ export default function ChallengeInterface({
                 {challenge.difficulty}
               </Badge>
               {isCompleted && (
-                <Badge variant="secondary" className="bg-accent text-accent-foreground">
+                <Badge variant="secondary" className="bg-green-500/20 text-green-700 dark:text-green-400">
                   <CheckCircle className="mr-1 h-3 w-3" />
                   Completed
                 </Badge>
@@ -99,13 +99,13 @@ export default function ChallengeInterface({
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="Write your code here..."
-              className="absolute inset-0 w-full h-full resize-none rounded-none border-none font-mono text-sm"
+              className="absolute inset-0 w-full h-full resize-none rounded-none border-none font-mono text-sm bg-muted/30"
             />
           </div>
           <div className="p-2 border-t flex justify-end gap-2 items-center">
             {isCompleted && (
-              <Alert className="border-green-500 text-green-700 w-full text-left">
-                <CheckCircle className="h-4 w-4 !text-green-700" />
+              <Alert className="border-green-500/50 text-green-700 dark:text-green-400 w-full text-left bg-green-500/10">
+                <CheckCircle className="h-4 w-4 !text-green-700 dark:!text-green-400" />
                 <AlertTitle>Congratulations!</AlertTitle>
                 <AlertDescription>
                   You've successfully completed this challenge.

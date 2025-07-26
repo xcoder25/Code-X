@@ -191,25 +191,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
             </Card>
         </div>
         <div>
-            <Card>
-                 <CardHeader>
-                    <CardTitle>Coding Challenge</CardTitle>
-                    <CardDescription>Test your skills with a hands-on exercise.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm mb-4">
-                        Complete the challenge below to practice the concepts you've learned.
-                    </p>
-                    <Button className="w-full" variant="outline" disabled>
-                        Start Challenge
-                    </Button>
-                </CardContent>
-            </Card>
-        </div>
-      </div>
-
-       <div className="mt-8">
-            <Card>
+            <Card className="mt-8 md:mt-0">
                 <CardHeader>
                     <CardTitle>Personalized Learning Path</CardTitle>
                     <CardDescription>
@@ -221,6 +203,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 </CardContent>
             </Card>
         </div>
+      </div>
 
       <div className="mt-8">
          {challenge && <ChallengeInterface challenge={challenge} />}
