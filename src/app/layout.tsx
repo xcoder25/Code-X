@@ -5,8 +5,8 @@ import { Toaster } from '@/components/ui/toaster';
 import AppProvider from './app-provider';
 
 export const metadata: Metadata = {
-  title: 'Software Academy',
-  description: 'Your personal software engineering academy.',
+  title: 'Code-X',
+  description: 'Your personal coding academy.',
 };
 
 export default function RootLayout({

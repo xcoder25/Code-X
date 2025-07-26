@@ -48,7 +48,7 @@ export default function AppSidebar() {
               <path d="M3 3v18h18" />
             </svg>
           </div>
-          <h1 className="text-xl font-semibold">Academy</h1>
+          <h1 className="text-xl font-semibold">Code-X</h1>
         </div>
       </SidebarHeader>
       <SidebarContent>
