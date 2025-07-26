@@ -3,6 +3,7 @@
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/app-sidebar';
 import { usePathname } from 'next/navigation';
+import AppHeader from '@/components/app-header';
 
 const NO_SIDEBAR_ROUTES = ['/', '/login', '/signup'];
 
@@ -18,7 +19,10 @@ export default function AppProvider({
     return (
       <SidebarProvider>
         <AppSidebar />
-        <SidebarInset>{children}</SidebarInset>
+        <SidebarInset>
+            <AppHeader />
+            {children}
+        </SidebarInset>
       </SidebarProvider>
     );
   }
