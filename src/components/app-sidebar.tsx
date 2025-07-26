@@ -6,10 +6,10 @@ import {
   Home,
   LayoutDashboard,
   PencilRuler,
+  FileQuestion,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 
 import {
   Sidebar,
@@ -39,8 +39,8 @@ export default function AppSidebar() {
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === '/'}>
-              <Link href="/">
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/dashboard')}>
+              <Link href="/dashboard">
                 <LayoutDashboard />
                 <span>Dashboard</span>
               </Link>
@@ -71,7 +71,7 @@ export default function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/exams')}>
               <Link href="/exams">
-                <Home />
+                <FileQuestion />
                 <span>Exams</span>
               </Link>
             </SidebarMenuButton>

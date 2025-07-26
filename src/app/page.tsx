@@ -1,247 +1,112 @@
 import Link from 'next/link';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  Activity,
-  ArrowRight,
-  BookOpen,
-  Calendar,
-  ClipboardList,
-  Target,
-} from 'lucide-react';
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+import { PencilRuler, BookOpen, Target, Code } from 'lucide-react';
 
-export default function DashboardPage() {
+export default function LandingPage() {
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-      <div className="flex items-center">
-        <h1 className="font-semibold text-3xl">Student Dashboard</h1>
-      </div>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Upcoming Classes
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-muted-foreground">
-              classes scheduled for this week
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Assignments
-            </CardTitle>
-            <ClipboardList className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">5</div>
-            <p className="text-xs text-muted-foreground">
-              due by the end of the month
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Courses</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">2</div>
-            <p className="text-xs text-muted-foreground">
-              currently enrolled bootcamps
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overall Goal</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Full-Stack Dev</div>
-            <p className="text-xs text-muted-foreground">
-              your primary learning track
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Upcoming Schedule</CardTitle>
-            <CardDescription>
-              Your classes and deadlines for the next 7 days.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Type</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell>Oct 28</TableCell>
-                  <TableCell>React Hooks Workshop</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">Class</Badge>
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Oct 29</TableCell>
-                  <TableCell>State Management Assignment</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">Due</Badge>
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Oct 30</TableCell>
-                  <TableCell>Mid-term Exam</TableCell>
-                  <TableCell>
-                    <Badge variant="destructive">Exam</Badge>
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Nov 2</TableCell>
-                  <TableCell>Advanced TypeScript</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">Class</Badge>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>
-              Your recent submissions and grades.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center">
-              <Activity className="h-5 w-5 mr-3" />
-              <div className="flex-1">
-                <p>
-                  Submitted{' '}
-                  <span className="font-semibold">
-                    Component Lifecycle Assignment
-                  </span>
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  2 days ago
+    <div className="flex flex-col min-h-screen">
+      <header className="px-4 lg:px-6 h-14 flex items-center bg-background shadow-sm">
+        <Link href="#" className="flex items-center justify-center">
+          <PencilRuler className="h-6 w-6 text-primary" />
+          <span className="ml-2 text-lg font-semibold">Software Academy</span>
+        </Link>
+        <nav className="ml-auto flex gap-4 sm:gap-6">
+          <Link
+            href="/login"
+            className="text-sm font-medium hover:underline underline-offset-4"
+          >
+            Login
+          </Link>
+          <Button asChild>
+            <Link href="/signup">Sign Up</Link>
+          </Button>
+        </nav>
+      </header>
+      <main className="flex-1">
+        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-primary text-primary-foreground">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center space-y-4 text-center">
+              <div className="space-y-2">
+                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
+                  Unlock Your Potential in Software Engineering
+                </h1>
+                <p className="mx-auto max-w-[700px] text-primary-foreground/80 md:text-xl">
+                  Join our immersive bootcamps and gain the skills to build amazing applications. Personalized learning paths, expert mentorship, and hands-on projects.
                 </p>
               </div>
-              <Badge variant="default">Graded: A-</Badge>
-            </div>
-            <div className="flex items-center">
-              <Activity className="h-5 w-5 mr-3" />
-              <div className="flex-1">
-                <p>
-                  Completed{' '}
-                  <span className="font-semibold">
-                    JavaScript Fundamentals Quiz
-                  </span>
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  4 days ago
-                </p>
-              </div>
-              <Badge variant="secondary">Score: 92%</Badge>
-            </div>
-             <div className="flex items-center">
-              <Activity className="h-5 w-5 mr-3" />
-              <div className="flex-1">
-                <p>
-                  Enrolled in{' '}
-                  <span className="font-semibold">
-                    Advanced Next.js Bootcamp
-                  </span>
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  1 week ago
-                </p>
+              <div className="space-x-4">
+                <Button asChild size="lg" variant="secondary">
+                   <Link href="/courses">Explore Courses</Link>
+                </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Courses</CardTitle>
-          <CardDescription>
-            An overview of the bootcamps you are enrolled in.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-           <Card>
-            <CardHeader>
-              <CardTitle>Web Development Bootcamp</CardTitle>
-              <CardDescription>Master HTML, CSS, JavaScript, React, and Node.js to build full-stack web applications.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-2">Progress: 75%</p>
-              <div className="w-full bg-muted rounded-full h-2.5">
-                  <div className="bg-primary h-2.5 rounded-full" style={{width: '75%'}}></div>
+          </div>
+        </section>
+        <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-background">
+          <div className="container px-4 md:px-6">
+            <div className="grid items-center gap-6 lg:grid-cols-3 lg:gap-12">
+              <div className="flex flex-col justify-center space-y-4 text-center lg:text-left">
+                <div className="space-y-2">
+                   <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Key Features</div>
+                   <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Why Choose Us?</h2>
+                  <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                    Our platform is designed to provide you with a comprehensive and engaging learning experience.
+                  </p>
+                </div>
               </div>
-            </CardContent>
-            <CardFooter>
-               <Button asChild className="w-full">
-                <Link href="/courses/web-development">
-                  Continue Learning <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-           <Card>
-            <CardHeader>
-              <CardTitle>Advanced Next.js Bootcamp</CardTitle>
-              <CardDescription>Dive deep into server components, data fetching, and advanced routing in Next.js.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-2">Progress: 20%</p>
-               <div className="w-full bg-muted rounded-full h-2.5">
-                  <div className="bg-primary h-2.5 rounded-full" style={{width: '20%'}}></div>
+              <div className="col-span-2 grid items-start gap-6 sm:grid-cols-2">
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                        <BookOpen className="h-8 w-8 text-primary" />
+                        <h3 className="text-xl font-bold">Structured Bootcamps</h3>
+                    </div>
+                  <p className="text-muted-foreground">
+                    From web fundamentals to advanced topics, our courses are designed to build your skills progressively.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1">
+                   <div className="flex items-center gap-2">
+                        <Target className="h-8 w-8 text-primary" />
+                        <h3 className="text-xl font-bold">Personalized Learning</h3>
+                    </div>
+                  <p className="text-muted-foreground">
+                    Use our AI to generate a learning path that is tailored to your specific goals and interests.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                        <Code className="h-8 w-8 text-primary" />
+                        <h3 className="text-xl font-bold">Hands-On Projects</h3>
+                    </div>
+                  <p className="text-muted-foreground">
+                    Apply what you learn with real-world projects and coding challenges to build your portfolio.
+                  </p>
+                </div>
+                 <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                        <svg className="h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <h3 className="text-xl font-bold">Community & Mentorship</h3>
+                    </div>
+                  <p className="text-muted-foreground">
+                    Connect with peers, get help from mentors, and grow with our supportive community.
+                  </p>
+                </div>
               </div>
-            </CardContent>
-             <CardFooter>
-               <Button asChild className="w-full">
-                <Link href="/courses/advanced-nextjs">
-                  Continue Learning <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        </CardContent>
-      </Card>
-    </main>
+            </div>
+          </div>
+        </section>
+      </main>
+      <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
+        <p className="text-xs text-muted-foreground">&copy; 2024 Software Academy. All rights reserved.</p>
+        <nav className="sm:ml-auto flex gap-4 sm:gap-6">
+          <Link href="#" className="text-xs hover:underline underline-offset-4">
+            Terms of Service
+          </Link>
+          <Link href="#" className="text-xs hover:underline underline-offset-4">
+            Privacy
+          </Link>
+        </nav>
+      </footer>
+    </div>
   );
 }
