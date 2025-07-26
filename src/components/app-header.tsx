@@ -1,4 +1,5 @@
 import { Bell } from 'lucide-react';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -10,9 +11,11 @@ export default function AppHeader() {
       <SidebarTrigger className="md:hidden" />
       <div className="flex items-center gap-2">
         <ThemeToggle />
-        <Button variant="outline" size="icon">
-          <Bell />
-          <span className="sr-only">Notifications</span>
+        <Button asChild variant="outline" size="icon">
+          <Link href="/notifications">
+            <Bell />
+            <span className="sr-only">Notifications</span>
+          </Link>
         </Button>
       </div>
     </header>

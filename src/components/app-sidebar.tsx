@@ -7,6 +7,9 @@ import {
   FileQuestion,
   Bot,
   LogOut,
+  Bell,
+  CreditCard,
+  Settings
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -81,7 +84,16 @@ export default function AppSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/subscription')}>
+              <Link href="/subscription">
+                <CreditCard />
+                <span>Subscription</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <Separator className="my-1" />
+           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
               isActive={pathname.startsWith('/assignments')}
@@ -97,6 +109,23 @@ export default function AppSidebar() {
               <Link href="/exams">
                 <FileQuestion />
                 <span>Exams</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <Separator className="my-1" />
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/notifications')}>
+              <Link href="/notifications">
+                <Bell />
+                <span>Notifications</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/settings')}>
+              <Link href="/settings">
+                <Settings />
+                <span>Settings</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
