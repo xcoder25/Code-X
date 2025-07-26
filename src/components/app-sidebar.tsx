@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   FileQuestion,
   Bot,
+  LogOut,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -102,7 +103,17 @@ export default function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <Separator className="mb-2" />
+         <SidebarMenu>
+          <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link href="/">
+                  <LogOut />
+                  <span>Logout</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+        </SidebarMenu>
+        <Separator className="my-2" />
         <div className="flex items-center gap-3 px-2">
           <Avatar>
             <AvatarImage

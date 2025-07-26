@@ -3,6 +3,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import AppProvider from './app-provider';
+import PageProvider from './page-provider';
 
 export const metadata: Metadata = {
   title: 'Code-X',
@@ -25,7 +26,9 @@ export default function RootLayout({
         ></link>
       </head>
       <body className={cn('font-body antialiased')}>
-        <AppProvider>{children}</AppProvider>
+        <PageProvider>
+          <AppProvider>{children}</AppProvider>
+        </PageProvider>
         <Toaster />
       </body>
     </html>
