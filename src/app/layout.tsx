@@ -6,8 +6,8 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/app-sidebar';
 
 export const metadata: Metadata = {
-  title: 'LearnAI',
-  description: 'AI-powered personalized learning paths by CODE-X Academy',
+  title: 'Software Academy',
+  description: 'Your personal software engineering academy.',
 };
 
 export default function RootLayout({

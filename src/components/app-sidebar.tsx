@@ -1,6 +1,12 @@
 'use client';
 
-import { Bot, Code, Home } from 'lucide-react';
+import {
+  BookOpen,
+  ClipboardList,
+  Home,
+  LayoutDashboard,
+  PencilRuler,
+} from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -25,9 +31,9 @@ export default function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-primary text-primary-foreground">
-            <Bot size={24} />
+            <PencilRuler size={24} />
           </div>
-          <h1 className="text-xl font-semibold">LearnAI</h1>
+          <h1 className="text-xl font-semibold">Academy</h1>
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -35,19 +41,38 @@ export default function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname === '/'}>
               <Link href="/">
-                <Home />
-                <span>My Learning Path</span>
+                <LayoutDashboard />
+                <span>Dashboard</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              isActive={pathname.startsWith('/challenges')}
+              isActive={pathname.startsWith('/courses')}
             >
-              <Link href="/challenges">
-                <Code />
-                <span>Challenges</span>
+              <Link href="/courses">
+                <BookOpen />
+                <span>Courses</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith('/assignments')}
+            >
+              <Link href="/assignments">
+                <ClipboardList />
+                <span>Assignments</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/exams')}>
+              <Link href="/exams">
+                <Home />
+                <span>Exams</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -57,7 +82,11 @@ export default function AppSidebar() {
         <Separator className="mb-2" />
         <div className="flex items-center gap-3 px-2">
           <Avatar>
-            <AvatarImage src="https://placehold.co/40x40.png" alt="User" data-ai-hint="profile picture" />
+            <AvatarImage
+              src="https://placehold.co/40x40.png"
+              alt="User"
+              data-ai-hint="profile picture"
+            />
             <AvatarFallback>U</AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
