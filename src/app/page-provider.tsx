@@ -12,29 +12,16 @@ export default function PageProvider({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const handleStart = () => setLoading(true);
-    const handleComplete = () => setLoading(false);
+    // Show loading on path change, but don't clear it immediately
+    setLoading(true);
     
-    //This is a bit of a hack to simulate a loading state for next/link
-    const originalPushState = history.pushState;
-    history.pushState = function (...args) {
-      handleStart();
-      originalPushState.apply(history, args);
-      // We don't have a reliable way to know when the page is fully rendered
-      // so we will just fake it with a timeout.
-      setTimeout(handleComplete, 500);
-    };
+    // Hide loading after a short delay to allow the page to render
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 500); // Adjust delay as needed
 
-    window.addEventListener('popstate', handleStart);
-    // Again, faking the loading complete event
-    window.addEventListener('popstate', () => setTimeout(handleComplete, 500));
-
-    return () => {
-      history.pushState = originalPushState;
-      window.removeEventListener('popstate', handleStart);
-      window.removeEventListener('popstate', () => setTimeout(handleComplete, 500));
-    };
-  }, []);
+    return () => clearTimeout(timer);
+  }, [pathname]);
 
   return (
     <>
