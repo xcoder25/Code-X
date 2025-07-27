@@ -206,7 +206,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 <CardHeader>
                     <CardTitle>Personalized Learning Path</CardTitle>
                     <CardDescription>
-                       Use our AI assistant to generate a custom learning path tailored to your goals.
+                       Use our AI Coach to generate a custom learning path tailored to your goals.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

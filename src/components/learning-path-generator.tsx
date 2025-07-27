@@ -88,7 +88,7 @@ export default function LearningPathGenerator() {
     <div className="grid gap-6 md:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle>Create Your Learning Path</CardTitle>
+          <CardTitle>Chat with your AI Coach</CardTitle>
           <CardDescription>
             Tell us about yourself and we'll generate a personalized learning
             path for you.
@@ -169,7 +169,7 @@ export default function LearningPathGenerator() {
                 ) : (
                   <>
                     <Bot className="mr-2 h-4 w-4" />
-                    Generate Path
+                    Get Advice
                   </>
                 )}
               </Button>
@@ -180,7 +180,7 @@ export default function LearningPathGenerator() {
 
       <Card className="flex flex-col">
         <CardHeader>
-          <CardTitle>Your Personalized Path</CardTitle>
+          <CardTitle>Your Personalized Plan</CardTitle>
           <CardDescription>
             Here is the step-by-step guide to help you achieve your goals.
           </CardDescription>
@@ -203,7 +203,7 @@ export default function LearningPathGenerator() {
             <div className="flex items-center justify-center h-full rounded-lg border-2 border-dashed border-muted-foreground/30">
               <div className="text-center text-muted-foreground">
                 <Bot size={48} className="mx-auto" />
-                <p className="mt-4">Your learning path will appear here.</p>
+                <p className="mt-4">Your learning plan will appear here.</p>
               </div>
             </div>
           )}

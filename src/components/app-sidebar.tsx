@@ -81,7 +81,7 @@ export default function AppSidebar() {
             <SidebarMenuButton asChild isActive={pathname.startsWith('/path')}>
               <Link href="/path">
                 <Bot />
-                <span>Learning Path</span>
+                <span>AI Coach</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
