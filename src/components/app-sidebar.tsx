@@ -24,6 +24,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
@@ -102,6 +103,9 @@ export default function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
+              <SidebarSeparator />
+            </SidebarMenuItem>
+           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
               isActive={pathname.startsWith('/assignments')}
@@ -128,6 +132,9 @@ export default function AppSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          <SidebarMenuItem>
+              <SidebarSeparator />
+            </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/notifications')}>
               <Link href="/notifications">
