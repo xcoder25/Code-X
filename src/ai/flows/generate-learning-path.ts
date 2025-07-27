@@ -21,7 +21,8 @@ const LearningPathInputSchema = z.object({
 export type LearningPathInput = z.infer<typeof LearningPathInputSchema>;
 
 const LearningPathOutputSchema = z.object({
-  learningPath: z.string().describe('A personalized learning path for the user.'),
+  title: z.string().describe('A catchy title for the learning path.'),
+  path: z.string().describe('A personalized, step-by-step learning path for the user, formatted as a numbered list.'),
 });
 export type LearningPathOutput = z.infer<typeof LearningPathOutputSchema>;
 
@@ -33,14 +34,26 @@ const prompt = ai.definePrompt({
   name: 'learningPathPrompt',
   input: {schema: LearningPathInputSchema},
   output: {schema: LearningPathOutputSchema},
-  prompt: `You are an expert learning path generator. You will generate a personalized learning path for the user based on their skill level, interests, and goals.
+  prompt: `You are an expert, friendly, and encouraging AI learning coach named "Code-X Coach". Your goal is to generate a personalized learning path for a user.
 
-Skill Level: {{{skillLevel}}}
-Interests: {{{interests}}}
-Goals: {{{goals}}}
+First, acknowledge their inputs and ask one or two clarifying questions to better understand their needs. Then, based on their skill level, interests, and goals, create a clear, step-by-step learning path.
 
-Personalized Learning Path:`,
+The path should be formatted as a numbered list. Each step should be a concrete, actionable item.
+
+User Details:
+- Skill Level: {{{skillLevel}}}
+- Interests: {{{interests}}}
+- Goals: {{{goals}}}
+
+Example Output Structure:
+{
+  "title": "Your Journey to Becoming a React Pro",
+  "path": "1. Master the fundamentals of JavaScript (ES6+).\\n2. Learn React basics: components, props, and state.\\n3. Build your first project: a simple to-do list app."
+}
+
+Generate a response now.`,
 });
+
 
 const generateLearningPathFlow = ai.defineFlow(
   {

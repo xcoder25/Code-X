@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
 interface LearningPathDisplayProps {
+  title: string;
   path: string;
 }
 
@@ -16,7 +17,7 @@ interface Step {
   completed: boolean;
 }
 
-export default function LearningPathDisplay({ path }: LearningPathDisplayProps) {
+export default function LearningPathDisplay({ title, path }: LearningPathDisplayProps) {
   const [steps, setSteps] = useState<Step[]>([]);
   const [progress, setProgress] = useState(0);
 
@@ -67,7 +68,10 @@ export default function LearningPathDisplay({ path }: LearningPathDisplayProps) 
         </p>
       </div>
       <Card>
-        <CardContent className="p-6 space-y-4">
+        <CardHeader>
+            <CardTitle>{title}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 space-y-4 pt-0">
           {steps.map((step) => (
             <div key={step.id} className="flex items-start space-x-3">
               <Checkbox

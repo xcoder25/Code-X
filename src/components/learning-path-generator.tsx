@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/card';
 import LearningPathDisplay from './learning-path-display';
 import { useToast } from '@/hooks/use-toast';
+import type { LearningPathOutput } from '@/ai/flows/generate-learning-path';
 
 const formSchema = z.object({
   skillLevel: z.string().min(1, 'Please select your skill level.'),
@@ -45,7 +46,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function LearningPathGenerator() {
-  const [learningPath, setLearningPath] = useState<string | null>(null);
+  const [learningPath, setLearningPath] = useState<LearningPathOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -63,8 +64,8 @@ export default function LearningPathGenerator() {
     setLearningPath(null);
     try {
       const result = await generateLearningPathAction(values);
-      if (result.learningPath) {
-        setLearningPath(result.learningPath);
+      if (result.path) {
+        setLearningPath(result);
       } else {
         toast({
           variant: 'destructive',
@@ -196,7 +197,7 @@ export default function LearningPathGenerator() {
             </div>
           )}
           {!isLoading && learningPath && (
-            <LearningPathDisplay path={learningPath} />
+            <LearningPathDisplay title={learningPath.title} path={learningPath.path} />
           )}
           {!isLoading && !learningPath && (
             <div className="flex items-center justify-center h-full rounded-lg border-2 border-dashed border-muted-foreground/30">

@@ -23,6 +23,6 @@ export async function generateLearningPathAction(
     return output;
   } catch (error) {
     console.error('Error generating learning path:', error);
-    return { learningPath: '' };
+    return { title: '', path: '' };
   }
 }
