@@ -53,7 +53,7 @@ export default function ChallengeInterface({
   return (
     <ResizablePanelGroup
       direction="horizontal"
-      className="flex-1 rounded-lg border"
+      className="flex-1 rounded-lg border h-full"
     >
       <ResizablePanel defaultSize={40}>
         <div className="flex h-full flex-col p-4">
@@ -66,6 +66,8 @@ export default function ChallengeInterface({
                     ? 'secondary'
                     : challenge.difficulty === 'Medium'
                     ? 'default'
+                    : challenge.difficulty === 'Sandbox'
+                    ? 'outline'
                     : 'destructive'
                 }
               >
@@ -112,14 +114,16 @@ export default function ChallengeInterface({
                 </AlertDescription>
               </Alert>
             )}
-            <Button onClick={handleSubmit} disabled={isSubmitting || isCompleted}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Running...
-                </>
-              ) : 'Submit Solution'}
-            </Button>
+            {challenge.difficulty !== 'Sandbox' && (
+                <Button onClick={handleSubmit} disabled={isSubmitting || isCompleted}>
+                {isSubmitting ? (
+                    <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Running...
+                    </>
+                ) : 'Submit Solution'}
+                </Button>
+            )}
           </div>
         </div>
       </ResizablePanel>

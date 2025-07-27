@@ -10,7 +10,8 @@ import {
   Bell,
   CreditCard,
   Settings,
-  Calendar
+  Calendar,
+  FlaskConical,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -82,6 +83,14 @@ export default function AppSidebar() {
               <Link href="/path">
                 <Bot />
                 <span>AI Coach</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/lab')}>
+              <Link href="/lab">
+                <FlaskConical />
+                <span>Code-X Lab</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
