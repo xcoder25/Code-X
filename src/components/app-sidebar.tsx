@@ -24,7 +24,6 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import Image from 'next/image';
@@ -38,10 +37,10 @@ export default function AppSidebar() {
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-primary text-primary-foreground">
              <Image
-                src="/logo.png"
+                src="/my logo.png"
                 alt="Code-X Logo"
-                width={24}
-                height={24}
+                width={32}
+                height={32}
                 className="text-primary"
              />
           </div>

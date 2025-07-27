@@ -9,10 +9,10 @@ export default function LandingPage() {
       <header className="px-4 lg:px-6 h-14 flex items-center bg-background/80 backdrop-blur-sm shadow-sm sticky top-0 z-50">
         <Link href="#" className="flex items-center justify-center">
           <Image
-            src="/logo.png"
+            src="/my logo.png"
             alt="Code-X Logo"
-            width={24}
-            height={24}
+            width={32}
+            height={32}
             className="text-primary"
           />
           <span className="ml-2 text-lg font-semibold">Code-X</span>
