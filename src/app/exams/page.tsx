@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import {
   Card,
   CardHeader,
@@ -18,25 +19,29 @@ import { Button } from '@/components/ui/button';
 
 const exams = [
   {
+    id: 'mid-term-exam',
     title: 'Mid-term Exam',
     course: 'Web Development Bootcamp',
     date: 'Oct 30, 2024',
     status: 'Upcoming',
   },
   {
+    id: 'js-fundamentals-quiz',
     title: 'JavaScript Fundamentals Quiz',
     course: 'Web Development Bootcamp',
     date: 'Oct 18, 2024',
     status: 'Completed',
     score: '92%',
   },
-   {
+  {
+    id: 'final-exam',
     title: 'Final Exam',
     course: 'Web Development Bootcamp',
     date: 'Dec 15, 2024',
     status: 'Upcoming',
   },
   {
+    id: 'advanced-nextjs-concepts',
     title: 'Advanced Next.js Concepts',
     course: 'Advanced Next.js',
     date: 'Nov 20, 2024',
@@ -84,12 +89,12 @@ export default function ExamsPage() {
                   </TableCell>
                   <TableCell>{exam.score || 'N/A'}</TableCell>
                   <TableCell className="text-right">
-                    <Button
+                    <Button asChild
                       variant="outline"
                       size="sm"
                       disabled={exam.status === 'Completed'}
                     >
-                      {exam.status === 'Completed' ? 'View Results' : 'Begin Exam'}
+                      {exam.status === 'Completed' ? <Link href="#">View Results</Link> : <Link href={`/exams/${exam.id}`}>Begin Exam</Link>}
                     </Button>
                   </TableCell>
                 </TableRow>
