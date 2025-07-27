@@ -25,7 +25,6 @@ import {
   SidebarMenuButton,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { Separator } from './ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 export default function AppSidebar() {
@@ -102,7 +101,6 @@ export default function AppSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <Separator className="my-1" />
            <SidebarMenuItem>
             <SidebarMenuButton
               asChild
@@ -130,7 +128,6 @@ export default function AppSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <Separator className="my-1" />
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/notifications')}>
               <Link href="/notifications">
@@ -160,8 +157,7 @@ export default function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
         </SidebarMenu>
-        <Separator className="my-2" />
-        <div className="flex items-center gap-3 px-2">
+        <div className="flex items-center gap-3 px-2 mt-2">
           <Avatar>
             <AvatarImage
               src="https://placehold.co/40x40.png"
