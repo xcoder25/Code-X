@@ -5,7 +5,6 @@ import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
 
-import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,7 +31,7 @@ type SidebarContext = {
   setOpen: (open: boolean) => void
   openMobile: boolean
   setOpenMobile: (open: boolean) => void
-  isMobile: boolean
+  isMobile: boolean | undefined
   toggleSidebar: () => void
 }
 
@@ -67,8 +66,19 @@ const SidebarProvider = React.forwardRef<
     },
     ref
   ) => {
-    const isMobile = useIsMobile()
+    const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined);
     const [openMobile, setOpenMobile] = React.useState(false)
+
+     React.useEffect(() => {
+      const checkIsMobile = () => {
+        setIsMobile(window.innerWidth < 768);
+      };
+      checkIsMobile();
+      window.addEventListener("resize", checkIsMobile);
+      return () => {
+        window.removeEventListener("resize", checkIsMobile);
+      };
+    }, []);
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
@@ -91,9 +101,11 @@ const SidebarProvider = React.forwardRef<
 
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
-      return isMobile
-        ? setOpenMobile((open) => !open)
-        : setOpen((open) => !open)
+      if (isMobile) {
+        setOpenMobile((prev) => !prev)
+      } else {
+        setOpen((prev) => !prev)
+      }
     }, [isMobile, setOpen, setOpenMobile])
 
     // Adds a keyboard shortcut to toggle the sidebar.
@@ -175,7 +187,11 @@ const Sidebar = React.forwardRef<
     },
     ref
   ) => {
-    const { state, openMobile, setOpenMobile } = useSidebar()
+    const { state, openMobile, setOpenMobile, isMobile } = useSidebar()
+
+    if (isMobile === undefined) {
+      return null;
+    }
 
     if (collapsible === "none") {
       return (
@@ -585,7 +601,7 @@ const SidebarMenuButton = React.forwardRef<
         <TooltipContent
           side="right"
           align="center"
-          hidden={state !== "collapsed" || isMobile}
+          hidden={state !== "collapsed" || (isMobile !== undefined && isMobile)}
           {...tooltip}
         />
       </Tooltip>
