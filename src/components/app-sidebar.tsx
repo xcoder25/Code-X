@@ -24,8 +24,10 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import Image from 'next/image';
 
 export default function AppSidebar() {
   const pathname = usePathname();
@@ -35,23 +37,13 @@ export default function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-primary text-primary-foreground">
-            <svg
-              className="h-6 w-6"
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M15 6.343a4 4 0 0 1 0 5.314" />
-              <path d="M18.657 3a8 8 0 0 1 0 11.314" />
-              <path d="M12.293 11.707a1 1 0 0 1 0-1.414l5-5a1 1 0 1 1 1.414 1.414l-5 5a1 1 0 0 1-1.414 0z" />
-              <path d="M3 3v18h18" />
-            </svg>
+             <Image
+                src="/logo.png"
+                alt="Code-X Logo"
+                width={24}
+                height={24}
+                className="text-primary"
+             />
           </div>
           <h1 className="text-xl font-semibold">Code-X</h1>
         </div>
