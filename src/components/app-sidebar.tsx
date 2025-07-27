@@ -9,7 +9,8 @@ import {
   LogOut,
   Bell,
   CreditCard,
-  Settings
+  Settings,
+  Calendar
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -109,6 +110,14 @@ export default function AppSidebar() {
               <Link href="/exams">
                 <FileQuestion />
                 <span>Exams</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/schedule')}>
+              <Link href="/schedule">
+                <Calendar />
+                <span>Schedule</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

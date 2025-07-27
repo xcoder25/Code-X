@@ -4,12 +4,12 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-  CardFooter
+  CardFooter,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { PlayCircle, FileText, CheckSquare, Bot } from 'lucide-react';
+import { PlayCircle, FileText, CheckSquare, Bot, Video } from 'lucide-react';
 import Link from 'next/link';
 import ChallengeInterface from '@/components/challenge-interface';
 import LearningPathGenerator from '@/components/learning-path-generator';
@@ -26,6 +26,7 @@ const courses: { [key: string]: any } = {
         lessons: [
           { title: 'Introduction to HTML', type: 'video', completed: true },
           { title: 'Styling with CSS', type: 'video', completed: true },
+           { title: 'Live Session: Flexbox Deep Dive', type: 'live', completed: false, meetingUrl: '#' },
           { title: 'Building a Simple Layout', type: 'challenge', completed: false },
         ]
       },
@@ -41,6 +42,7 @@ const courses: { [key: string]: any } = {
         title: 'Module 3: React & State Management',
         lessons: [
           { title: 'Introduction to React', type: 'video', completed: false },
+          { title: 'Live Q&A: React Hooks', type: 'live', completed: false, meetingUrl: '#' },
           { title: 'State and Props', type: 'video', completed: false },
            { title: 'Building a Counter App', type: 'challenge', completed: false },
         ]
@@ -57,6 +59,7 @@ const courses: { [key: string]: any } = {
         title: 'Module 1: Server Components',
         lessons: [
           { title: 'Understanding Server vs Client', type: 'video', completed: true },
+          { title: 'Live Coding: Building a Server Component', type: 'live', completed: false, meetingUrl: '#' },
           { title: 'Data Fetching Strategies', type: 'reading', completed: false },
         ]
       },
@@ -113,6 +116,8 @@ function getLessonIcon(type: string) {
       return <FileText className="h-5 w-5" />;
     case 'challenge':
       return <CheckSquare className="h-5 w-5" />;
+    case 'live':
+        return <Video className="h-5 w-5" />;
     default:
       return null;
   }
@@ -179,7 +184,13 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                                         {getLessonIcon(lesson.type)}
                                         <span className={`${lesson.completed ? 'line-through' : ''}`}>{lesson.title}</span>
                                     </div>
-                                    <Badge variant={lesson.completed ? "secondary" : "default"}>{lesson.completed ? "Completed" : "Pending"}</Badge>
+                                    {lesson.type === 'live' ? (
+                                        <Button asChild size="sm">
+                                            <Link href={lesson.meetingUrl} target="_blank">Join Session</Link>
+                                        </Button>
+                                    ) : (
+                                        <Badge variant={lesson.completed ? "secondary" : "default"}>{lesson.completed ? "Completed" : "Pending"}</Badge>
+                                    )}
                                 </li>
                                 ))}
                             </ul>
