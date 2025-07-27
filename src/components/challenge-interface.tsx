@@ -10,13 +10,17 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
+  CardDescription,
+  Card,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Code, Loader2 } from 'lucide-react';
+import { CheckCircle, Code, Loader2, Sparkles } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { analyzeCodeAction } from '@/app/actions';
+import type { AnalyzeCodeOutput } from '@/ai/flows/analyze-code';
 
 interface Challenge {
   id: string;
@@ -36,6 +40,8 @@ export default function ChallengeInterface({
   const [code, setCode] = useState(challenge.defaultCode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<AnalyzeCodeOutput | null>(null);
   const { toast } = useToast();
 
   const handleSubmit = () => {
@@ -50,13 +56,30 @@ export default function ChallengeInterface({
     }, 1500);
   };
 
+  const handleAnalyze = async () => {
+    setIsAnalyzing(true);
+    setAnalysis(null);
+    try {
+      const result = await analyzeCodeAction({ code });
+      setAnalysis(result);
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to analyze code. Please try again.',
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <ResizablePanelGroup
       direction="horizontal"
       className="flex-1 rounded-lg border h-full"
     >
       <ResizablePanel defaultSize={40}>
-        <div className="flex h-full flex-col p-4">
+        <div className="flex h-full flex-col p-4 overflow-y-auto">
           <CardHeader className="p-2">
             <CardTitle className="text-2xl">{challenge.title}</CardTitle>
             <div className="flex items-center gap-2 pt-2">
@@ -81,10 +104,43 @@ export default function ChallengeInterface({
               )}
             </div>
           </CardHeader>
-          <CardContent className="p-2 flex-1 overflow-y-auto">
+          <CardContent className="p-2 flex-1">
             <p className="whitespace-pre-wrap text-sm text-muted-foreground">
               {challenge.description}
             </p>
+
+            {(isAnalyzing || analysis) && (
+              <Card className="mt-4">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    AI Code Analysis
+                  </CardTitle>
+                  <CardDescription>
+                    Here's what our AI assistant thinks of your code.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isAnalyzing ? (
+                     <div className="flex items-center justify-center h-24">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                     </div>
+                  ) : analysis ? (
+                    <div className="space-y-4">
+                        <div>
+                            <h4 className="font-semibold">Explanation</h4>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{analysis.explanation}</p>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold">Feedback</h4>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{analysis.feedback}</p>
+                        </div>
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+            )}
+
           </CardContent>
         </div>
       </ResizablePanel>
@@ -114,6 +170,19 @@ export default function ChallengeInterface({
                 </AlertDescription>
               </Alert>
             )}
+            <Button onClick={handleAnalyze} variant="outline" disabled={isAnalyzing}>
+                {isAnalyzing ? (
+                    <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing...
+                    </>
+                ) : (
+                    <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Analyze Code
+                    </>
+                )}
+            </Button>
             {challenge.difficulty !== 'Sandbox' && (
                 <Button onClick={handleSubmit} disabled={isSubmitting || isCompleted}>
                 {isSubmitting ? (
