@@ -14,55 +14,26 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { AlertCircle, CheckCircle, Timer } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, CheckCircle, Timer, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-
-const exams: { [key: string]: any } = {
-  'mid-term-exam': {
-    id: 'mid-term-exam',
-    title: 'Mid-term Exam',
-    course: 'Web Development Bootcamp',
-    duration: 3600, // 60 minutes in seconds
-    questions: [
-      {
-        id: 'q1',
-        text: 'What is the correct HTML for referring to an external style sheet?',
-        options: [
-          '<style src="mystyle.css">',
-          '<stylesheet>mystyle.css</stylesheet>',
-          '<link rel="stylesheet" type="text/css" href="mystyle.css">',
-        ],
-        correctAnswer: '<link rel="stylesheet" type="text/css" href="mystyle.css">',
-      },
-      {
-        id: 'q2',
-        text: 'Which property is used to change the background color?',
-        options: ['color', 'bgcolor', 'background-color'],
-        correctAnswer: 'background-color',
-      },
-       {
-        id: 'q3',
-        text: 'How do you write "Hello World" in an alert box?',
-        options: ['msg("Hello World");', 'alert("Hello World");', 'alertBox("Hello World");'],
-        correctAnswer: 'alert("Hello World");',
-      },
-    ],
-  },
-};
+import { getExamQuestions, getExamDetails } from '@/lib/exam-data';
+import { submitExamAction } from '@/app/actions';
 
 export default function ExamTakingPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { toast } = useToast();
-  const exam = exams[params.id];
-  
-  const [timeLeft, setTimeLeft] = useState(exam?.duration || 0);
+  const examDetails = getExamDetails(params.id);
+  const examQuestions = getExamQuestions(params.id);
+
+  const [timeLeft, setTimeLeft] = useState(examDetails?.duration || 0);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState(0);
 
   useEffect(() => {
+    if (!examDetails) return;
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -74,32 +45,36 @@ export default function ExamTakingPage({ params }: { params: { id: string } }) {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [examDetails]);
 
   const handleAnswerChange = (questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  const handleSubmit = () => {
-    if (isSubmitted) return;
+  const handleSubmit = async () => {
+    if (isSubmitted || isSubmitting) return;
 
-    let correctAnswers = 0;
-    exam.questions.forEach((q: any) => {
-      if (answers[q.id] === q.correctAnswer) {
-        correctAnswers++;
-      }
-    });
-
-    const finalScore = (correctAnswers / exam.questions.length) * 100;
-    setScore(finalScore);
-    setIsSubmitted(true);
-     toast({
+    setIsSubmitting(true);
+    try {
+      const result = await submitExamAction({ examId: params.id, answers });
+      setScore(result.score);
+      setIsSubmitted(true);
+      toast({
         title: 'Exam Submitted!',
-        description: `You scored ${finalScore.toFixed(2)}%.`,
-    });
+        description: `You scored ${result.score.toFixed(2)}%.`,
+      });
+    } catch (error) {
+       toast({
+        variant: 'destructive',
+        title: 'Error submitting exam',
+        description: 'An unexpected error occurred. Please try again.',
+      });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
-  if (!exam) {
+  if (!examDetails) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center p-4">
         <AlertCircle className="w-16 h-16 text-destructive" />
@@ -114,7 +89,7 @@ export default function ExamTakingPage({ params }: { params: { id: string } }) {
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
-  const progress = (timeLeft / exam.duration) * 100;
+  const progress = (timeLeft / examDetails.duration) * 100;
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -122,8 +97,8 @@ export default function ExamTakingPage({ params }: { params: { id: string } }) {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle className="text-3xl">{exam.title}</CardTitle>
-              <CardDescription>{exam.course}</CardDescription>
+              <CardTitle className="text-3xl">{examDetails.title}</CardTitle>
+              <CardDescription>{examDetails.course}</CardDescription>
             </div>
              <div className="flex items-center gap-2 text-lg font-semibold">
                 <Timer className="h-6 w-6" />
@@ -147,13 +122,13 @@ export default function ExamTakingPage({ params }: { params: { id: string } }) {
                 </div>
             ) : (
                 <form className="space-y-8">
-                {exam.questions.map((question: any, index: number) => (
+                {examQuestions.map((question: any, index: number) => (
                     <div key={question.id}>
                     <p className="font-semibold text-lg">{index + 1}. {question.text}</p>
                     <RadioGroup
                         onValueChange={(value) => handleAnswerChange(question.id, value)}
                         className="mt-4 space-y-2"
-                        disabled={isSubmitted}
+                        disabled={isSubmitting || isSubmitted}
                     >
                         {question.options.map((option: string) => (
                         <div key={option} className="flex items-center space-x-2">
@@ -169,8 +144,9 @@ export default function ExamTakingPage({ params }: { params: { id: string } }) {
         </CardContent>
         {!isSubmitted && (
             <CardFooter>
-            <Button onClick={handleSubmit} disabled={isSubmitted}>
-                Submit Exam
+            <Button onClick={handleSubmit} disabled={isSubmitting || isSubmitted}>
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isSubmitting ? 'Submitting...' : 'Submit Exam'}
             </Button>
             </CardFooter>
         )}

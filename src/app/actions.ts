@@ -3,6 +3,7 @@
 import { chatWithElara, ChatWithElaraInput, ChatWithElaraOutput } from '@/ai/flows/ai-coach-flow';
 import { analyzeCode, AnalyzeCodeInput, AnalyzeCodeOutput } from '@/ai/flows/analyze-code';
 import { z } from 'zod';
+import { exams as examData } from '@/lib/exam-data';
 
 const chatWithElaraFormSchema = z.object({
   userName: z.string(),
@@ -50,4 +51,36 @@ export async function analyzeCodeAction(
         console.error('Error analyzing code:', error);
         return { explanation: 'Sorry, an error occurred.', feedback: 'Please try again later.' };
     }
+}
+
+const submitExamFormSchema = z.object({
+  examId: z.string(),
+  answers: z.record(z.string()),
+});
+
+export async function submitExamAction(
+  input: z.infer<typeof submitExamFormSchema>
+): Promise<{ score: number }> {
+  const parsedInput = submitExamFormSchema.safeParse(input);
+
+  if (!parsedInput.success) {
+    throw new Error('Invalid input');
+  }
+  
+  const { examId, answers } = parsedInput.data;
+  const exam = examData[examId as keyof typeof examData];
+
+  if (!exam) {
+    throw new Error('Exam not found');
+  }
+
+  let correctAnswers = 0;
+  exam.questions.forEach((q: any) => {
+    if (answers[q.id] === q.correctAnswer) {
+      correctAnswers++;
+    }
+  });
+
+  const score = (correctAnswers / exam.questions.length) * 100;
+  return { score };
 }
