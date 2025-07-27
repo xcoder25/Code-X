@@ -13,7 +13,7 @@ import {
   Calendar,
   FlaskConical,
 } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import {
@@ -27,9 +27,32 @@ import {
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import Image from 'next/image';
+import { useAuth } from '@/app/auth-provider';
+import { auth } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AppSidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out.',
+      });
+      router.push('/login');
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message,
+      });
+    }
+  };
 
   return (
     <Sidebar>
@@ -140,30 +163,30 @@ export default function AppSidebar() {
       <SidebarFooter>
          <SidebarMenu>
           <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link href="/">
+              <SidebarMenuButton onClick={handleLogout}>
                   <LogOut />
                   <span>Logout</span>
-                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
         </SidebarMenu>
-        <div className="flex items-center gap-3 px-2 mt-2">
-          <Avatar>
-            <AvatarImage
-              src="https://placehold.co/40x40.png"
-              alt="User"
-              data-ai-hint="profile picture"
-            />
-            <AvatarFallback>U</AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold">John Doe</span>
-            <span className="text-xs text-muted-foreground">
-              john.doe@email.com
-            </span>
+        {user && (
+          <div className="flex items-center gap-3 px-2 mt-2">
+            <Avatar>
+              <AvatarImage
+                src={user.photoURL || "https://placehold.co/40x40.png"}
+                alt={user.displayName || "User"}
+                data-ai-hint="profile picture"
+              />
+              <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold">{user.displayName}</span>
+              <span className="text-xs text-muted-foreground">
+                {user.email}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </SidebarFooter>
     </Sidebar>
   );

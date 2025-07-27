@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import AppProvider from './app-provider';
 import PageProvider from './page-provider';
 import { ThemeProvider } from '@/components/theme-provider';
+import { AuthProvider } from './auth-provider';
 
 export const metadata: Metadata = {
   title: 'Code-X',
@@ -33,10 +34,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <PageProvider>
-            <AppProvider>{children}</AppProvider>
-          </PageProvider>
-          <Toaster />
+          <AuthProvider>
+            <PageProvider>
+              <AppProvider>{children}</AppProvider>
+            </PageProvider>
+            <Toaster />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
