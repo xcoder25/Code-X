@@ -1,30 +1,31 @@
 'use server';
 
-import { generateLearningPath, LearningPathInput, LearningPathOutput } from '@/ai/flows/generate-learning-path';
+import { chatWithElara, ChatWithElaraInput, ChatWithElaraOutput } from '@/ai/flows/ai-coach-flow';
 import { analyzeCode, AnalyzeCodeInput, AnalyzeCodeOutput } from '@/ai/flows/analyze-code';
 import { z } from 'zod';
 
-const learningPathFormSchema = z.object({
-  skillLevel: z.string(),
-  interests: z.string(),
-  goals: z.string(),
+const chatWithElaraFormSchema = z.object({
+  userName: z.string(),
+  message: z.string(),
+  history: z.array(z.any()),
 });
 
-export async function generateLearningPathAction(
-  input: LearningPathInput
-): Promise<LearningPathOutput> {
-  const parsedInput = learningPathFormSchema.safeParse(input);
+export async function chatWithElaraAction(
+  input: ChatWithElaraInput
+): Promise<ChatWithElaraOutput> {
+  const parsedInput = chatWithElaraFormSchema.safeParse(input);
 
   if (!parsedInput.success) {
+    console.error('Invalid input:', parsedInput.error);
     throw new Error('Invalid input');
   }
 
   try {
-    const output = await generateLearningPath(parsedInput.data);
+    const output = await chatWithElara(parsedInput.data);
     return output;
   } catch (error) {
-    console.error('Error generating learning path:', error);
-    return { title: '', path: '' };
+    console.error('Error chatting with Elara:', error);
+    return { reply: 'Sorry, I encountered an error. Please try again.' };
   }
 }
 
