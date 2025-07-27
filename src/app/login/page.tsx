@@ -17,7 +17,7 @@ export default function LoginPage() {
       <Card className="mx-auto max-w-sm">
         <CardHeader className="text-center">
             <Image
-              src="/logo.png"
+              src="/my logo.png"
               alt="Code-X Logo"
               width={48}
               height={48}

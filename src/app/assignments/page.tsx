@@ -16,34 +16,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-const assignments = [
-  {
-    title: 'State Management',
-    course: 'Web Development Bootcamp',
-    dueDate: 'Oct 29, 2024',
-    status: 'Pending',
-  },
-  {
-    title: 'Component Lifecycle',
-    course: 'Web Development Bootcamp',
-    dueDate: 'Oct 22, 2024',
-    status: 'Graded',
-    grade: 'A-',
-  },
-  {
-    title: 'Server Actions',
-    course: 'Advanced Next.js',
-    dueDate: 'Nov 5, 2024',
-    status: 'Pending',
-  },
-    {
-    title: 'JS Fundamentals',
-    course: 'Web Development Bootcamp',
-    dueDate: 'Oct 15, 2024',
-    status: 'Graded',
-    grade: 'B+',
-  },
-];
+const assignments: any[] = [];
 
 export default function AssignmentsPage() {
   return (
@@ -69,38 +42,46 @@ export default function AssignmentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {assignments.map((assignment) => (
-                <TableRow key={assignment.title}>
-                  <TableCell className="font-medium">
-                    {assignment.title}
-                  </TableCell>
-                  <TableCell>{assignment.course}</TableCell>
-                  <TableCell>{assignment.dueDate}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        assignment.status === 'Pending'
-                          ? 'destructive'
-                          : 'secondary'
-                      }
-                    >
-                      {assignment.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{assignment.grade || 'N/A'}</TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={assignment.status === 'Graded'}
-                    >
-                      {assignment.status === 'Graded'
-                        ? 'View Submission'
-                        : 'Submit'}
-                    </Button>
+              {assignments.length > 0 ? (
+                assignments.map((assignment) => (
+                  <TableRow key={assignment.title}>
+                    <TableCell className="font-medium">
+                      {assignment.title}
+                    </TableCell>
+                    <TableCell>{assignment.course}</TableCell>
+                    <TableCell>{assignment.dueDate}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          assignment.status === 'Pending'
+                            ? 'destructive'
+                            : 'secondary'
+                        }
+                      >
+                        {assignment.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{assignment.grade || 'N/A'}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={assignment.status === 'Graded'}
+                      >
+                        {assignment.status === 'Graded'
+                          ? 'View Submission'
+                          : 'Submit'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    No assignments found.
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>

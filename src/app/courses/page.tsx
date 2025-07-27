@@ -11,44 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, BookOpenCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
-const courses = [
-  {
-    id: 'web-development',
-    title: 'Web Development Bootcamp',
-    description:
-      'Master HTML, CSS, JavaScript, React, and Node.js to build full-stack web applications from scratch.',
-    tags: ['HTML', 'CSS', 'JavaScript', 'React', 'Node.js'],
-    status: 'in-progress',
-    progress: 75,
-  },
-  {
-    id: 'advanced-nextjs',
-    title: 'Advanced Next.js',
-    description:
-      'Dive deep into server components, advanced data fetching patterns, and scalable architecture in Next.js.',
-    tags: ['Next.js', 'Server Components', 'Vercel'],
-    status: 'in-progress',
-    progress: 20,
-  },
-  {
-    id: 'data-structures',
-    title: 'Data Structures & Algorithms',
-    description:
-      'Strengthen your problem-solving skills with a deep dive into essential data structures and algorithms.',
-    tags: ['Algorithms', 'Data Structures', 'Problem Solving'],
-    status: 'not-started',
-    progress: 0,
-  },
-   {
-    id: 'ui-ux-design',
-    title: 'UI/UX Design Fundamentals',
-    description:
-      'Learn the principles of user-centered design, wireframing, and prototyping to create beautiful interfaces.',
-    tags: ['UI', 'UX', 'Figma', 'Design Thinking'],
-    status: 'not-started',
-    progress: 0,
-  },
-];
+const courses: any[] = [];
 
 export default function CoursesPage() {
   return (
@@ -72,7 +35,7 @@ export default function CoursesPage() {
               <CardDescription>{course.description}</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow space-x-2">
-              {course.tags.map((tag) => (
+              {course.tags.map((tag: string) => (
                 <Badge key={tag} variant="outline">
                   {tag}
                 </Badge>
@@ -91,6 +54,11 @@ export default function CoursesPage() {
           </Card>
         ))}
       </div>
+       {courses.length === 0 && (
+          <div className="text-center text-muted-foreground py-12 col-span-full">
+              <p>No courses available at the moment. Please check back later.</p>
+            </div>
+        )}
     </main>
   );
 }

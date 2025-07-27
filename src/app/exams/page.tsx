@@ -17,37 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-const exams = [
-  {
-    id: 'mid-term-exam',
-    title: 'Mid-term Exam',
-    course: 'Web Development Bootcamp',
-    date: 'Oct 30, 2024',
-    status: 'Upcoming',
-  },
-  {
-    id: 'js-fundamentals-quiz',
-    title: 'JavaScript Fundamentals Quiz',
-    course: 'Web Development Bootcamp',
-    date: 'Oct 18, 2024',
-    status: 'Completed',
-    score: '92%',
-  },
-  {
-    id: 'final-exam',
-    title: 'Final Exam',
-    course: 'Web Development Bootcamp',
-    date: 'Dec 15, 2024',
-    status: 'Upcoming',
-  },
-  {
-    id: 'advanced-nextjs-concepts',
-    title: 'Advanced Next.js Concepts',
-    course: 'Advanced Next.js',
-    date: 'Nov 20, 2024',
-    status: 'Upcoming',
-  },
-];
+const exams: any[] = [];
 
 export default function ExamsPage() {
   return (
@@ -73,32 +43,40 @@ export default function ExamsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {exams.map((exam) => (
-                <TableRow key={exam.title}>
-                  <TableCell className="font-medium">{exam.title}</TableCell>
-                  <TableCell>{exam.course}</TableCell>
-                  <TableCell>{exam.date}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        exam.status === 'Upcoming' ? 'default' : 'secondary'
-                      }
-                    >
-                      {exam.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{exam.score || 'N/A'}</TableCell>
-                  <TableCell className="text-right">
-                    <Button asChild
-                      variant="outline"
-                      size="sm"
-                      disabled={exam.status === 'Completed'}
-                    >
-                      {exam.status === 'Completed' ? <Link href="#">View Results</Link> : <Link href={`/exams/${exam.id}`}>Begin Exam</Link>}
-                    </Button>
+              {exams.length > 0 ? (
+                exams.map((exam) => (
+                  <TableRow key={exam.title}>
+                    <TableCell className="font-medium">{exam.title}</TableCell>
+                    <TableCell>{exam.course}</TableCell>
+                    <TableCell>{exam.date}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          exam.status === 'Upcoming' ? 'default' : 'secondary'
+                        }
+                      >
+                        {exam.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{exam.score || 'N/A'}</TableCell>
+                    <TableCell className="text-right">
+                      <Button asChild
+                        variant="outline"
+                        size="sm"
+                        disabled={exam.status === 'Completed'}
+                      >
+                        {exam.status === 'Completed' ? <Link href="#">View Results</Link> : <Link href={`/exams/${exam.id}`}>Begin Exam</Link>}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    No exams found.
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>

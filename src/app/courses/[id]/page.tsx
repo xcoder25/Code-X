@@ -14,99 +14,9 @@ import Link from 'next/link';
 import ChallengeInterface from '@/components/challenge-interface';
 import LearningPathGenerator from '@/components/learning-path-generator';
 
-const courses: { [key: string]: any } = {
-  'web-development': {
-    id: 'web-development',
-    title: 'Web Development Bootcamp',
-    description: 'Master HTML, CSS, JavaScript, React, and Node.js to build full-stack web applications from scratch.',
-    tags: ['HTML', 'CSS', 'JavaScript', 'React', 'Node.js'],
-    modules: [
-      {
-        title: 'Module 1: HTML & CSS Fundamentals',
-        lessons: [
-          { title: 'Introduction to HTML', type: 'video', completed: true },
-          { title: 'Styling with CSS', type: 'video', completed: true },
-           { title: 'Live Session: Flexbox Deep Dive', type: 'live', completed: false, meetingUrl: '#' },
-          { title: 'Building a Simple Layout', type: 'challenge', completed: false },
-        ]
-      },
-      {
-        title: 'Module 2: JavaScript Basics',
-        lessons: [
-          { title: 'Variables and Data Types', type: 'video', completed: true },
-          { title: 'DOM Manipulation', type: 'reading', completed: false },
-           { title: 'Interactive Button Challenge', type: 'challenge', completed: false },
-        ]
-      },
-       {
-        title: 'Module 3: React & State Management',
-        lessons: [
-          { title: 'Introduction to React', type: 'video', completed: false },
-          { title: 'Live Q&A: React Hooks', type: 'live', completed: false, meetingUrl: '#' },
-          { title: 'State and Props', type: 'video', completed: false },
-           { title: 'Building a Counter App', type: 'challenge', completed: false },
-        ]
-      }
-    ],
-  },
-  'advanced-nextjs': {
-    id: 'advanced-nextjs',
-    title: 'Advanced Next.js',
-    description: 'Dive deep into server components, advanced data fetching patterns, and scalable architecture in Next.js.',
-    tags: ['Next.js', 'Server Components', 'Vercel'],
-    modules: [
-        {
-        title: 'Module 1: Server Components',
-        lessons: [
-          { title: 'Understanding Server vs Client', type: 'video', completed: true },
-          { title: 'Live Coding: Building a Server Component', type: 'live', completed: false, meetingUrl: '#' },
-          { title: 'Data Fetching Strategies', type: 'reading', completed: false },
-        ]
-      },
-        {
-        title: 'Module 2: Advanced Routing',
-        lessons: [
-          { title: 'Dynamic Routes', type: 'video', completed: false },
-          { title: 'Route Groups and Layouts', type: 'challenge', completed: false },
-        ]
-      }
-    ]
-  },
-};
+const courses: { [key: string]: any } = {};
+const challenges: { [key: string]: any } = {};
 
-const challenges = {
-    'building-a-simple-layout': {
-        id: 'building-a-simple-layout',
-        title: 'Challenge: Building a Simple Layout',
-        description: 'Create a simple two-column layout using HTML and CSS Flexbox. The left column should contain a title and the right should have a paragraph of text.',
-        difficulty: 'Easy',
-        defaultCode: `<html>
-  <head>
-    <style>
-      .container {
-        /* Your CSS here */
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <!-- Your HTML here -->
-    </div>
-  </body>
-</html>`
-    },
-    'interactive-button-challenge': {
-        id: 'interactive-button-challenge',
-        title: 'Challenge: Interactive Button',
-        description: 'Using JavaScript, make the button below change its text to "Clicked!" when the user clicks on it.',
-        difficulty: 'Easy',
-        defaultCode: `<button id="myButton">Click Me</button>
-
-<script>
-  // Your JavaScript here
-</script>`
-    }
-}
 
 function getLessonIcon(type: string) {
   switch (type) {
@@ -125,8 +35,10 @@ function getLessonIcon(type: string) {
 
 export default function CourseDetailPage({ params }: { params: { id: string } }) {
   const course = courses[params.id];
-  const challengeId = 'building-a-simple-layout';
-  const challenge = challenges[challengeId as keyof typeof challenges];
+  
+  // Find a challenge related to the course, if any
+  const challengeId = course?.modules?.flatMap((m: any) => m.lessons).find((l: any) => l.type === 'challenge')?.id;
+  const challenge = challengeId ? challenges[challengeId] : null;
 
   if (!course) {
     return (

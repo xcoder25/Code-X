@@ -28,91 +28,11 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
-const courses = [
-  {
-    id: 'web-development',
-    title: 'Web Development Bootcamp',
-    description:
-      'Master HTML, CSS, JavaScript, React, and Node.js to build full-stack web applications from scratch.',
-    tags: ['HTML', 'CSS', 'JavaScript', 'React', 'Node.js'],
-    status: 'in-progress',
-    progress: 75,
-  },
-  {
-    id: 'advanced-nextjs',
-    title: 'Advanced Next.js',
-    description:
-      'Dive deep into server components, advanced data fetching patterns, and scalable architecture in Next.js.',
-    tags: ['Next.js', 'Server Components', 'Vercel'],
-    status: 'in-progress',
-    progress: 20,
-  },
-];
+const courses: any[] = [];
+const assignments: any[] = [];
+const exams: any[] = [];
+const liveClasses: any[] = [];
 
-const assignments = [
-  {
-    title: 'State Management',
-    course: 'Web Development Bootcamp',
-    dueDate: 'Oct 29, 2024',
-    status: 'Pending',
-  },
-  {
-    title: 'Component Lifecycle',
-    course: 'Web Development Bootcamp',
-    dueDate: 'Oct 22, 2024',
-    status: 'Graded',
-    grade: 'A-',
-  },
-  {
-    title: 'Server Actions',
-    course: 'Advanced Next.js',
-    dueDate: 'Nov 5, 2024',
-    status: 'Pending',
-  },
-  {
-    title: 'JS Fundamentals',
-    course: 'Web Development Bootcamp',
-    dueDate: 'Oct 15, 2024',
-    status: 'Graded',
-    grade: 'B+',
-  },
-];
-
-const exams = [
-  {
-    title: 'Mid-term Exam',
-    course: 'Web Development Bootcamp',
-    date: 'Oct 30, 2024',
-    status: 'Upcoming',
-  },
-  {
-    title: 'Final Exam',
-    course: 'Web Development Bootcamp',
-    date: 'Dec 15, 2024',
-    status: 'Upcoming',
-  },
-  {
-    title: 'Advanced Next.js Concepts',
-    course: 'Advanced Next.js',
-    date: 'Nov 20, 2024',
-    status: 'Upcoming',
-  },
-];
-
-const liveClasses = [
-  {
-    title: 'Live Q&A: React Hooks',
-    course: 'Web Development Bootcamp',
-    date: 'Oct 28, 2024',
-    time: '4:00 PM',
-  },
-  {
-    title: 'Live Coding: Building a Server Component',
-    course: 'Advanced Next.js',
-    date: 'Nov 1, 2024',
-    time: '2:00 PM',
-  },
-];
 
 const getStatusVariant = (status: string) => {
   switch (status) {
@@ -192,9 +112,9 @@ export default function DashboardPage() {
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">In Progress</div>
+            <div className="text-2xl font-bold">Not Set</div>
             <p className="text-xs text-muted-foreground">
-              Web Development Track
+              No track selected
             </p>
           </CardContent>
         </Card>
