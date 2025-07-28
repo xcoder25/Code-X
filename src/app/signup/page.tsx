@@ -71,7 +71,7 @@ export default function SignupPage() {
       <Card className="mx-auto max-w-sm">
         <CardHeader className="text-center">
           <Image
-            src="/my logo.png"
+            src="/logo.png"
             alt="Code-X Logo"
             width={48}
             height={48}
