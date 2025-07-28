@@ -1,8 +1,5 @@
 import type {NextConfig} from 'next';
 
-const withTM = require('next-transpile-modules')(['firebase/app', 'firebase/auth']);
-
-
 const nextConfig: NextConfig = {
   /* config options here */
   typescript: {
@@ -23,4 +20,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withTM(nextConfig);
+export default nextConfig;
