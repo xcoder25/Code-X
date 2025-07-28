@@ -10,7 +10,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDdIA5E2mTHLf1tXnyvyoXjyMM2CW-mh-0",
   authDomain: "learnai-jg327.firebaseapp.com",
   projectId: "learnai-jg327",
-  storageBucket: "learnai-jg327.appspot.com",
+  storageBucket: "learnai-jg327.firebasestorage.app",
   messagingSenderId: "150405267882",
   appId: "1:150405267882:web:ac16a10e57255a87162bd3"
 };
