@@ -1,6 +1,6 @@
 'use client';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useTransition } from 'react';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 
 export default function PageProvider({
@@ -9,23 +9,17 @@ export default function PageProvider({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [loading, setLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     startTransition(() => {
-        setLoading(true);
+      // No need to set a state here, `isPending` will track the transition
     });
   }, [pathname]);
 
-  useEffect(() => {
-    setLoading(false);
-  }, [children]);
-
-
   return (
     <>
-      {loading && <LoadingSpinner />}
+      {isPending && <LoadingSpinner />}
       {children}
     </>
   );
