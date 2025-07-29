@@ -12,9 +12,7 @@
 import { z } from 'zod';
 import { getAI, getGenerativeModel } from "firebase/ai";
 import { app } from '@/lib/firebase';
-import type { Message } from '@/components/ai-coach';
 import type { BaseMessage } from '@google/generative-ai';
-
 
 const ChatWithElaraInputSchema = z.object({
   userName: z.string().describe('The name of the user engaging with the AI.'),
@@ -53,10 +51,11 @@ const model = getGenerativeModel(ai, {
 export async function chatWithElara(
   input: ChatWithElaraInput
 ): Promise<ChatWithElaraOutput> {
-  const { message, history } = input;
+  const { userName, message, history } = input;
   
   // The SDK expects a `BaseMessage[]` with a specific format.
-  const typedHistory: BaseMessage[] = history.map((msg: Message) => ({
+  // This maps the incoming history to the required format.
+  const typedHistory: BaseMessage[] = history.map((msg) => ({
       role: msg.role,
       parts: [{ text: msg.content }],
   }));
