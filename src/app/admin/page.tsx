@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
+import { collection, onSnapshot, limit, orderBy, query } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -46,26 +46,30 @@ export default function AdminPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                // Fetch recent users
-                const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(5));
-                const usersSnapshot = await getDocs(usersQuery);
-                const recentUsers = usersSnapshot.docs.map(doc => doc.data() as User);
-                setUsers(recentUsers);
+        // Listen for recent users
+        const recentUsersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(5));
+        const unsubscribeRecent = onSnapshot(recentUsersQuery, (snapshot) => {
+            const recentUsersData = snapshot.docs.map(doc => doc.data() as User);
+            setUsers(recentUsersData);
+            if (loading) setLoading(false);
+        }, (error) => {
+            console.error("Error fetching recent users:", error);
+            setLoading(false);
+        });
 
-                // Fetch total user count
-                const allUsersSnapshot = await getDocs(collection(db, 'users'));
-                setTotalUsers(allUsersSnapshot.size);
+        // Listen for total user count
+        const allUsersQuery = query(collection(db, 'users'));
+        const unsubscribeTotal = onSnapshot(allUsersQuery, (snapshot) => {
+            setTotalUsers(snapshot.size);
+        }, (error) => {
+            console.error("Error fetching total user count:", error);
+        });
 
-            } catch (error) {
-                console.error("Error fetching admin data:", error);
-            } finally {
-                setLoading(false);
-            }
+        // Cleanup listeners on unmount
+        return () => {
+            unsubscribeRecent();
+            unsubscribeTotal();
         };
-
-        fetchData();
     }, []);
 
   return (

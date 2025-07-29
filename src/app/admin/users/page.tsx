@@ -28,7 +28,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -48,20 +48,18 @@ export default function AdminUsersPage() {
     const [loading, setLoading] = useState(true);
 
      useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-                const usersSnapshot = await getDocs(usersQuery);
-                const allUsers = usersSnapshot.docs.map(doc => doc.data() as User);
-                setUsers(allUsers);
-            } catch (error) {
-                console.error("Error fetching users:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+        const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+        
+        const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
+            const allUsers = snapshot.docs.map(doc => doc.data() as User);
+            setUsers(allUsers);
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching users:", error);
+            setLoading(false);
+        });
 
-        fetchUsers();
+        return () => unsubscribe();
     }, []);
 
   return (
