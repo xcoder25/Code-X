@@ -81,7 +81,7 @@ export default function AiCoach() {
       const response = await chatWithElaraAction({
         userName,
         message: currentInput,
-        history: newMessages, // Pass the *new* messages array with the user's latest message
+        history: messages, // Pass the history *before* the new user message
       });
 
       const elaraMessage: Message = { role: 'model', content: response.reply };

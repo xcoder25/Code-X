@@ -52,12 +52,8 @@ export async function chatWithElara(
 ): Promise<ChatWithElaraOutput> {
   const { message, history } = input;
   
-  // The Firebase AI SDK's `startChat` history should not include the current message.
-  // The history from the client includes the latest user message, so we slice it off.
-  const conversationHistory = history.slice(0, -1);
-  
   // The SDK expects a `BaseMessage[]` with a specific format.
-  const typedHistory: BaseMessage[] = conversationHistory.map((msg) => ({
+  const typedHistory: BaseMessage[] = history.map((msg) => ({
       role: msg.role,
       parts: [{ text: msg.content }],
   }));
