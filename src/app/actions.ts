@@ -4,12 +4,14 @@ import { chatWithElara, ChatWithElaraInput, ChatWithElaraOutput } from '@/ai/flo
 import { analyzeCode, AnalyzeCodeInput, AnalyzeCodeOutput } from '@/ai/flows/analyze-code';
 import { z } from 'zod';
 import { exams as examData } from '@/lib/exam-data';
-import { BaseMessage } from '@google/generative-ai';
 
 const chatWithElaraFormSchema = z.object({
   userName: z.string(),
   message: z.string(),
-  history: z.array(z.any()),
+  history: z.array(z.object({
+    role: z.enum(['user', 'model']),
+    content: z.string(),
+  })),
 });
 
 export async function chatWithElaraAction(
@@ -63,7 +65,7 @@ const submitExamFormSchema = z.object({
 export async function submitExamAction(
   input: z.infer<typeof submitExamFormSchema>
 ): Promise<{ score: number }> {
-  const parsedInput = submitExamFormSchema.safeParse(input);
+  const parsedInput = submitExamForm-schema.safeParse(input);
 
   if (!parsedInput.success) {
     throw new Error('Invalid input');

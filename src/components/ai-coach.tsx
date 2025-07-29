@@ -73,14 +73,15 @@ export default function AiCoach() {
     const userMessage: Message = { role: 'user', content: input };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
+    const currentInput = input;
     setInput('');
     setIsLoading(true);
 
     try {
       const response = await chatWithElaraAction({
         userName,
-        message: input,
-        history: messages, // pass the current messages as history
+        message: currentInput,
+        history: newMessages, // Pass the *new* messages array with the user's latest message
       });
 
       const elaraMessage: Message = { role: 'model', content: response.reply };
@@ -92,7 +93,7 @@ export default function AiCoach() {
         description: 'Failed to get a response. Please try again.',
       });
       // remove the user message if the API fails
-      setMessages(prev => prev.slice(0, prev.length -1));
+      setMessages(newMessages.slice(0, newMessages.length -1));
     } finally {
       setIsLoading(false);
     }
