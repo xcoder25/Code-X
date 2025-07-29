@@ -8,6 +8,7 @@ import {
   Users,
   CreditCard,
   KeyRound,
+  Bell,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -105,6 +106,14 @@ export default function AppSidebar() {
               <Link href="/admin/access-codes">
                 <KeyRound />
                 <span>Access Codes</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/notifications')}>
+              <Link href="/admin/notifications">
+                <Bell />
+                <span>Notifications</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

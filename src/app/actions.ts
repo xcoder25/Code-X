@@ -2,6 +2,8 @@
 
 import { chatWithElara, ChatWithElaraInput, ChatWithElaraOutput } from '@/ai/flows/ai-coach-flow';
 import { analyzeCode, AnalyzeCodeInput, AnalyzeCodeOutput } from '@/ai/flows/analyze-code';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { z } from 'zod';
 import { exams as examData } from '@/lib/exam-data';
 
@@ -65,7 +67,7 @@ const submitExamFormSchema = z.object({
 export async function submitExamAction(
   input: z.infer<typeof submitExamFormSchema>
 ): Promise<{ score: number }> {
-  const parsedInput = submitExamForm-schema.safeParse(input);
+  const parsedInput = submitExamFormSchema.safeParse(input);
 
   if (!parsedInput.success) {
     throw new Error('Invalid input');
@@ -87,4 +89,32 @@ export async function submitExamAction(
 
   const score = (correctAnswers / exam.questions.length) * 100;
   return { score };
+}
+
+const sendNotificationFormSchema = z.object({
+  title: z.string(),
+  message: z.string(),
+});
+
+export async function sendNotificationAction(
+  input: z.infer<typeof sendNotificationFormSchema>
+) {
+    const parsedInput = sendNotificationFormSchema.safeParse(input);
+
+    if (!parsedInput.success) {
+        throw new Error('Invalid input for notification');
+    }
+
+    try {
+        await addDoc(collection(db, 'notifications'), {
+            title: parsedInput.data.title,
+            description: parsedInput.data.message,
+            createdAt: serverTimestamp(),
+            readBy: [], // Used to track which users have read it
+            type: 'announcement', // Example type
+        });
+    } catch (error) {
+        console.error('Error sending notification:', error);
+        throw new Error('Could not send notification.');
+    }
 }

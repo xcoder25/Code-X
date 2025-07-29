@@ -1,3 +1,6 @@
+
+'use client';
+
 import {
   Card,
   CardHeader,
@@ -5,12 +8,70 @@ import {
   CardDescription,
   CardContent,
 } from '@/components/ui/card';
-import { Bell, Zap, AlertTriangle } from 'lucide-react';
+import { Bell, Zap, AlertTriangle, BookOpenCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useEffect, useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const notifications: any[] = [];
+interface Notification {
+  id: string;
+  title: string;
+  description: string;
+  createdAt: {
+    seconds: number;
+    nanoseconds: number;
+  };
+  type: 'announcement' | 'grade' | 'reminder';
+  read?: boolean; // We'll assume all are unread for now
+}
+
+const getNotificationIcon = (type: string) => {
+    switch (type) {
+        case 'grade':
+            return <BookOpenCheck />;
+        case 'reminder':
+            return <AlertTriangle />;
+        case 'announcement':
+        default:
+            return <Bell />;
+    }
+}
+
+const getNotificationVariant = (type: string) => {
+    switch (type) {
+        case 'grade':
+            return 'default';
+        case 'reminder':
+            return 'destructive';
+        case 'announcement':
+        default:
+            return 'default';
+    }
+}
+
 
 export default function NotificationsPage() {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+
+   useEffect(() => {
+    const q = query(collection(db, "notifications"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const notificationsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        // This is a simplified read status. A real app would store read status per user.
+        read: false,
+      })) as Notification[];
+      setNotifications(notificationsData);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <div className="flex items-center">
@@ -22,7 +83,20 @@ export default function NotificationsPage() {
 
       <Card>
         <CardContent className="p-6">
-         {notifications.length > 0 ? (
+         {loading ? (
+             <ul className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                    <li key={i} className="flex items-start gap-4 p-4">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="flex-1 space-y-2">
+                             <Skeleton className="h-4 w-1/4" />
+                             <Skeleton className="h-4 w-3/4" />
+                             <Skeleton className="h-3 w-1/2" />
+                        </div>
+                    </li>
+                ))}
+             </ul>
+         ) : notifications.length > 0 ? (
             <ul className="space-y-4">
                 {notifications.map((notification) => (
                 <li
@@ -33,12 +107,12 @@ export default function NotificationsPage() {
                 >
                     <div
                     className={`p-2 rounded-full ${
-                        notification.variant === 'destructive'
+                        getNotificationVariant(notification.type) === 'destructive'
                         ? 'bg-destructive/20 text-destructive'
                         : 'bg-primary/20 text-primary'
                     }`}
                     >
-                    {notification.icon}
+                    {getNotificationIcon(notification.type)}
                     </div>
                     <div className="flex-1">
                     <div className="flex justify-between items-center">
@@ -50,7 +124,7 @@ export default function NotificationsPage() {
                         {notification.description}
                     </p>
                     <p className="text-xs text-muted-foreground mt-2">
-                        {notification.date}
+                         {new Date(notification.createdAt.seconds * 1000).toLocaleString()}
                     </p>
                     </div>
                 </li>
