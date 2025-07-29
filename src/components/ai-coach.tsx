@@ -16,44 +16,16 @@ interface Message {
   content: string;
 }
 
+const initialMessage = `Hi there! My name is Elara, and I'm your AI learning coach here on the Code-X platform. I'm excited to help you on your coding journey! To best assist you, tell me, what are you hoping to learn or accomplish today?`;
+
 export default function AiCoach() {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([{ role: 'model', content: initialMessage }]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const userName = user?.displayName?.split(' ')[0] || "there";
-
-  // Initial welcome message from Elara
-  useEffect(() => {
-    async function getInitialMessage() {
-      if (messages.length > 0) {
-        setIsLoading(false);
-        return;
-      };
-      setIsLoading(true);
-      try {
-        const initialResponse = await chatWithElaraAction({
-            userName,
-            message: "Hello, introduce yourself!",
-            history: [],
-        });
-        setMessages([{ role: 'model', content: initialResponse.reply }]);
-      } catch (error) {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Failed to connect with Elara. Please try again later.',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    if (user) {
-        getInitialMessage();
-    }
-  }, [userName, toast, user, messages.length]);
 
   useEffect(() => {
     // Scroll to the bottom when new messages are added
@@ -78,10 +50,11 @@ export default function AiCoach() {
     setIsLoading(true);
 
     try {
+      // We pass the history *before* the new user message
       const response = await chatWithElaraAction({
         userName,
         message: currentInput,
-        history: messages, // Pass the history *before* the new user message
+        history: messages,
       });
 
       const elaraMessage: Message = { role: 'model', content: response.reply };
@@ -114,18 +87,6 @@ export default function AiCoach() {
       </div>
       <ScrollArea className="flex-1 p-4" viewportRef={scrollAreaRef}>
         <div className="space-y-6">
-          {isLoading && messages.length === 0 && (
-             <div className="flex items-start gap-3 justify-start">
-                 <Avatar className="h-8 w-8">
-                   <AvatarFallback className="bg-primary text-primary-foreground">
-                        <Bot />
-                   </AvatarFallback>
-                </Avatar>
-                <div className="bg-muted rounded-lg p-3 flex items-center justify-center">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                </div>
-             </div>
-          )}
           {messages.map((message, index) => (
             <div
               key={index}
@@ -160,7 +121,7 @@ export default function AiCoach() {
               )}
             </div>
           ))}
-          {isLoading && messages.length > 0 && (
+          {isLoading && (
              <div className="flex items-start gap-3 justify-start">
                  <Avatar className="h-8 w-8">
                    <AvatarFallback className="bg-primary text-primary-foreground">
@@ -181,7 +142,7 @@ export default function AiCoach() {
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask Elara for help..."
             className="flex-1"
-            disabled={isLoading}
+            disabled={isLoading || !user}
           />
           <Button type="submit" disabled={isLoading || !user}>
             {isLoading ? (

@@ -40,8 +40,7 @@ const model = getGenerativeModel(ai, {
     systemInstruction: `You are Elara, an expert, friendly, and encouraging AI learning coach for the Code-X platform. Your goal is to provide personalized guidance, clarify concepts, and help users on their coding journey.
 
     - Your persona is supportive, patient, and knowledgeable.
-    - When the conversation starts, if the history is empty, greet the user by their name and introduce yourself.
-    - Ask clarifying questions to understand the user's needs before providing detailed explanations or learning plans.
+    - DO NOT greet the user or introduce yourself. The user interface already handles the initial greeting. Jump directly into a helpful response.
     - Keep your responses concise and easy to understand.
     - If asked to create a learning plan, format it as a numbered or bulleted list.
     - You are a programming expert and can explain code, debug issues, and clarify complex topics.`
@@ -51,11 +50,14 @@ const model = getGenerativeModel(ai, {
 export async function chatWithElara(
   input: ChatWithElaraInput
 ): Promise<ChatWithElaraOutput> {
-  const { userName, message, history } = input;
+  const { message, history } = input;
   
   // The SDK expects a `BaseMessage[]` with a specific format.
   // This maps the incoming history to the required format.
-  const typedHistory: BaseMessage[] = history.map((msg) => ({
+  // We exclude the most recent user message from the history array for the `startChat` method.
+  const typedHistory: BaseMessage[] = (history || [])
+    .slice(0, -1) // Exclude the last message (the user's current input)
+    .map((msg) => ({
       role: msg.role,
       parts: [{ text: msg.content }],
   }));
