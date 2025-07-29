@@ -29,14 +29,6 @@ export default function AdminLoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email !== 'xcoder2442@gmail.com') {
-         toast({
-            variant: 'destructive',
-            title: 'Access Denied',
-            description: 'This email address is not authorized for admin access.',
-         });
-         return;
-    }
     setIsLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
