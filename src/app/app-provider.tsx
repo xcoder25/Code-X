@@ -16,7 +16,10 @@ export default function AppProvider({
   const pathname = usePathname();
   const { user } = useAuth();
   
-  const showSidebar = user && !NO_SIDEBAR_ROUTES.includes(pathname);
+  // Do not show the student sidebar on any admin pages.
+  const isAdminRoute = pathname.startsWith('/admin');
+
+  const showSidebar = user && !NO_SIDEBAR_ROUTES.includes(pathname) && !isAdminRoute;
 
   if (showSidebar) {
     return (
