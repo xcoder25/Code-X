@@ -5,7 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import AppProvider from './app-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from './auth-provider';
-import LearningPathGenerator from '@/components/learning-path-generator';
+import PageLoader from '@/components/learning-path-generator';
 
 export const metadata: Metadata = {
   title: 'Code-X',
@@ -39,7 +39,8 @@ export default function RootLayout({
             <Toaster />
           </AuthProvider>
         </ThemeProvider>
-        <LearningPathGenerator />
+        <PageLoader />
       </body>
     </html>
   );
+}
