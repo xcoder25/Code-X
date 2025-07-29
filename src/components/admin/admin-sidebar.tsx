@@ -63,7 +63,7 @@ export default function AppSidebar() {
                 className="text-primary"
              />
           </div>
-          <h1 className="text-xl font-semibold">Code-X Admin</h1>
+          <h1 className="text-xl font-semibold group-data-[collapsible=icon]:hidden">Code-X Admin</h1>
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -128,7 +128,7 @@ export default function AppSidebar() {
             </SidebarMenuItem>
         </SidebarMenu>
         {user && (
-          <div className="flex items-center gap-3 px-2 mt-2">
+          <div className="flex items-center gap-3 px-2 mt-2 group-data-[collapsible=icon]:hidden">
             <Avatar>
               <AvatarImage
                 src={user.photoURL || "https://placehold.co/40x40.png"}
