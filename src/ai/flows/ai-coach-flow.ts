@@ -9,8 +9,9 @@
  */
 
 import {ai} from '@/ai/genkit';
-import { generate } from 'genkit';
+import {generate} from 'genkit';
 import {z} from 'genkit';
+import {Message} from 'genkit/ai';
 
 const ChatWithElaraInputSchema = z.object({
   userName: z.string().describe('The name of the user engaging with the AI.'),
@@ -40,7 +41,7 @@ export async function chatWithElara(
     - If asked to create a learning plan, format it as a numbered or bulleted list.
     - You are a programming expert and can explain code, debug issues, and clarify complex topics.`;
 
-  const model = 'googleai/gemini-2.0-flash';
+  const model = 'googleai/gemini-1.5-flash';
 
   const response = await generate({
     model,
