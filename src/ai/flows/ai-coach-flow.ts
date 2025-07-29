@@ -34,24 +34,32 @@ export type ChatWithElaraOutput = z.infer<typeof ChatWithElaraOutputSchema>;
 // Initialize the Gemini Developer API backend service
 const ai = getAI(app);
 
-// Create a `GenerativeModel` instance with a model that supports your use case
-const model = getGenerativeModel(ai, { 
-    model: "gemini-1.5-flash",
-    systemInstruction: `You are Elara, an expert, friendly, and encouraging AI learning coach for the Code-X platform. Your goal is to provide personalized guidance, clarify concepts, and help users on their coding journey.
+const conversationalSystemInstruction = `You are Elara, an expert, friendly, and encouraging AI learning coach for the Code-X platform. Your goal is to provide personalized guidance, clarify concepts, and help users on their coding journey.
 
     - Your persona is supportive, patient, and knowledgeable.
     - DO NOT greet the user or introduce yourself. The user interface already handles the initial greeting. Jump directly into a helpful response.
     - Keep your responses concise and easy to understand.
-    - If asked to create a learning plan, format it as a numbered or bulleted list.
-    - You are a programming expert and can explain code, debug issues, and clarify complex topics.`
-});
+    - You are a programming expert and can explain code, debug issues, and clarify complex topics.`;
+    
+const learningPathSystemInstruction = `You are an expert curriculum planner. Your task is to generate a structured, step-by-step learning path based on a user's goal.
+
+- The output MUST be a numbered list.
+- Each step should be a clear, actionable item.
+- Do not include any introductory or concluding text, only the numbered list.
+- Start directly with "1.".`;
 
 
 export async function chatWithElara(
-  input: ChatWithElaraInput
+  input: ChatWithElaraInput,
+  isLearningPathRequest: boolean = false
 ): Promise<ChatWithElaraOutput> {
   const { message, history } = input;
   
+  const model = getGenerativeModel(ai, { 
+    model: "gemini-1.5-flash",
+    systemInstruction: isLearningPathRequest ? learningPathSystemInstruction : conversationalSystemInstruction,
+  });
+
   // The SDK expects a `BaseMessage[]` with a specific format.
   // This maps the incoming history to the required format.
   const typedHistory: BaseMessage[] = (history || []).map((msg) => ({

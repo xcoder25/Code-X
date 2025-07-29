@@ -5,7 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import AppProvider from './app-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from './auth-provider';
-import PageLoader from '@/components/learning-path-generator';
+import PageLoader from '@/components/page-loader';
 
 export const metadata: Metadata = {
   title: 'Code-X',

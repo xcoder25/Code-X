@@ -1,3 +1,4 @@
+
 'use server';
 
 import { chatWithElara, ChatWithElaraInput, ChatWithElaraOutput } from '@/ai/flows/ai-coach-flow';
@@ -27,8 +28,10 @@ export async function chatWithElaraAction(
   }
 
   try {
-    // Pass the full parsed input, including history, to the chat function
-    const output = await chatWithElara(parsedInput.data);
+    // When generating a learning path, we can simplify the system prompt
+    const isLearningPathRequest = parsedInput.data.message.includes('Create a learning path');
+    
+    const output = await chatWithElara(parsedInput.data, isLearningPathRequest);
     return output;
   } catch (error) {
     console.error('Error chatting with Elara:', error);
