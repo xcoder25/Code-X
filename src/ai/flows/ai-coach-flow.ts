@@ -9,7 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {generate} from 'genkit/ai';
+import { generate } from 'genkit';
 import {z} from 'genkit';
 
 const ChatWithElaraInputSchema = z.object({
