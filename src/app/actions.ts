@@ -4,7 +4,7 @@ import { chatWithElara, ChatWithElaraInput, ChatWithElaraOutput } from '@/ai/flo
 import { analyzeCode, AnalyzeCodeInput, AnalyzeCodeOutput } from '@/ai/flows/analyze-code';
 import { z } from 'zod';
 import { exams as examData } from '@/lib/exam-data';
-import { Message } from 'genkit/ai';
+import { Message } from 'genkit';
 
 const chatWithElaraFormSchema = z.object({
   userName: z.string(),
