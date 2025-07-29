@@ -11,7 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {generate} from 'genkit';
 import {z} from 'genkit';
-import {Message} from 'genkit/ai';
+import type {Message} from 'genkit';
 
 const ChatWithElaraInputSchema = z.object({
   userName: z.string().describe('The name of the user engaging with the AI.'),
@@ -27,12 +27,16 @@ const ChatWithElaraOutputSchema = z.object({
 });
 export type ChatWithElaraOutput = z.infer<typeof ChatWithElaraOutputSchema>;
 
-export async function chatWithElara(
-  input: ChatWithElaraInput
-): Promise<ChatWithElaraOutput> {
-  const {userName, message, history} = input;
+const chatWithElaraFlow = ai.defineFlow(
+  {
+    name: 'chatWithElaraFlow',
+    inputSchema: ChatWithElaraInputSchema,
+    outputSchema: ChatWithElaraOutputSchema,
+  },
+  async (input) => {
+    const { userName, message, history } = input;
 
-  const systemPrompt = `You are Elara, an expert, friendly, and encouraging AI learning coach for the Code-X platform. Your goal is to provide personalized guidance, clarify concepts, and help users on their coding journey.
+    const systemPrompt = `You are Elara, an expert, friendly, and encouraging AI learning coach for the Code-X platform. Your goal is to provide personalized guidance, clarify concepts, and help users on their coding journey.
 
     - Your persona is supportive, patient, and knowledgeable.
     - When the conversation starts, greet the user by their name, "${userName}", and introduce yourself.
@@ -41,14 +45,22 @@ export async function chatWithElara(
     - If asked to create a learning plan, format it as a numbered or bulleted list.
     - You are a programming expert and can explain code, debug issues, and clarify complex topics.`;
 
-  const model = 'googleai/gemini-1.5-flash';
+    const model = 'googleai/gemini-1.5-flash';
 
-  const response = await generate({
-    model,
-    system: systemPrompt,
-    history,
-    prompt: message,
-  });
+    const response = await generate({
+      model,
+      system: systemPrompt,
+      history,
+      prompt: message,
+    });
 
-  return {reply: response.text};
+    return { reply: response.text };
+  }
+);
+
+
+export async function chatWithElara(
+  input: ChatWithElaraInput
+): Promise<ChatWithElaraOutput> {
+  return await chatWithElaraFlow(input);
 }
