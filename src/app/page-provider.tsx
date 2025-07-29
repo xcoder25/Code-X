@@ -12,23 +12,21 @@ export default function PageProvider({
   const [loading, setLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  // This effect now correctly depends on `pathname`.
+  // It will run on initial load AND every time the path changes.
   useEffect(() => {
-    // This effect runs when the component mounts and the page is considered "loaded".
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    // Show loading on path change
+    // We start by assuming the new page is loading.
     setLoading(true);
 
-    // Using startTransition can help manage rendering updates without blocking the UI
-    startTransition(() => {
-        // We set loading to false in a separate effect that runs when the new page component mounts.
-        // This effect's main job is just to turn the spinner ON.
-    });
+    // And then we immediately turn it off. The new page content will
+    // take a moment to render, but the spinner will be gone.
+    // To make it feel even better, we could have a slight delay here,
+    // but for now, this ensures it always disappears.
+    const timer = setTimeout(() => setLoading(false), 1); // A minimal delay ensures state update
 
-    // The spinner is turned off by the other effect.
+    return () => clearTimeout(timer);
   }, [pathname]);
+
 
   return (
     <>
