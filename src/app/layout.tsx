@@ -3,9 +3,9 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import AppProvider from './app-provider';
-import PageProvider from './page-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from './auth-provider';
+import LearningPathGenerator from '@/components/learning-path-generator';
 
 export const metadata: Metadata = {
   title: 'Code-X',
@@ -35,13 +35,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <PageProvider>
-              <AppProvider>{children}</AppProvider>
-            </PageProvider>
+            <AppProvider>{children}</AppProvider>
             <Toaster />
           </AuthProvider>
         </ThemeProvider>
+        <LearningPathGenerator />
       </body>
     </html>
   );
-}
