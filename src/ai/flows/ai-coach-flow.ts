@@ -11,7 +11,7 @@
 import { z } from 'zod';
 import { getAI, getGenerativeModel } from "firebase/ai";
 import { app } from '@/lib/firebase';
-import { BaseMessage } from '@google/generative-ai';
+import type { BaseMessage } from '@google/generative-ai';
 
 const ChatWithElaraInputSchema = z.object({
   userName: z.string().describe('The name of the user engaging with the AI.'),
