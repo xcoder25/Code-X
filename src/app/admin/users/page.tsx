@@ -1,4 +1,3 @@
-
 import {
   Card,
   CardHeader,
@@ -15,13 +14,16 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import {
-  Users,
-  BookOpen,
-  DollarSign,
-  Activity,
-} from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { MoreHorizontal } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 
 const users = [
@@ -67,57 +69,15 @@ const users = [
     }
 ];
 
-export default function AdminPage() {
+export default function AdminUsersPage() {
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
-        <h2 className="text-3xl font-bold tracking-tight">Admin Dashboard</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">$45,231.89</div>
-                    <p className="text-xs text-muted-foreground">+20.1% from last month</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">+2350</div>
-                    <p className="text-xs text-muted-foreground">+180.1% from last month</p>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
-                    <BookOpen className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">12</div>
-                    <p className="text-xs text-muted-foreground">+2 since last month</p>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Platform Activity</CardTitle>
-                    <Activity className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">+573</div>
-                    <p className="text-xs text-muted-foreground">+201 since last hour</p>
-                </CardContent>
-            </Card>
-        </div>
+        <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
         <Card>
             <CardHeader>
-                <CardTitle>Recent Signups</CardTitle>
+                <CardTitle>All Users</CardTitle>
                 <CardDescription>
-                    New users who joined this month.
+                    View and manage all registered users.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -128,6 +88,9 @@ export default function AdminPage() {
                         <TableHead>Email</TableHead>
                         <TableHead>Join Date</TableHead>
                         <TableHead>Plan</TableHead>
+                        <TableHead>
+                            <span className="sr-only">Actions</span>
+                        </TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -136,7 +99,7 @@ export default function AdminPage() {
                                 <TableCell>
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-9 w-9">
-                                            <AvatarImage src={user.image} alt="Avatar" data-ai-hint="avatar person" />
+                                            <AvatarImage src={user.image} alt="Avatar" data-ai-hint="avatar" />
                                             <AvatarFallback>{user.fallback}</AvatarFallback>
                                         </Avatar>
                                         <span className="font-medium">{user.name}</span>
@@ -146,6 +109,26 @@ export default function AdminPage() {
                                 <TableCell>{user.date}</TableCell>
                                 <TableCell>
                                     <Badge variant={user.plan === 'Free' ? 'secondary' : 'default'}>{user.plan}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                    <Button
+                                        aria-haspopup="true"
+                                        size="icon"
+                                        variant="ghost"
+                                    >
+                                        <MoreHorizontal className="h-4 w-4" />
+                                        <span className="sr-only">Toggle menu</span>
+                                    </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem>Edit</DropdownMenuItem>
+                                    <DropdownMenuItem>Suspend</DropdownMenuItem>
+                                    <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                                 </TableCell>
                             </TableRow>
                         ))}
