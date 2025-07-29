@@ -9,16 +9,18 @@
  */
 
 import { z } from 'zod';
-import type { Message } from 'genkit';
 import { getAI, getGenerativeModel } from "firebase/ai";
 import { app } from '@/lib/firebase';
-import { BaseMessage, Content, Part } from '@google/generative-ai';
+import { BaseMessage } from '@google/generative-ai';
 
 const ChatWithElaraInputSchema = z.object({
   userName: z.string().describe('The name of the user engaging with the AI.'),
   message: z.string().describe("The user's message to Elara."),
   history: z
-    .array(z.any())
+    .array(z.object({
+        role: z.enum(['user', 'model']),
+        content: z.string(),
+    }))
     .describe('The history of the conversation so far.'),
 });
 export type ChatWithElaraInput = z.infer<typeof ChatWithElaraInputSchema>;
@@ -50,8 +52,9 @@ export async function chatWithElara(
 ): Promise<ChatWithElaraOutput> {
   const { message, history } = input;
   
-  // The Firebase AI SDK expects a `BaseMessage[]`, so we need to ensure the history matches that type.
-  const typedHistory: BaseMessage[] = history.map((msg: any) => ({
+  // The Firebase AI SDK expects a `BaseMessage[]`, which has a different shape than our client-side message type.
+  // We need to map from `{ role, content }` to `{ role, parts: [{ text: content }] }`.
+  const typedHistory: BaseMessage[] = history.map((msg) => ({
       role: msg.role,
       parts: [{ text: msg.content }],
   }));
