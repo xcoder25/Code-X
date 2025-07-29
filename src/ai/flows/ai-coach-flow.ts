@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -55,7 +56,7 @@ export async function chatWithElara(
   const { message, history } = input;
   
   // The SDK expects a `BaseMessage[]` with a specific format.
-  const typedHistory: BaseMessage[] = history.map((msg) => ({
+  const typedHistory: BaseMessage[] = history.map((msg: Message) => ({
       role: msg.role,
       parts: [{ text: msg.content }],
   }));
