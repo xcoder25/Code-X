@@ -23,7 +23,7 @@ export function useAuth() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !user && PROTECTED_ROUTES.includes(pathname)) {
+    if (!loading && !user && PROTECTED_ROUTES.some(route => pathname.startsWith(route))) {
       router.push('/login');
     }
   }, [user, loading, router, pathname]);
