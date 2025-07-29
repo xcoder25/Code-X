@@ -1,0 +1,21 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Admins: Allow logged-in users to read their own document to verify if they are an admin.
+    // Deny all writes by default for security. Admin management should be done
+    // through the Firebase Console for now.
+    match /admins/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false; 
+    }
+
+    // Users: Allow users to read and write their own data.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Add rules for other collections as your app grows
+  }
+}
