@@ -50,8 +50,14 @@ export async function chatWithElara(
 ): Promise<ChatWithElaraOutput> {
   const { message, history } = input;
   
+  // The Firebase AI SDK expects a `BaseMessage[]`, so we need to ensure the history matches that type.
+  const typedHistory: BaseMessage[] = history.map((msg: any) => ({
+      role: msg.role,
+      parts: [{ text: msg.content }],
+  }));
+  
   const chat = model.startChat({
-      history: history as BaseMessage[],
+      history: typedHistory,
   });
   
   const result = await chat.sendMessage(message);
