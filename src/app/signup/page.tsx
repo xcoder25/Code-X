@@ -31,38 +31,49 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!firstName || !lastName || !email || !password) {
+        toast({
+            variant: 'destructive',
+            title: 'Missing Information',
+            description: 'Please fill out all fields.',
+        });
+        return;
+    }
     setIsLoading(true);
+
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Update user profile
-      await updateProfile(user, {
-        displayName: `${firstName} ${lastName}`,
+      // Immediately redirect and show success toast
+      toast({
+        title: 'Account Created!',
+        description: 'Welcome to Code-X! Redirecting you now...',
       });
+      router.push('/dashboard');
 
-      // Create user document in Firestore
-      await setDoc(doc(db, 'users', user.uid), {
+      // Perform profile update and Firestore write in the background
+      // We don't need to await these for the user to proceed
+      updateProfile(user, {
+        displayName: `${firstName} ${lastName}`,
+      }).catch((err) => console.error("Failed to update profile:", err));
+
+      setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         firstName,
         lastName,
         email,
         createdAt: new Date(),
-      });
+        displayName: `${firstName} ${lastName}`,
+      }).catch((err) => console.error("Failed to create user document:", err));
 
-      toast({
-        title: 'Account Created!',
-        description: 'You have been successfully signed up.',
-      });
-      router.push('/dashboard');
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: 'Signup Error',
         description: error.message,
       });
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Only stop loading on error
     }
   };
 
