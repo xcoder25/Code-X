@@ -4,6 +4,7 @@ import { chatWithElara, ChatWithElaraInput, ChatWithElaraOutput } from '@/ai/flo
 import { analyzeCode, AnalyzeCodeInput, AnalyzeCodeOutput } from '@/ai/flows/analyze-code';
 import { z } from 'zod';
 import { exams as examData } from '@/lib/exam-data';
+import { Message } from 'genkit/ai';
 
 const chatWithElaraFormSchema = z.object({
   userName: z.string(),
@@ -22,7 +23,11 @@ export async function chatWithElaraAction(
   }
 
   try {
-    const output = await chatWithElara(parsedInput.data);
+    const history: Message[] = input.history.map(m => ({
+        role: m.role,
+        content: [{ text: m.content }]
+    }));
+    const output = await chatWithElara({ ...parsedInput.data, history });
     return output;
   } catch (error) {
     console.error('Error chatting with Elara:', error);
