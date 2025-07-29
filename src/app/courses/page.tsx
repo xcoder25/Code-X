@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import {
   Card,
@@ -10,8 +11,19 @@ import {
 import { Button } from '@/components/ui/button';
 import { ArrowRight, BookOpenCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { courses as allCourses } from '@/lib/course-data';
 
-const courses: any[] = [];
+// For now, we'll mock the user's enrolled courses.
+// In a real app, this would come from a database.
+const enrolledCourseIds = ['web-dev-bootcamp'];
+const courses = allCourses.map(course => {
+    const isEnrolled = enrolledCourseIds.includes(course.id);
+    // This is a simplified progress mock
+    const progress = isEnrolled ? 35 : 0; 
+    const status = isEnrolled ? 'in-progress' : 'not-started';
+    return { ...course, progress, status };
+});
+
 
 export default function CoursesPage() {
   return (
@@ -47,7 +59,7 @@ export default function CoursesPage() {
               </div>
               <Button asChild className="w-full">
                 <Link href={`/courses/${course.id}`}>
-                   {course.status === 'not-started' ? 'Start Course' : 'Continue Course'} <ArrowRight className="ml-2 h-4 w-4" />
+                   {course.status === 'not-started' ? 'View Course' : 'Continue Course'} <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
             </CardFooter>
