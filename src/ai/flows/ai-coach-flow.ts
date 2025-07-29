@@ -54,12 +54,9 @@ export async function chatWithElara(
   
   // The SDK expects a `BaseMessage[]` with a specific format.
   // This maps the incoming history to the required format.
-  // We exclude the most recent user message from the history array for the `startChat` method.
-  const typedHistory: BaseMessage[] = (history || [])
-    .slice(0, -1) // Exclude the last message (the user's current input)
-    .map((msg) => ({
-      role: msg.role,
-      parts: [{ text: msg.content }],
+  const typedHistory: BaseMessage[] = (history || []).map((msg) => ({
+    role: msg.role,
+    parts: [{ text: msg.content }],
   }));
   
   const chat = model.startChat({
