@@ -1,21 +1,38 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Admins: Allow logged-in users to read their own document to verify if they are an admin.
-    // Deny all writes by default for security. Admin management should be done
-    // through the Firebase Console for now.
-    match /admins/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if false; 
+
+    // Helper function to check if a user is an admin
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // Users: Allow users to read and write their own data.
+    // Users can read their own data
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth.uid == userId;
+    }
+    
+    // Admins can read all user data
+    match /users/{userId} {
+      allow list, get: if isAdmin();
+    }
+    
+    // Notifications can be read by any authenticated user
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null;
     }
 
-    // Add rules for other collections as your app grows
+    // Admins can create notifications
+    match /notifications/{notificationId} {
+        allow create: if isAdmin();
+    }
+    
+    // Admins collection can only be read by admins themselves (to check roles)
+    match /admins/{adminId} {
+        allow read: if request.auth.uid == adminId;
+        // Restrict write access for security
+        allow write: if false; 
+    }
   }
 }

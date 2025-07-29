@@ -1,3 +1,6 @@
+
+'use client';
+
 import {
   Card,
   CardHeader,
@@ -24,52 +27,43 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
-
-const users = [
-    {
-        name: "Olivia Martin",
-        email: "olivia.martin@email.com",
-        image: "https://placehold.co/40x40.png",
-        fallback: "OM",
-        date: "2023-11-01",
-        plan: "Pro"
-    },
-    {
-        name: "Jackson Lee",
-        email: "jackson.lee@email.com",
-        image: "https://placehold.co/40x40.png",
-        fallback: "JL",
-        date: "2023-11-01",
-        plan: "Pro"
-    },
-    {
-        name: "Isabella Nguyen",
-        email: "isabella.nguyen@email.com",
-        image: "https://placehold.co/40x40.png",
-        fallback: "IN",
-        date: "2023-10-31",
-        plan: "Free"
-    },
-     {
-        name: "William Kim",
-        email: "will@email.com",
-        image: "https://placehold.co/40x40.png",
-        fallback: "WK",
-        date: "2023-10-29",
-        plan: "Team"
-    },
-    {
-        name: "Sofia Davis",
-        email: "sofia.davis@email.com",
-        image: "https://placehold.co/40x40.png",
-        fallback: "SD",
-        date: "2023-10-28",
-        plan: "Pro"
-    }
-];
+interface User {
+    uid: string;
+    displayName: string;
+    email: string;
+    photoURL?: string;
+    createdAt: {
+        seconds: number;
+    };
+    plan?: string;
+}
 
 export default function AdminUsersPage() {
+    const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
+
+     useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+                const usersSnapshot = await getDocs(usersQuery);
+                const allUsers = usersSnapshot.docs.map(doc => doc.data() as User);
+                setUsers(allUsers);
+            } catch (error) {
+                console.error("Error fetching users:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUsers();
+    }, []);
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
         <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
@@ -94,21 +88,42 @@ export default function AdminUsersPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {users.map(user => (
-                            <TableRow key={user.email}>
+                       {loading ? (
+                             [...Array(10)].map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell>
+                                        <div className="flex items-center gap-3">
+                                            <Skeleton className="h-9 w-9 rounded-full" />
+                                            <Skeleton className="h-4 w-32" />
+                                        </div>
+                                    </TableCell>
+                                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                                    <TableCell><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : users.length === 0 ? (
+                             <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center">
+                                    No users found.
+                                </TableCell>
+                            </TableRow>
+                        ) : users.map(user => (
+                            <TableRow key={user.uid}>
                                 <TableCell>
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-9 w-9">
-                                            <AvatarImage src={user.image} alt="Avatar" data-ai-hint="avatar" />
-                                            <AvatarFallback>{user.fallback}</AvatarFallback>
+                                            <AvatarImage src={user.photoURL} alt="Avatar" data-ai-hint="avatar" />
+                                            <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
                                         </Avatar>
-                                        <span className="font-medium">{user.name}</span>
+                                        <span className="font-medium">{user.displayName}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell>{user.email}</TableCell>
-                                <TableCell>{user.date}</TableCell>
+                                <TableCell>{new Date(user.createdAt.seconds * 1000).toLocaleDateString()}</TableCell>
                                 <TableCell>
-                                    <Badge variant={user.plan === 'Free' ? 'secondary' : 'default'}>{user.plan}</Badge>
+                                    <Badge variant={user.plan === 'Free' || !user.plan ? 'secondary' : 'default'}>{user.plan || 'Free'}</Badge>
                                 </TableCell>
                                 <TableCell>
                                 <DropdownMenu>
