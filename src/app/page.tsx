@@ -35,7 +35,7 @@ export default function LandingPage() {
             <div className="flex flex-col items-center space-y-4 text-center">
               <div className="space-y-2">
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-                  Unlock Your Potential in Software Engineering
+                  Unlock Your Potential in Software Development
                 </h1>
                 <p className="mx-auto max-w-[700px] text-primary-foreground/80 md:text-xl">
                   Join our immersive bootcamps and gain the skills to build amazing applications. Personalized learning paths, expert mentorship, and hands-on projects.
