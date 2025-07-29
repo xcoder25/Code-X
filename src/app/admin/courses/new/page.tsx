@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -26,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { createCourseAction } from '@/app/actions';
 
 const courseFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),
@@ -49,19 +51,24 @@ export default function NewCoursePage() {
 
   const onSubmit = async (values: z.infer<typeof courseFormSchema>) => {
     setIsLoading(true);
-    // Here you would typically call a server action to save the data to Firestore
-    console.log('New course data:', values);
-
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    toast({
-      title: 'Course Created!',
-      description: `The course "${values.title}" has been successfully created.`,
-    });
-
-    setIsLoading(false);
-    router.push('/admin/courses');
+    try {
+        const result = await createCourseAction(values);
+        if (result.success) {
+            toast({
+                title: 'Course Created!',
+                description: `The course "${values.title}" has been successfully created.`,
+            });
+            router.push('/admin/courses');
+        }
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to create course. Please try again.",
+        });
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   return (

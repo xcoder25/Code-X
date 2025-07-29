@@ -4,7 +4,7 @@
 import { chatWithElara, ChatWithElaraInput, ChatWithElaraOutput } from '@/ai/flows/ai-coach-flow';
 import { analyzeCode, AnalyzeCodeInput, AnalyzeCodeOutput } from '@/ai/flows/analyze-code';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, setDoc, doc } from 'firebase/firestore';
 import { z } from 'zod';
 import { exams as examData } from '@/lib/exam-data';
 
@@ -70,7 +70,7 @@ const submitExamFormSchema = z.object({
 export async function submitExamAction(
   input: z.infer<typeof submitExamFormSchema>
 ): Promise<{ score: number }> {
-  const parsedInput = submitExamFormSchema.safeParse(input);
+  const parsedInput = submitExam-form-schema.safeParse(input);
 
   if (!parsedInput.success) {
     throw new Error('Invalid input');
@@ -119,5 +119,84 @@ export async function sendNotificationAction(
     } catch (error) {
         console.error('Error sending notification:', error);
         throw new Error('Could not send notification.');
+    }
+}
+
+const createCourseFormSchema = z.object({
+  title: z.string().min(3, 'Title must be at least 3 characters.'),
+  description: z.string().min(10, 'Description must be at least 10 characters.'),
+  tags: z.string().min(1, 'Please add at least one tag (comma-separated).'),
+});
+
+export async function createCourseAction(values: z.infer<typeof createCourseFormSchema>) {
+  const parsedInput = createCourseFormSchema.safeParse(values);
+  if (!parsedInput.success) {
+    throw new Error('Invalid input for creating a course.');
+  }
+
+  try {
+    const newCourseRef = doc(collection(db, "courses"));
+    await setDoc(newCourseRef, {
+      id: newCourseRef.id,
+      title: parsedInput.data.title,
+      description: parsedInput.data.description,
+      tags: parsedInput.data.tags.split(',').map(tag => tag.trim()),
+      status: 'Draft',
+      enrollments: 0,
+      createdAt: serverTimestamp(),
+      modules: []
+    });
+    return { success: true, courseId: newCourseRef.id };
+  } catch (error) {
+    console.error("Error creating course: ", error);
+    throw new Error("Could not create course.");
+  }
+}
+
+const generateCodesFormSchema = z.object({
+  courseId: z.string().min(1, "Course is required."),
+  prefix: z.string().optional(),
+  quantity: z.number().min(1).max(100),
+  maxRedemptions: z.number().min(1),
+});
+
+
+export async function generateAccessCodesAction(values: z.infer<typeof generateCodesFormSchema>) {
+    const parsedInput = generateCodesFormSchema.safeParse(values);
+    if (!parsedInput.success) {
+        throw new Error('Invalid input for generating codes.');
+    }
+
+    const { courseId, prefix, quantity, maxRedemptions } = parsedInput.data;
+
+    try {
+        const courseDoc = await doc(db, 'courses', courseId).get();
+        if (!courseDoc.exists()) {
+            throw new Error("Selected course does not exist.");
+        }
+        const courseTitle = courseDoc.data()?.title;
+
+        const generatedCodes = [];
+        for (let i = 0; i < quantity; i++) {
+            const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const code = prefix ? `${prefix}-${randomPart}` : randomPart;
+            
+            const newCodeRef = doc(collection(db, 'accessCodes'));
+            await setDoc(newCodeRef, {
+                id: newCodeRef.id,
+                code,
+                courseId,
+                courseTitle,
+                status: 'Active',
+                redemptions: 0,
+                maxRedemptions,
+                createdAt: serverTimestamp(),
+            });
+            generatedCodes.push(code);
+        }
+        return { success: true, count: generatedCodes.length };
+    } catch (error) {
+        console.error("Error generating access codes: ", error);
+        throw new Error("Could not generate access codes.");
     }
 }

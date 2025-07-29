@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -27,39 +28,45 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
+import GenerateCodesDialog from '@/components/admin/generate-codes-dialog';
 
-const initialCodes = [
-    {
-        code: "BOOTCAMP-2024-S1",
-        course: "Web Development Bootcamp",
-        status: "Active",
-        redemptions: 25,
-        maxRedemptions: 100,
-        createdAt: "2024-05-01"
-    },
-    {
-        code: "JS-ADV-FALL",
-        course: "Advanced JavaScript",
-        status: "Active",
-        redemptions: 8,
-        maxRedemptions: 50,
-        createdAt: "2024-06-15"
-    },
-    {
-        code: "EXPIRED-PYTHON",
-        course: "Introduction to Python",
-        status: "Expired",
-        redemptions: 20,
-        maxRedemptions: 20,
-        createdAt: "2024-03-10"
+
+interface AccessCode {
+    id: string;
+    code: string;
+    courseTitle: string;
+    status: 'Active' | 'Expired';
+    redemptions: number;
+    maxRedemptions: number;
+    createdAt: {
+        seconds: number;
     }
-];
+}
 
 
 export default function AdminAccessCodesPage() {
-    const [codes, setCodes] = useState(initialCodes);
+    const [codes, setCodes] = useState<AccessCode[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const { toast } = useToast();
+
+    useEffect(() => {
+        const codesQuery = query(collection(db, 'accessCodes'), orderBy('createdAt', 'desc'));
+        const unsubscribe = onSnapshot(codesQuery, (snapshot) => {
+            const codesData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as AccessCode);
+            setCodes(codesData);
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching access codes:", error);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     const copyCode = (code: string) => {
         navigator.clipboard.writeText(code);
@@ -73,10 +80,12 @@ export default function AdminAccessCodesPage() {
     <div className="flex-1 space-y-4 p-8 pt-6">
         <div className="flex items-center justify-between">
             <h2 className="text-3xl font-bold tracking-tight">Access Codes</h2>
-            <Button>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Generate Codes
-            </Button>
+             <GenerateCodesDialog>
+                <Button>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Generate Codes
+                </Button>
+            </GenerateCodesDialog>
         </div>
          <p className="text-muted-foreground">
             Generate and manage access codes for specific courses or bootcamps.
@@ -103,15 +112,32 @@ export default function AdminAccessCodesPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {codes.map(item => (
-                            <TableRow key={item.code}>
+                         {loading ? (
+                             [...Array(5)].map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                    <TableCell><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : codes.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={6} className="h-24 text-center">
+                                    No access codes found.
+                                </TableCell>
+                            </TableRow>
+                        ) : codes.map(item => (
+                            <TableRow key={item.id}>
                                 <TableCell className="font-medium font-mono">{item.code}</TableCell>
-                                <TableCell>{item.course}</TableCell>
+                                <TableCell>{item.courseTitle}</TableCell>
                                 <TableCell>{item.redemptions} / {item.maxRedemptions}</TableCell>
                                 <TableCell>
                                     <Badge variant={item.status === 'Active' ? 'default' : 'secondary'}>{item.status}</Badge>
                                 </TableCell>
-                                <TableCell>{item.createdAt}</TableCell>
+                                <TableCell>{new Date(item.createdAt.seconds * 1000).toLocaleDateString()}</TableCell>
                                 <TableCell className="text-right">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>

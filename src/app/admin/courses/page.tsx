@@ -1,3 +1,6 @@
+
+'use client';
+
 import Link from 'next/link';
 import {
   Card,
@@ -17,32 +20,39 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const courses = [
-    {
-        id: "cs101",
-        title: "Introduction to Python",
-        status: "Published",
-        enrollments: 1250,
-        createdAt: "2023-10-01"
-    },
-    {
-        id: "cs201",
-        title: "Web Development Bootcamp",
-        status: "Published",
-        enrollments: 2350,
-        createdAt: "2023-09-15"
-    },
-    {
-        id: "cs301",
-        title: "Advanced JavaScript",
-        status: "Draft",
-        enrollments: 0,
-        createdAt: "2023-11-05"
-    }
-];
+interface Course {
+    id: string;
+    title: string;
+    status: 'Published' | 'Draft';
+    enrollments: number;
+    createdAt: {
+        seconds: number;
+    };
+}
 
 export default function AdminCoursesPage() {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const coursesQuery = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(coursesQuery, (snapshot) => {
+        const coursesData = snapshot.docs.map(doc => doc.data() as Course);
+        setCourses(coursesData);
+        setLoading(false);
+    }, (error) => {
+        console.error("Error fetching courses:", error);
+        setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
         <div className="flex items-center justify-between">
@@ -73,14 +83,30 @@ export default function AdminCoursesPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {courses.map(course => (
+                        {loading ? (
+                            [...Array(3)].map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-4 w-64" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                    <TableCell><Skeleton className="h-8 w-16" /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : courses.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center">
+                                    No courses created yet.
+                                </TableCell>
+                            </TableRow>
+                        ) : courses.map(course => (
                             <TableRow key={course.id}>
                                 <TableCell className="font-medium">{course.title}</TableCell>
                                 <TableCell>
                                     <Badge variant={course.status === 'Published' ? 'default' : 'secondary'}>{course.status}</Badge>
                                 </TableCell>
                                 <TableCell>{course.enrollments.toLocaleString()}</TableCell>
-                                <TableCell>{course.createdAt}</TableCell>
+                                <TableCell>{new Date(course.createdAt.seconds * 1000).toLocaleDateString()}</TableCell>
                                 <TableCell className="text-right">
                                     <Button variant="outline" size="sm">Edit</Button>
                                 </TableCell>
