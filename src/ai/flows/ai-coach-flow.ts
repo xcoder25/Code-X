@@ -1,17 +1,18 @@
 'use server';
 
 /**
- * @fileOverview A conversational AI coach named Elara.
+ * @fileOverview A conversational AI coach named Elara, using the Firebase AI SDK.
  *
  * - chatWithElara - A function that handles the conversational chat with Elara.
  * - ChatWithElaraInput - The input type for the chatWithElara function.
  * - ChatWithElaraOutput - The return type for the chatWithElara function.
  */
 
-import {ai} from '@/ai/genkit';
-import {generate} from 'genkit';
-import {z} from 'genkit';
-import type {Message} from 'genkit';
+import { z } from 'zod';
+import type { Message } from 'genkit';
+import { getAI, getGenerativeModel } from "firebase/ai";
+import { app } from '@/lib/firebase';
+import { BaseMessage, Content, Part } from '@google/generative-ai';
 
 const ChatWithElaraInputSchema = z.object({
   userName: z.string().describe('The name of the user engaging with the AI.'),
@@ -27,40 +28,35 @@ const ChatWithElaraOutputSchema = z.object({
 });
 export type ChatWithElaraOutput = z.infer<typeof ChatWithElaraOutputSchema>;
 
-const chatWithElaraFlow = ai.defineFlow(
-  {
-    name: 'chatWithElaraFlow',
-    inputSchema: ChatWithElaraInputSchema,
-    outputSchema: ChatWithElaraOutputSchema,
-  },
-  async (input) => {
-    const { userName, message, history } = input;
+// Initialize the Gemini Developer API backend service
+const ai = getAI(app);
 
-    const systemPrompt = `You are Elara, an expert, friendly, and encouraging AI learning coach for the Code-X platform. Your goal is to provide personalized guidance, clarify concepts, and help users on their coding journey.
+// Create a `GenerativeModel` instance with a model that supports your use case
+const model = getGenerativeModel(ai, { 
+    model: "gemini-1.5-flash",
+    systemInstruction: `You are Elara, an expert, friendly, and encouraging AI learning coach for the Code-X platform. Your goal is to provide personalized guidance, clarify concepts, and help users on their coding journey.
 
     - Your persona is supportive, patient, and knowledgeable.
-    - When the conversation starts, greet the user by their name, "${userName}", and introduce yourself.
+    - When the conversation starts, greet the user by their name and introduce yourself.
     - Ask clarifying questions to understand the user's needs before providing detailed explanations or learning plans.
     - Keep your responses concise and easy to understand.
     - If asked to create a learning plan, format it as a numbered or bulleted list.
-    - You are a programming expert and can explain code, debug issues, and clarify complex topics.`;
-
-    const model = 'googleai/gemini-1.5-flash';
-
-    const response = await generate({
-      model,
-      system: systemPrompt,
-      history,
-      prompt: message,
-    });
-
-    return { reply: response.text };
-  }
-);
+    - You are a programming expert and can explain code, debug issues, and clarify complex topics.`
+});
 
 
 export async function chatWithElara(
   input: ChatWithElaraInput
 ): Promise<ChatWithElaraOutput> {
-  return await chatWithElaraFlow(input);
+  const { message, history } = input;
+  
+  const chat = model.startChat({
+      history: history as BaseMessage[],
+  });
+  
+  const result = await chat.sendMessage(message);
+  const response = result.response;
+  const text = response.text();
+
+  return { reply: text };
 }

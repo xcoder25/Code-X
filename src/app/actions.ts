@@ -5,6 +5,7 @@ import { analyzeCode, AnalyzeCodeInput, AnalyzeCodeOutput } from '@/ai/flows/ana
 import { z } from 'zod';
 import { exams as examData } from '@/lib/exam-data';
 import { Message } from 'genkit';
+import { BaseMessage } from '@google/generative-ai';
 
 const chatWithElaraFormSchema = z.object({
   userName: z.string(),
@@ -23,9 +24,10 @@ export async function chatWithElaraAction(
   }
 
   try {
-    const history: Message[] = input.history.map(m => ({
+    // Convert generic message history to the format required by Firebase AI SDK
+    const history: BaseMessage[] = input.history.map(m => ({
         role: m.role,
-        content: [{ text: m.content }]
+        parts: [{ text: m.content }]
     }));
     const output = await chatWithElara({ ...parsedInput.data, history });
     return output;
@@ -66,7 +68,7 @@ const submitExamFormSchema = z.object({
 export async function submitExamAction(
   input: z.infer<typeof submitExamFormSchema>
 ): Promise<{ score: number }> {
-  const parsedInput = submitExamFormSchema.safeParse(input);
+  const parsedInput = submitExamForm-schema.safeParse(input);
 
   if (!parsedInput.success) {
     throw new Error('Invalid input');
