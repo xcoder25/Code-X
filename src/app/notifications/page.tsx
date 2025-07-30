@@ -26,9 +26,10 @@ interface Notification {
   };
   type: 'announcement' | 'grade' | 'reminder';
   target: {
-      type: 'general' | 'course';
+      type: 'general' | 'course' | 'user';
       courseId?: string;
       courseTitle?: string;
+      userId?: string;
   };
   read?: boolean;
 }
@@ -72,10 +73,9 @@ export default function NotificationsPage() {
         return;
     };
     
-    // Query for general notifications OR notifications for courses the user is enrolled in
+    // Query for notifications targeted at the user specifically, their courses, or everyone.
     const notificationsQuery = query(
         collection(db, "notifications"),
-        where('target.type', 'in', ['general', 'course']),
         orderBy("createdAt", "desc")
     );
 
@@ -95,6 +95,10 @@ export default function NotificationsPage() {
           if (notif.target.type === 'course' && notif.target.courseId) {
               // Show if user is enrolled in the target course
               return userEnrolledCourseIds.includes(notif.target.courseId);
+          }
+          if (notif.target.type === 'user' && notif.target.userId) {
+              // Show if the notification is targeted at the current user
+              return notif.target.userId === user.uid;
           }
           return false;
       })

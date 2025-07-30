@@ -97,15 +97,15 @@ export async function submitExamAction(
 const sendNotificationFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),
   message: z.string().min(10, 'Message must be at least 10 characters.'),
-  targetType: z.enum(['general', 'course']),
+  targetType: z.enum(['general', 'course', 'user']),
   courseId: z.string().optional(),
+  userId: z.string().optional(),
 }).refine(data => {
-    if (data.targetType === 'course') {
-        return !!data.courseId;
-    }
+    if (data.targetType === 'course') return !!data.courseId;
+    if (data.targetType === 'user') return !!data.userId;
     return true;
 }, {
-    message: 'A course must be selected for course-specific notifications.',
+    message: 'A selection is required for this target type.',
     path: ['courseId'],
 });
 
@@ -119,14 +119,18 @@ export async function sendNotificationAction(
         throw new Error('Invalid input for notification');
     }
     
-    const { title, message, targetType, courseId } = parsedInput.data;
+    const { title, message, targetType, courseId, userId } = parsedInput.data;
     
-    let courseTitle = '';
+    let targetPayload: any = { type: targetType };
+
     if (targetType === 'course' && courseId) {
         const courseDoc = await getDoc(doc(db, 'courses', courseId));
         if (courseDoc.exists()) {
-            courseTitle = courseDoc.data().title;
+             targetPayload.courseId = courseId;
+             targetPayload.courseTitle = courseDoc.data().title;
         }
+    } else if (targetType === 'user' && userId) {
+        targetPayload.userId = userId;
     }
 
     try {
@@ -135,12 +139,8 @@ export async function sendNotificationAction(
             description: message,
             createdAt: serverTimestamp(),
             readBy: [],
-            type: 'announcement',
-            target: {
-                type: targetType,
-                courseId: courseId || null,
-                courseTitle: courseTitle || null,
-            }
+            type: 'announcement', // This could be enhanced later
+            target: targetPayload
         });
     } catch (error) {
         console.error('Error sending notification:', error);
