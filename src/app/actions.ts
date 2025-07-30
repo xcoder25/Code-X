@@ -1,3 +1,4 @@
+
 'use server';
 
 // ──────────────────────────────────────
@@ -11,6 +12,7 @@ import {
   setDoc,
   getDoc,
   serverTimestamp,
+  writeBatch,
 } from 'firebase/firestore';
 
 import { z } from 'zod';
@@ -122,12 +124,12 @@ const sendNotificationFormSchema = z
     message: z.string().min(10),
     targetType: z.enum(['general', 'course', 'user']),
     courseId: z.string().optional(),
-    userId: z.string().optional(),
+    userIds: z.array(z.string()).optional(),
   })
   .refine(
     (data) => {
       if (data.targetType === 'course') return !!data.courseId;
-      if (data.targetType === 'user') return !!data.userId;
+      if (data.targetType === 'user') return data.userIds && data.userIds.length > 0;
       return true;
     },
     {
@@ -142,28 +144,42 @@ export async function sendNotificationAction(
   const parsed = sendNotificationFormSchema.safeParse(input);
   if (!parsed.success) throw new Error('Invalid notification input');
 
-  const { title, message, targetType, courseId, userId } = parsed.data;
-
-  const target: any = { type: targetType };
-  if (targetType === 'course' && courseId) {
-    const courseDoc = await getDoc(doc(db, 'courses', courseId));
-    if (courseDoc.exists()) {
-      target.courseId = courseId;
-      target.courseTitle = courseDoc.data().title;
-    }
-  } else if (targetType === 'user' && userId) {
-    target.userId = userId;
-  }
+  const { title, message, targetType, courseId, userIds } = parsed.data;
 
   try {
-    await addDoc(collection(db, 'notifications'), {
-      title,
-      description: message,
-      createdAt: serverTimestamp(),
-      readBy: [],
-      type: 'announcement',
-      target,
-    });
+     if (targetType === 'user' && userIds && userIds.length > 0) {
+      const batch = writeBatch(db);
+      userIds.forEach(userId => {
+        const notifRef = doc(collection(db, 'notifications'));
+        batch.set(notifRef, {
+            title,
+            description: message,
+            createdAt: serverTimestamp(),
+            readBy: [],
+            type: 'announcement', // or 'direct_message'
+            target: { type: 'user', userId },
+        });
+      });
+      await batch.commit();
+    } else {
+        const target: any = { type: targetType };
+        if (targetType === 'course' && courseId) {
+            const courseDoc = await getDoc(doc(db, 'courses', courseId));
+            if (courseDoc.exists()) {
+            target.courseId = courseId;
+            target.courseTitle = courseDoc.data().title;
+            }
+        }
+        
+        await addDoc(collection(db, 'notifications'), {
+            title,
+            description: message,
+            createdAt: serverTimestamp(),
+            readBy: [],
+            type: 'announcement',
+            target,
+        });
+    }
   } catch (error) {
     console.error('Error sending notification:', error);
     throw new Error('Could not send notification.');

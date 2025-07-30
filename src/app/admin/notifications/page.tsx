@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+
 import {
   Card,
   CardHeader,
@@ -27,48 +28,47 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { sendNotificationAction } from '@/app/actions';
+
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Check, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+
 
 const notificationFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),
   message: z.string().min(10, 'Message must be at least 10 characters.'),
   targetType: z.enum(['general', 'course', 'user'], { required_error: 'You must select a target audience.' }),
   courseId: z.string().optional(),
-  userId: z.string().optional(),
+  userIds: z.array(z.string()).optional(),
 }).refine(data => {
-    if (data.targetType === 'course') return !!data.courseId;
-    if (data.targetType === 'user') return !!data.userId;
-    return true;
+  if (data.targetType === 'course') return !!data.courseId;
+  if (data.targetType === 'user') return !!data.userIds && data.userIds.length > 0;
+  return true;
 }, {
-    message: 'A selection is required for this target type.',
-    path: ['courseId'], // This path will be dynamically relevant
+  message: 'A selection is required for this target type.',
+  path: ['courseId'], // This path is a bit of a misnomer now, but keeps error logic simple
 });
 
-
 interface Course {
-    id: string;
-    title: string;
+  id: string;
+  title: string;
 }
 
 interface User {
-    uid: string;
-    displayName: string;
-    email: string;
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL?: string;
 }
 
 export default function AdminNotificationsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [popoverOpen, setPopoverOpen] = useState(false);
-
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof notificationFormSchema>>({
@@ -78,7 +78,7 @@ export default function AdminNotificationsPage() {
       message: '',
       targetType: 'general',
       courseId: '',
-      userId: '',
+      userIds: [],
     },
   });
 
@@ -89,23 +89,21 @@ export default function AdminNotificationsPage() {
 
   useEffect(() => {
     async function fetchCourses() {
-        const coursesQuery = query(collection(db, 'courses'), orderBy('title'));
-        const querySnapshot = await getDocs(coursesQuery);
-        const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
-        setCourses(coursesData);
-    }
-     async function fetchUsers() {
-        const usersQuery = query(collection(db, 'users'), orderBy('displayName'));
-        const querySnapshot = await getDocs(usersQuery);
-        const usersData = querySnapshot.docs.map(doc => ({ ...doc.data() } as User));
-        setUsers(usersData);
+      const coursesQuery = query(collection(db, 'courses'), orderBy('title'));
+      const querySnapshot = await getDocs(coursesQuery);
+      const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+      setCourses(coursesData);
     }
 
-    if (targetType === 'course') {
-        fetchCourses();
-    } else if (targetType === 'user') {
-        fetchUsers();
+    async function fetchUsers() {
+      const usersQuery = query(collection(db, 'users'), orderBy('displayName'));
+      const querySnapshot = await getDocs(usersQuery);
+      const usersData = querySnapshot.docs.map(doc => ({ ...doc.data() } as User));
+      setUsers(usersData);
     }
+
+    if (targetType === 'course') fetchCourses();
+    else if (targetType === 'user') fetchUsers();
   }, [targetType]);
 
   const onSubmit = async (values: z.infer<typeof notificationFormSchema>) => {
@@ -116,9 +114,15 @@ export default function AdminNotificationsPage() {
         title: 'Notification Sent!',
         description: 'Your message has been sent.',
       });
-      form.reset();
+      form.reset({
+        title: '',
+        message: '',
+        targetType: 'general',
+        courseId: '',
+        userIds: [],
+      });
     } catch (error) {
-       toast({
+      toast({
         variant: 'destructive',
         title: 'Error',
         description: 'Failed to send notification. Please try again.',
@@ -131,7 +135,7 @@ export default function AdminNotificationsPage() {
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <h2 className="text-3xl font-bold tracking-tight">Send Notification</h2>
-       <p className="text-muted-foreground">
+      <p className="text-muted-foreground">
         Compose and send a broadcast message to all students or a specific course.
       </p>
       <Form {...form}>
@@ -144,142 +148,137 @@ export default function AdminNotificationsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-               <FormField
-                  control={form.control}
-                  name="targetType"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            form.setValue('userId', '');
-                            form.setValue('courseId', '');
-                          }}
-                          defaultValue={field.value}
-                          className="flex flex-col space-y-1"
-                        >
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="general" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              General Announcement (All Users)
-                            </FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="course" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              Course-specific Announcement
-                            </FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="user" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              Direct Message to a User
-                            </FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 {targetType === 'course' && (
-                  <div className="pt-4">
+              <FormField
+                control={form.control}
+                name="targetType"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          form.setValue('userIds', []);
+                          form.setValue('courseId', '');
+                        }}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-1"
+                      >
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="general" />
+                          </FormControl>
+                          <FormLabel className="font-normal">General Announcement (All Users)</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="course" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Course-specific Announcement</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="user" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Direct Message to a User</FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {targetType === 'course' && (
+                <div className="pt-4">
+                  <FormField
+                    control={form.control}
+                    name="courseId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Select Course</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a course to notify" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {courses.map((course) => (
+                              <SelectItem key={course.id} value={course.id}>
+                                {course.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+
+              {targetType === 'user' && (
+                 <div className="pt-4">
                     <FormField
                       control={form.control}
-                      name="courseId"
-                      render={({ field }) => (
+                      name="userIds"
+                      render={() => (
                         <FormItem>
-                          <FormLabel>Select Course</FormLabel>
-                           <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a course to notify" />
-                                </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {courses.map(course => (
-                                        <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
-                 {targetType === 'user' && (
-                  <div className="pt-4">
-                    <FormField
-                      control={form.control}
-                      name="userId"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>Select User</FormLabel>
-                          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  className={cn(
-                                    "w-full justify-between",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value
-                                    ? users.find(
-                                        (user) => user.uid === field.value
-                                      )?.displayName
-                                    : "Select user"}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                              <Command>
-                                <CommandInput placeholder="Search user..." />
-                                <CommandList>
-                                  <CommandEmpty>No user found.</CommandEmpty>
-                                  <CommandGroup>
-                                    {users.map((user) => (
-                                      <CommandItem
-                                        value={user.uid}
+                           <div className="mb-4">
+                            <FormLabel className="text-base">Select Users</FormLabel>
+                            <p className="text-sm text-muted-foreground">
+                              Select the users you want to send a direct message to.
+                            </p>
+                          </div>
+                          <ScrollArea className="h-72 w-full rounded-md border">
+                            <div className="p-4">
+                              {users.map((user) => (
+                                <FormField
+                                  key={user.uid}
+                                  control={form.control}
+                                  name="userIds"
+                                  render={({ field }) => {
+                                    return (
+                                      <FormItem
                                         key={user.uid}
-                                        onSelect={(currentValue) => {
-                                          form.setValue("userId", currentValue === field.value ? "" : currentValue);
-                                          setPopoverOpen(false);
-                                        }}
+                                        className="flex flex-row items-center space-x-3 space-y-0 mb-4"
                                       >
-                                        <Check
-                                          className={cn(
-                                            "mr-2 h-4 w-4",
-                                            user.uid === field.value
-                                              ? "opacity-100"
-                                              : "opacity-0"
-                                          )}
-                                        />
-                                        {user.displayName} ({user.email})
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
+                                        <FormControl>
+                                          <Checkbox
+                                            checked={field.value?.includes(user.uid)}
+                                            onCheckedChange={(checked) => {
+                                              return checked
+                                                ? field.onChange([...(field.value || []), user.uid])
+                                                : field.onChange(
+                                                    field.value?.filter(
+                                                      (value) => value !== user.uid
+                                                    )
+                                                  )
+                                            }}
+                                          />
+                                        </FormControl>
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarImage src={user.photoURL} alt={user.displayName} data-ai-hint="avatar person" />
+                                                <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                                            </Avatar>
+                                            <FormLabel className="font-normal">
+                                            {user.displayName || user.email}
+                                            </FormLabel>
+                                        </div>
+                                      </FormItem>
+                                    )
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          </ScrollArea>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                  </div>
-                )}
+                 </div>
+              )}
             </CardContent>
           </Card>
 
@@ -327,7 +326,7 @@ export default function AdminNotificationsPage() {
                 {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                   <Send className="mr-2 h-4 w-4" />
+                  <Send className="mr-2 h-4 w-4" />
                 )}
                 Send Notification
               </Button>
