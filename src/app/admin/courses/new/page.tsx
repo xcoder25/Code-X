@@ -68,7 +68,7 @@ export default function NewCoursePage() {
   const onSubmit = async (values: z.infer<typeof courseFormSchema>) => {
     setIsLoading(true);
     // In a real app, you would upload files to a service like Firebase Storage
-    // and get back URLs. For now, we'll just pass file names.
+    // and get back URLs. For now, we'll just pass file names and metadata.
     const moduleData = files.map(file => ({
         name: file.name,
         type: file.type,
@@ -84,11 +84,11 @@ export default function NewCoursePage() {
             });
             router.push('/admin/courses');
         }
-    } catch (error) {
+    } catch (error: any) {
         toast({
             variant: "destructive",
-            title: "Error",
-            description: "Failed to create course. Please try again.",
+            title: "Error Creating Course",
+            description: error.message || "An unexpected error occurred. Please try again.",
         });
     } finally {
         setIsLoading(false);

@@ -172,9 +172,10 @@ export async function createCourseAction(values: z.infer<typeof createCourseForm
     // In a real app, you would upload files to storage here and get URLs.
     // For this prototype, we'll just store the file metadata.
     const modulesWithFileInfo = parsedInput.data.modules?.map(module => ({
-        // In a real app, this would be a download URL from Firebase Storage
         url: 'mock_url_placeholder', 
-        ...module,
+        name: module.name,
+        type: module.type,
+        size: module.size
     })) || [];
     
     await setDoc(newCourseRef, {
@@ -188,12 +189,10 @@ export async function createCourseAction(values: z.infer<typeof createCourseForm
       modules: modulesWithFileInfo,
     });
     
-    console.log("Uploaded modules:", parsedInput.data.modules);
-
     return { success: true, courseId: newCourseRef.id };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating course: ", error);
-    throw new Error("Could not create course.");
+    throw new Error(`Could not create course: ${error.message}`);
   }
 }
 
