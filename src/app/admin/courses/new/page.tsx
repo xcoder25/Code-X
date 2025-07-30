@@ -24,19 +24,22 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Upload, X, File as FileIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { createCourseAction } from '@/app/actions';
+import { Separator } from '@/components/ui/separator';
 
 const courseFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),
   description: z.string().min(10, 'Description must be at least 10 characters.'),
   tags: z.string().min(1, 'Please add at least one tag (comma-separated).'),
+  modules: z.array(z.any()).optional(), // Will handle file validation separately
 });
 
 export default function NewCoursePage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -46,13 +49,34 @@ export default function NewCoursePage() {
       title: '',
       description: '',
       tags: '',
+      modules: [],
     },
   });
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      const newFiles = Array.from(event.target.files);
+      setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
+  };
+
+
   const onSubmit = async (values: z.infer<typeof courseFormSchema>) => {
     setIsLoading(true);
+    // In a real app, you would upload files to a service like Firebase Storage
+    // and get back URLs. For now, we'll just pass file names.
+    const moduleData = files.map(file => ({
+        name: file.name,
+        type: file.type,
+        size: file.size,
+    }));
+    
     try {
-        const result = await createCourseAction(values);
+        const result = await createCourseAction({ ...values, modules: moduleData });
         if (result.success) {
             toast({
                 title: 'Course Created!',
@@ -130,6 +154,49 @@ export default function NewCoursePage() {
                   </FormItem>
                 )}
               />
+              <Separator />
+               <div className="space-y-4">
+                <FormLabel>Course Modules</FormLabel>
+                <p className="text-sm text-muted-foreground">
+                  Upload your course materials in PDF or DOCX format.
+                </p>
+                <FormControl>
+                    <div className="relative border-2 border-dashed border-muted-foreground/50 rounded-lg p-6 text-center">
+                        <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <p className="mt-2">Drag & drop files here, or click to select files</p>
+                        <Input
+                            type="file"
+                            multiple
+                            accept=".pdf,.docx"
+                            onChange={handleFileChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                    </div>
+                </FormControl>
+                {files.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Selected Files:</h4>
+                    <ul className="divide-y divide-border rounded-md border">
+                      {files.map((file, index) => (
+                        <li key={index} className="flex items-center justify-between p-2">
+                           <div className="flex items-center gap-2">
+                             <FileIcon className="h-5 w-5 text-muted-foreground" />
+                             <span className="text-sm">{file.name}</span>
+                           </div>
+                           <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeFile(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </CardContent>
             <CardFooter className="border-t px-6 py-4">
               <Button type="submit" disabled={isLoading}>

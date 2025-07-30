@@ -126,16 +126,31 @@ const createCourseFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),
   description: z.string().min(10, 'Description must be at least 10 characters.'),
   tags: z.string().min(1, 'Please add at least one tag (comma-separated).'),
+  modules: z.array(z.object({
+    name: z.string(),
+    type: z.string(),
+    size: z.number(),
+  })).optional(),
 });
 
 export async function createCourseAction(values: z.infer<typeof createCourseFormSchema>) {
   const parsedInput = createCourseFormSchema.safeParse(values);
   if (!parsedInput.success) {
+    console.error(parsedInput.error.flatten());
     throw new Error('Invalid input for creating a course.');
   }
 
   try {
     const newCourseRef = doc(collection(db, "courses"));
+    
+    // In a real app, you would upload files to storage here and get URLs.
+    // For this prototype, we'll just store the file metadata.
+    const modulesWithFileInfo = parsedInput.data.modules?.map(module => ({
+        // In a real app, this would be a download URL from Firebase Storage
+        url: 'mock_url_placeholder', 
+        ...module,
+    })) || [];
+    
     await setDoc(newCourseRef, {
       id: newCourseRef.id,
       title: parsedInput.data.title,
@@ -144,8 +159,11 @@ export async function createCourseAction(values: z.infer<typeof createCourseForm
       status: 'Draft',
       enrollments: 0,
       createdAt: serverTimestamp(),
-      modules: []
+      modules: modulesWithFileInfo,
     });
+    
+    console.log("Uploaded modules:", parsedInput.data.modules);
+
     return { success: true, courseId: newCourseRef.id };
   } catch (error) {
     console.error("Error creating course: ", error);
