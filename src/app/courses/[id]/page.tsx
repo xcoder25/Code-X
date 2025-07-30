@@ -64,18 +64,18 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   useEffect(() => {
     const fetchCourse = async () => {
         if (!params.id) return;
+        setLoading(true);
         try {
-            const courseDoc = await getDoc(doc(db, 'courses', params.id));
+            const courseDocRef = doc(db, 'courses', params.id);
+            const courseDoc = await getDoc(courseDocRef);
+
             if (courseDoc.exists()) {
-                // In a real app, module content would be structured better.
-                // For now, we mock the lesson structure.
                 const data = courseDoc.data();
                 setCourse({
-                    id: data.id,
+                    id: courseDoc.id,
                     title: data.title,
                     description: data.description,
                     tags: data.tags || [],
-                    // Mocking modules and lessons based on uploaded file names
                     modules: (data.modules || []).map((mod: any, index: number) => ({
                         title: `Module ${index + 1}: ${mod.name.split('.').slice(0, -1).join('.')}`,
                         lessons: [
@@ -86,6 +86,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 });
             } else {
                 console.log("No such course!");
+                setCourse(null);
             }
         } catch (error) {
             console.error("Error fetching course:", error);

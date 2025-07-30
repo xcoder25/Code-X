@@ -23,7 +23,7 @@ interface Course {
   title: string;
   description: string;
   tags: string[];
-  progress: number; // Simplified for now
+  progress: number; 
   status: 'in-progress' | 'not-started';
 }
 
@@ -32,8 +32,8 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // In a real app, this would come from a database.
-  const enrolledCourseIds = ['web-dev-bootcamp'];
+  // In a real app, this would come from the user's data.
+  const enrolledCourseIds: string[] = [];
 
   useEffect(() => {
     const coursesQuery = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
