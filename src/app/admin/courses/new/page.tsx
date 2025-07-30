@@ -29,12 +29,13 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { createCourseAction } from '@/app/actions';
 import { Separator } from '@/components/ui/separator';
+import { storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const courseFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),
   description: z.string().min(10, 'Description must be at least 10 characters.'),
   tags: z.string().min(1, 'Please add at least one tag (comma-separated).'),
-  modules: z.array(z.any()).optional(), // Will handle file validation separately
 });
 
 export default function NewCoursePage() {
@@ -49,7 +50,6 @@ export default function NewCoursePage() {
       title: '',
       description: '',
       tags: '',
-      modules: [],
     },
   });
 
@@ -67,15 +67,22 @@ export default function NewCoursePage() {
 
   const onSubmit = async (values: z.infer<typeof courseFormSchema>) => {
     setIsLoading(true);
-    // In a real app, you would upload files to a service like Firebase Storage
-    // and get back URLs. For now, we'll just pass file names and metadata.
-    const moduleData = files.map(file => ({
-        name: file.name,
-        type: file.type,
-        size: file.size,
-    }));
     
     try {
+        const modulePromises = files.map(async (file) => {
+            const storageRef = ref(storage, `course_modules/${Date.now()}_${file.name}`);
+            const snapshot = await uploadBytes(storageRef, file);
+            const url = await getDownloadURL(snapshot.ref);
+            return {
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                url: url,
+            };
+        });
+
+        const moduleData = await Promise.all(modulePromises);
+
         const result = await createCourseAction({ ...values, modules: moduleData });
         if (result.success) {
             toast({
@@ -167,7 +174,7 @@ export default function NewCoursePage() {
                         <Input
                             type="file"
                             multiple
-                            accept=".pdf,.docx"
+                            accept=".pdf,.docx,.doc"
                             onChange={handleFileChange}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                         />

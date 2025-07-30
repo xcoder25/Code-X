@@ -156,6 +156,7 @@ const createCourseFormSchema = z.object({
     name: z.string(),
     type: z.string(),
     size: z.number(),
+    url: z.string(),
   })).optional(),
 });
 
@@ -169,15 +170,6 @@ export async function createCourseAction(values: z.infer<typeof createCourseForm
   try {
     const newCourseRef = doc(collection(db, "courses"));
     
-    // In a real app, you would upload files to storage here and get URLs.
-    // For this prototype, we'll just store the file metadata.
-    const modulesWithFileInfo = parsedInput.data.modules?.map(module => ({
-        url: 'mock_url_placeholder', 
-        name: module.name,
-        type: module.type,
-        size: module.size
-    })) || [];
-    
     await setDoc(newCourseRef, {
       id: newCourseRef.id,
       title: parsedInput.data.title,
@@ -186,7 +178,7 @@ export async function createCourseAction(values: z.infer<typeof createCourseForm
       status: 'Draft',
       enrollments: 0,
       createdAt: serverTimestamp(),
-      modules: modulesWithFileInfo,
+      modules: parsedInput.data.modules || [],
     });
     
     return { success: true, courseId: newCourseRef.id };
