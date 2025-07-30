@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -12,6 +13,7 @@ import {
   Settings,
   Calendar,
   FlaskConical,
+  Inbox,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -139,6 +141,14 @@ export default function AppSidebar() {
               <Link href="/schedule">
                 <Calendar />
                 <span>Schedule</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/inbox')}>
+              <Link href="/inbox">
+                <Inbox />
+                <span>Inbox</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
