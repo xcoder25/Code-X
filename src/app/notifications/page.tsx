@@ -10,10 +10,11 @@ import {
 } from '@/components/ui/card';
 import { Bell, Zap, AlertTriangle, BookOpenCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/app/auth-provider';
 
 interface Notification {
   id: string;
@@ -24,7 +25,12 @@ interface Notification {
     nanoseconds: number;
   };
   type: 'announcement' | 'grade' | 'reminder';
-  read?: boolean; // We'll assume all are unread for now
+  target: {
+      type: 'general' | 'course';
+      courseId?: string;
+      courseTitle?: string;
+  };
+  read?: boolean;
 }
 
 const getNotificationIcon = (type: string) => {
@@ -55,22 +61,50 @@ const getNotificationVariant = (type: string) => {
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  
+  // In a real app, this would come from the user's profile in the database
+  const userEnrolledCourseIds = ['web-dev-bootcamp']; 
 
    useEffect(() => {
-    const q = query(collection(db, "notifications"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    if (!user) {
+        setLoading(false);
+        return;
+    };
+    
+    // Query for general notifications OR notifications for courses the user is enrolled in
+    const notificationsQuery = query(
+        collection(db, "notifications"),
+        where('target.type', 'in', ['general', 'course']),
+        orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(notificationsQuery, (querySnapshot) => {
       const notificationsData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         // This is a simplified read status. A real app would store read status per user.
         read: false,
       })) as Notification[];
-      setNotifications(notificationsData);
+      
+      // Filter notifications on the client-side
+      const filteredNotifications = notificationsData.filter(notif => {
+          if (notif.target.type === 'general') {
+              return true; // Show all general announcements
+          }
+          if (notif.target.type === 'course' && notif.target.courseId) {
+              // Show if user is enrolled in the target course
+              return userEnrolledCourseIds.includes(notif.target.courseId);
+          }
+          return false;
+      })
+
+      setNotifications(filteredNotifications);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -119,7 +153,9 @@ export default function NotificationsPage() {
                         <h3 className="font-semibold">{notification.title}</h3>
                         {!notification.read && <Badge>New</Badge>}
                     </div>
-
+                     {notification.target.type === 'course' && notification.target.courseTitle && (
+                        <Badge variant="outline" className="mt-1">{notification.target.courseTitle}</Badge>
+                     )}
                     <p className="text-sm text-muted-foreground mt-1">
                         {notification.description}
                     </p>

@@ -95,9 +95,20 @@ export async function submitExamAction(
 }
 
 const sendNotificationFormSchema = z.object({
-  title: z.string(),
-  message: z.string(),
+  title: z.string().min(3, 'Title must be at least 3 characters.'),
+  message: z.string().min(10, 'Message must be at least 10 characters.'),
+  targetType: z.enum(['general', 'course']),
+  courseId: z.string().optional(),
+}).refine(data => {
+    if (data.targetType === 'course') {
+        return !!data.courseId;
+    }
+    return true;
+}, {
+    message: 'A course must be selected for course-specific notifications.',
+    path: ['courseId'],
 });
+
 
 export async function sendNotificationAction(
   input: z.infer<typeof sendNotificationFormSchema>
@@ -107,14 +118,29 @@ export async function sendNotificationAction(
     if (!parsedInput.success) {
         throw new Error('Invalid input for notification');
     }
+    
+    const { title, message, targetType, courseId } = parsedInput.data;
+    
+    let courseTitle = '';
+    if (targetType === 'course' && courseId) {
+        const courseDoc = await getDoc(doc(db, 'courses', courseId));
+        if (courseDoc.exists()) {
+            courseTitle = courseDoc.data().title;
+        }
+    }
 
     try {
         await addDoc(collection(db, 'notifications'), {
-            title: parsedInput.data.title,
-            description: parsedInput.data.message,
+            title,
+            description: message,
             createdAt: serverTimestamp(),
-            readBy: [], // Used to track which users have read it
-            type: 'announcement', // Example type
+            readBy: [],
+            type: 'announcement',
+            target: {
+                type: targetType,
+                courseId: courseId || null,
+                courseTitle: courseTitle || null,
+            }
         });
     } catch (error) {
         console.error('Error sending notification:', error);

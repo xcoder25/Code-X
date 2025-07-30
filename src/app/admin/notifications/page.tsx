@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -27,14 +27,34 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { sendNotificationAction } from '@/app/actions';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const notificationFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),
   message: z.string().min(10, 'Message must be at least 10 characters.'),
+  targetType: z.enum(['general', 'course'], { required_error: 'You must select a target audience.' }),
+  courseId: z.string().optional(),
+}).refine(data => {
+    if (data.targetType === 'course') {
+        return !!data.courseId;
+    }
+    return true;
+}, {
+    message: 'A course must be selected for course-specific notifications.',
+    path: ['courseId'],
 });
+
+interface Course {
+    id: string;
+    title: string;
+}
 
 export default function AdminNotificationsPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof notificationFormSchema>>({
@@ -42,8 +62,27 @@ export default function AdminNotificationsPage() {
     defaultValues: {
       title: '',
       message: '',
+      targetType: 'general',
+      courseId: '',
     },
   });
+
+  const targetType = useWatch({
+    control: form.control,
+    name: 'targetType',
+  });
+
+  useEffect(() => {
+    async function fetchCourses() {
+        const coursesQuery = query(collection(db, 'courses'), orderBy('title'));
+        const querySnapshot = await getDocs(coursesQuery);
+        const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+        setCourses(coursesData);
+    }
+    if (targetType === 'course') {
+        fetchCourses();
+    }
+  }, [targetType]);
 
   const onSubmit = async (values: z.infer<typeof notificationFormSchema>) => {
     setIsLoading(true);
@@ -51,7 +90,7 @@ export default function AdminNotificationsPage() {
       await sendNotificationAction(values);
       toast({
         title: 'Notification Sent!',
-        description: 'Your message has been sent to all users.',
+        description: 'Your message has been sent.',
       });
       form.reset();
     } catch (error) {
@@ -69,15 +108,85 @@ export default function AdminNotificationsPage() {
     <div className="flex-1 space-y-4 p-8 pt-6">
       <h2 className="text-3xl font-bold tracking-tight">Send Notification</h2>
        <p className="text-muted-foreground">
-        Compose and send a broadcast message to all students.
+        Compose and send a broadcast message to all students or a specific course.
       </p>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Audience</CardTitle>
+              <CardDescription>
+                Choose who should receive this notification.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+               <FormField
+                  control={form.control}
+                  name="targetType"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex flex-col space-y-1"
+                        >
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="general" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              General Announcement (All Users)
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="course" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Course-specific Announcement
+                            </FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 {targetType === 'course' && (
+                  <div className="pt-4">
+                    <FormField
+                      control={form.control}
+                      name="courseId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Select Course</FormLabel>
+                           <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a course to notify" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {courses.map(course => (
+                                        <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Message Details</CardTitle>
               <CardDescription>
-                The message will appear in every student's notification inbox.
+                The message will appear in the targeted student's notification inbox.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -119,7 +228,7 @@ export default function AdminNotificationsPage() {
                 ) : (
                    <Send className="mr-2 h-4 w-4" />
                 )}
-                Send to All Users
+                Send Notification
               </Button>
             </CardFooter>
           </Card>
