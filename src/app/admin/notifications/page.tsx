@@ -32,7 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -151,7 +151,11 @@ export default function AdminNotificationsPage() {
                     <FormItem className="space-y-3">
                       <FormControl>
                         <RadioGroup
-                          onValueChange={field.onChange}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            form.setValue('userId', '');
+                            form.setValue('courseId', '');
+                          }}
                           defaultValue={field.value}
                           className="flex flex-col space-y-1"
                         >
@@ -242,29 +246,31 @@ export default function AdminNotificationsPage() {
                             <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                               <Command>
                                 <CommandInput placeholder="Search user..." />
-                                <CommandEmpty>No user found.</CommandEmpty>
-                                <CommandGroup>
-                                  {users.map((user) => (
-                                    <CommandItem
-                                      value={user.displayName}
-                                      key={user.uid}
-                                      onSelect={() => {
-                                        form.setValue("userId", user.uid);
-                                        setPopoverOpen(false);
-                                      }}
-                                    >
-                                      <Check
-                                        className={cn(
-                                          "mr-2 h-4 w-4",
-                                          user.uid === field.value
-                                            ? "opacity-100"
-                                            : "opacity-0"
-                                        )}
-                                      />
-                                      {user.displayName} ({user.email})
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
+                                <CommandList>
+                                  <CommandEmpty>No user found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {users.map((user) => (
+                                      <CommandItem
+                                        value={user.uid}
+                                        key={user.uid}
+                                        onSelect={(currentValue) => {
+                                          form.setValue("userId", currentValue === field.value ? "" : currentValue);
+                                          setPopoverOpen(false);
+                                        }}
+                                      >
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            user.uid === field.value
+                                              ? "opacity-100"
+                                              : "opacity-0"
+                                          )}
+                                        />
+                                        {user.displayName} ({user.email})
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
                               </Command>
                             </PopoverContent>
                           </Popover>
