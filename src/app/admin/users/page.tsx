@@ -51,7 +51,7 @@ export default function AdminUsersPage() {
         const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
         
         const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
-            const allUsers = snapshot.docs.map(doc => doc.data() as User);
+            const allUsers = snapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id }) as User);
             setUsers(allUsers);
             setLoading(false);
         }, (error) => {
