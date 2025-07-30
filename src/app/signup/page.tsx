@@ -43,30 +43,33 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
+      // Step 1: Create the user in Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+      const displayName = `${firstName} ${lastName}`;
 
-      // Immediately redirect and show success toast
+      // Step 2: Update the user's profile in Firebase Authentication (optional but good practice)
+      await updateProfile(user, {
+        displayName: displayName,
+      });
+
+      // Step 3: Create the user document in Firestore
+      // This is the key part that syncs the user to your database
+      await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        firstName: firstName,
+        lastName: lastName,
+        displayName: displayName,
+        email: email,
+        createdAt: serverTimestamp(),
+        plan: 'Free', // Default plan for new users
+      });
+
       toast({
         title: 'Account Created!',
         description: 'Welcome to Code-X! Redirecting you now...',
       });
       router.push('/dashboard');
-
-      // Perform profile update and Firestore write in the background
-      // We don't need to await these for the user to proceed
-      updateProfile(user, {
-        displayName: `${firstName} ${lastName}`,
-      }).catch((err) => console.error("Failed to update profile:", err));
-
-      setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        firstName,
-        lastName,
-        email,
-        createdAt: serverTimestamp(),
-        displayName: `${firstName} ${lastName}`,
-      }).catch((err) => console.error("Failed to create user document:", err));
 
     } catch (error: any) {
       toast({
@@ -74,7 +77,8 @@ export default function SignupPage() {
         title: 'Signup Error',
         description: error.message,
       });
-      setIsLoading(false); // Only stop loading on error
+    } finally {
+      setIsLoading(false);
     }
   };
 
