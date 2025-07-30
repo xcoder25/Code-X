@@ -4,7 +4,7 @@
 import { chatWithElara, ChatWithElaraInput, ChatWithElaraOutput } from '@/ai/flows/ai-coach-flow';
 import { analyzeCode, AnalyzeCodeInput, AnalyzeCodeOutput } from '@/ai/flows/analyze-code';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, setDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, setDoc, doc, getDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { exams as examData } from '@/lib/exam-data';
 
@@ -70,7 +70,7 @@ const submitExamFormSchema = z.object({
 export async function submitExamAction(
   input: z.infer<typeof submitExamFormSchema>
 ): Promise<{ score: number }> {
-  const parsedInput = submitExam-form-schema.safeParse(input);
+  const parsedInput = submitExamFormSchema.safeParse(input);
 
   if (!parsedInput.success) {
     throw new Error('Invalid input');
@@ -170,7 +170,9 @@ export async function generateAccessCodesAction(values: z.infer<typeof generateC
     const { courseId, prefix, quantity, maxRedemptions } = parsedInput.data;
 
     try {
-        const courseDoc = await doc(db, 'courses', courseId).get();
+        const courseRef = doc(db, 'courses', courseId);
+        const courseDoc = await getDoc(courseRef);
+        
         if (!courseDoc.exists()) {
             throw new Error("Selected course does not exist.");
         }
@@ -195,8 +197,11 @@ export async function generateAccessCodesAction(values: z.infer<typeof generateC
             generatedCodes.push(code);
         }
         return { success: true, count: generatedCodes.length };
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error generating access codes: ", error);
-        throw new Error("Could not generate access codes.");
+        if (error.code === 'unavailable' || error.message.includes('Could not reach Cloud Firestore backend')) {
+             throw new Error("Could not connect to the database. Please check your internet connection and Firebase project setup.");
+        }
+        throw new Error("Could not generate access codes due to a server error.");
     }
 }
