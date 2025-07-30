@@ -4,7 +4,6 @@ import AppSidebar from '@/components/admin/admin-sidebar';
 import AppHeader from '@/components/admin/admin-header';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AdminAuthProvider, useAdminAuth } from '../admin-auth-provider';
-import AdminArea from '@/components/admin/admin-area';
 import { usePathname } from 'next/navigation';
 
 function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
@@ -35,9 +34,7 @@ export default function AdminLayout({
 }) {
   return (
     <AdminAuthProvider>
-      <AdminArea>
         <AdminDashboardLayout>{children}</AdminDashboardLayout>
-      </AdminArea>
     </AdminAuthProvider>
   );
 }

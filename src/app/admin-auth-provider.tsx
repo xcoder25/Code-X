@@ -24,16 +24,19 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
       if (user) {
         try {
           const adminDoc = await getDoc(doc(db, 'admins', user.uid));
           if (adminDoc.exists()) {
+            setUser(user);
             setIsAdmin(true);
+            if (pathname === '/admin/login') {
+              router.replace('/admin');
+            }
           } else {
             setIsAdmin(false);
             if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
-                router.push('/admin/login');
+                router.replace('/admin/login');
             }
           }
         } catch (error) {
@@ -41,9 +44,10 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
             setIsAdmin(false);
         }
       } else {
+        setUser(null);
         setIsAdmin(false);
         if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
-            router.push('/admin/login');
+            router.replace('/admin/login');
         }
       }
       setLoading(false);
@@ -52,14 +56,17 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [pathname, router]);
 
-  const value = { user, isAdmin, loading };
-
-  // Only show loading spinner for admin routes, not the login page itself.
-  const showLoading = loading && pathname !== '/admin/login';
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+  
+  if (!isAdmin && pathname.startsWith('/admin') && pathname !== '/admin/login') {
+      return <LoadingSpinner />;
+  }
 
   return (
-    <AdminAuthContext.Provider value={value}>
-      {showLoading ? <LoadingSpinner /> : children}
+    <AdminAuthContext.Provider value={{ user, isAdmin, loading }}>
+      {children}
     </AdminAuthContext.Provider>
   );
 }
