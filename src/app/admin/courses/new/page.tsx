@@ -1,51 +1,41 @@
+
 'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-
-import { Loader2, Upload, X, File as FileIcon } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { storage } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { createCourseAction } from '@/app/actions';
+import { useToast } from '@/hooks/use-toast';
 
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { createCourseAction } from '@/app/actions';
+import { uploadBytes, getDownloadURL, ref } from 'firebase/storage';
+import { storage } from '@/lib/firebase';
+
+// 1. Schema Definition
 const courseFormSchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters.'),
-  description: z.string().min(10, 'Description must be at least 10 characters.'),
-  tags: z.string().min(1, 'Please add at least one tag (comma-separated).'),
+  title: z.string().min(3),
+  description: z.string().min(10),
+  tags: z.string().min(1),
 });
 
-export default function NewCoursePage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
-  const { toast } = useToast();
-  const router = useRouter();
+// 2. Extend Schema to Include Files & Modules
+type CourseFormData = z.infer<typeof courseFormSchema> & {
+  files?: FileList | null;
+  modules?: any[];
+};
 
-  const form = useForm<z.infer<typeof courseFormSchema>>({
+export default function CreateCourseForm() {
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const form = useForm<CourseFormData>({
     resolver: zodResolver(courseFormSchema),
     defaultValues: {
       title: '',
@@ -54,176 +44,104 @@ export default function NewCoursePage() {
     },
   });
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      const newFiles = Array.from(event.target.files);
-      setFiles((prev) => [...prev, ...newFiles]);
-    }
-  };
+  // 3. Handle File Upload + Firestore Submission
+  const onSubmit = async (data: CourseFormData) => {
+    setLoading(true);
 
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const onSubmit = async (values: z.infer<typeof courseFormSchema>) => {
-    setIsLoading(true);
     try {
-      const modulePromises = files.map(async (file) => {
-        const fileRef = ref(storage, `course_modules/${Date.now()}_${file.name}`);
-        const snapshot = await uploadBytes(fileRef, file);
-        const url = await getDownloadURL(snapshot.ref);
-        return {
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          url,
-        };
-      });
+      let uploadedModules: { name: string, type: string, size: number, url: string }[] = [];
 
-      const modules = await Promise.all(modulePromises);
-      const result = await createCourseAction({ ...values, modules });
-
-      if (result?.success) {
-        toast({
-          title: 'Course Created!',
-          description: `The course "${values.title}" has been successfully created.`,
+      if (data.files && data.files.length > 0) {
+        const uploads = Array.from(data.files).map(async (file) => {
+          const storageRef = ref(storage, `course_files/${file.name}`);
+          await uploadBytes(storageRef, file);
+          const url = await getDownloadURL(storageRef);
+          return {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            url: url,
+          };
         });
-        router.push('/admin/courses');
-      } else {
-        throw new Error(result?.message || 'Unknown error');
+
+        uploadedModules = await Promise.all(uploads);
       }
+
+      const courseData = {
+        title: data.title,
+        description: data.description,
+        tags: data.tags,
+        modules: uploadedModules,
+      };
+
+      // Call server action
+      await createCourseAction(courseData);
+
+      toast({
+        title: 'Success!',
+        description: 'Course created successfully!',
+      });
+      router.push('/admin/courses');
     } catch (error: any) {
+      console.error(error);
       toast({
         variant: 'destructive',
-        title: 'Error Creating Course',
-        description: error.message || 'An unexpected error occurred.',
+        title: 'Error',
+        description: 'Failed to create course.',
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
-      <h2 className="text-3xl font-bold tracking-tight">Create New Course</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Create New Course</h2>
+         <p className="text-muted-foreground">
+            Fill out the details below to add a new course to the platform.
+        </p>
+        <Card>
+             <CardContent className="pt-6">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div>
+                    <Label>Course Title</Label>
+                    <Input {...form.register('title')} placeholder="e.g., Ultimate Next.js Bootcamp" />
+                </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Course Details</CardTitle>
-              <CardDescription>
-                Fill in the information for the new course or bootcamp.
-              </CardDescription>
-            </CardHeader>
+                <div>
+                    <Label>Description</Label>
+                    <Textarea rows={4} {...form.register('description')} placeholder="A comprehensive course covering..." />
+                </div>
 
-            <CardContent className="space-y-6">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Course Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Advanced JavaScript" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                 <div>
+                    <Label>Tags</Label>
+                    <Input {...form.register('tags')} placeholder="e.g., React, Next.js, TypeScript (comma-separated)" />
+                </div>
 
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Course Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Describe the course content, goals, and target audience."
-                        className="min-h-[120px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
-              <FormField
-                control={form.control}
-                name="tags"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tags</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Web Development, JavaScript" {...field} />
-                    </FormControl>
-                    <p className="text-sm text-muted-foreground">
-                      Enter tags separated by commas.
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Separator />
-
-              <div className="space-y-4">
-                <FormLabel>Course Modules</FormLabel>
-                <p className="text-sm text-muted-foreground">
-                  Upload your course materials (PDF or DOCX).
-                </p>
-
-                <FormControl>
-                  <div className="relative border-2 border-dashed border-muted-foreground/50 rounded-lg p-6 text-center">
-                    <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <p className="mt-2">Drag & drop files here, or click to select</p>
+                <div>
+                    <Label>Course Materials (Videos, PDFs, etc.)</Label>
+                    <div className="relative flex items-center justify-center border-2 border-dashed rounded-md h-32 cursor-pointer hover:border-primary transition">
+                    <div className="text-center">
+                        <Upload className="mx-auto text-muted-foreground w-8 h-8" />
+                        <p className="text-sm text-muted-foreground mt-2">Drag & drop files or click to browse</p>
+                    </div>
                     <Input
-                      type="file"
-                      multiple
-                      accept=".pdf,.doc,.docx"
-                      onChange={handleFileChange}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        type="file"
+                        multiple
+                        accept=".pdf,.doc,.docx,.mp4,.mov"
+                        {...form.register('files')}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
                     />
-                  </div>
-                </FormControl>
+                    </div>
+                </div>
 
-                {files.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Selected Files:</h4>
-                    <ul className="divide-y divide-border rounded-md border">
-                      {files.map((file, index) => (
-                        <li key={index} className="flex items-center justify-between p-2">
-                          <div className="flex items-center gap-2">
-                            <FileIcon className="h-5 w-5 text-muted-foreground" />
-                            <span className="text-sm">{file.name}</span>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeFile(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-
-            <CardFooter className="border-t px-6 py-4">
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create Course
-              </Button>
-            </CardFooter>
-          </Card>
-        </form>
-      </Form>
+                <Button type="submit" disabled={loading}>
+                    {loading ? 'Creating Course...' : 'Create Course'}
+                </Button>
+                </form>
+             </CardContent>
+        </Card>
     </div>
   );
 }
