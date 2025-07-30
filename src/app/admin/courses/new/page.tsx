@@ -1,10 +1,10 @@
-
 'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+
 import {
   Card,
   CardHeader,
@@ -24,13 +24,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+
 import { Loader2, Upload, X, File as FileIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { createCourseAction } from '@/app/actions';
-import { Separator } from '@/components/ui/separator';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { createCourseAction } from '@/app/actions';
 
 const courseFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),
@@ -56,57 +57,58 @@ export default function NewCoursePage() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const newFiles = Array.from(event.target.files);
-      setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+      setFiles((prev) => [...prev, ...newFiles]);
     }
   };
 
   const removeFile = (index: number) => {
-    setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
-
 
   const onSubmit = async (values: z.infer<typeof courseFormSchema>) => {
     setIsLoading(true);
-    
     try {
-        const modulePromises = files.map(async (file) => {
-            const storageRef = ref(storage, `course_modules/${Date.now()}_${file.name}`);
-            const snapshot = await uploadBytes(storageRef, file);
-            const url = await getDownloadURL(snapshot.ref);
-            return {
-                name: file.name,
-                type: file.type,
-                size: file.size,
-                url: url,
-            };
-        });
+      const modulePromises = files.map(async (file) => {
+        const fileRef = ref(storage, `course_modules/${Date.now()}_${file.name}`);
+        const snapshot = await uploadBytes(fileRef, file);
+        const url = await getDownloadURL(snapshot.ref);
+        return {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          url,
+        };
+      });
 
-        const moduleData = await Promise.all(modulePromises);
+      const modules = await Promise.all(modulePromises);
+      const result = await createCourseAction({ ...values, modules });
 
-        const result = await createCourseAction({ ...values, modules: moduleData });
-        if (result.success) {
-            toast({
-                title: 'Course Created!',
-                description: `The course "${values.title}" has been successfully created.`,
-            });
-            router.push('/admin/courses');
-        }
-    } catch (error: any) {
+      if (result?.success) {
         toast({
-            variant: "destructive",
-            title: "Error Creating Course",
-            description: error.message || "An unexpected error occurred. Please try again.",
+          title: 'Course Created!',
+          description: `The course "${values.title}" has been successfully created.`,
         });
+        router.push('/admin/courses');
+      } else {
+        throw new Error(result?.message || 'Unknown error');
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error Creating Course',
+        description: error.message || 'An unexpected error occurred.',
+      });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <h2 className="text-3xl font-bold tracking-tight">Create New Course</h2>
+
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Course Details</CardTitle>
@@ -114,6 +116,7 @@ export default function NewCoursePage() {
                 Fill in the information for the new course or bootcamp.
               </CardDescription>
             </CardHeader>
+
             <CardContent className="space-y-6">
               <FormField
                 control={form.control}
@@ -128,6 +131,7 @@ export default function NewCoursePage() {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="description"
@@ -145,6 +149,7 @@ export default function NewCoursePage() {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="tags"
@@ -152,7 +157,7 @@ export default function NewCoursePage() {
                   <FormItem>
                     <FormLabel>Tags</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Web Development, Frontend, JavaScript" {...field} />
+                      <Input placeholder="e.g., Web Development, JavaScript" {...field} />
                     </FormControl>
                     <p className="text-sm text-muted-foreground">
                       Enter tags separated by commas.
@@ -161,36 +166,40 @@ export default function NewCoursePage() {
                   </FormItem>
                 )}
               />
+
               <Separator />
-               <div className="space-y-4">
+
+              <div className="space-y-4">
                 <FormLabel>Course Modules</FormLabel>
                 <p className="text-sm text-muted-foreground">
-                  Upload your course materials in PDF or DOCX format.
+                  Upload your course materials (PDF or DOCX).
                 </p>
+
                 <FormControl>
-                    <div className="relative border-2 border-dashed border-muted-foreground/50 rounded-lg p-6 text-center">
-                        <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-                        <p className="mt-2">Drag & drop files here, or click to select files</p>
-                        <Input
-                            type="file"
-                            multiple
-                            accept=".pdf,.docx,.doc"
-                            onChange={handleFileChange}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        />
-                    </div>
+                  <div className="relative border-2 border-dashed border-muted-foreground/50 rounded-lg p-6 text-center">
+                    <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <p className="mt-2">Drag & drop files here, or click to select</p>
+                    <Input
+                      type="file"
+                      multiple
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                  </div>
                 </FormControl>
+
                 {files.length > 0 && (
                   <div className="space-y-2">
                     <h4 className="font-medium">Selected Files:</h4>
                     <ul className="divide-y divide-border rounded-md border">
                       {files.map((file, index) => (
                         <li key={index} className="flex items-center justify-between p-2">
-                           <div className="flex items-center gap-2">
-                             <FileIcon className="h-5 w-5 text-muted-foreground" />
-                             <span className="text-sm">{file.name}</span>
-                           </div>
-                           <Button
+                          <div className="flex items-center gap-2">
+                            <FileIcon className="h-5 w-5 text-muted-foreground" />
+                            <span className="text-sm">{file.name}</span>
+                          </div>
+                          <Button
                             type="button"
                             variant="ghost"
                             size="icon"
@@ -205,6 +214,7 @@ export default function NewCoursePage() {
                 )}
               </div>
             </CardContent>
+
             <CardFooter className="border-t px-6 py-4">
               <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
