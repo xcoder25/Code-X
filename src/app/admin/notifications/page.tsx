@@ -246,10 +246,10 @@ export default function AdminNotificationsPage() {
                                 <CommandGroup>
                                   {users.map((user) => (
                                     <CommandItem
-                                      value={user.uid}
+                                      value={user.displayName}
                                       key={user.uid}
-                                      onSelect={(currentValue) => {
-                                        form.setValue("userId", currentValue === field.value ? "" : currentValue);
+                                      onSelect={() => {
+                                        form.setValue("userId", user.uid);
                                         setPopoverOpen(false);
                                       }}
                                     >
