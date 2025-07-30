@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
@@ -24,6 +25,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setLoading(true); // Start loading whenever auth state changes
       if (user) {
         try {
           const adminDoc = await getDoc(doc(db, 'admins', user.uid));
@@ -56,11 +58,16 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [pathname, router]);
 
-  if (loading) {
+  const isProtectedAdminRoute = pathname.startsWith('/admin') && pathname !== '/admin/login';
+
+  if (loading && isProtectedAdminRoute) {
     return <LoadingSpinner />;
   }
-  
-  if (!isAdmin && pathname.startsWith('/admin') && pathname !== '/admin/login') {
+
+  if (!isAdmin && isProtectedAdminRoute) {
+      // Don't render children if not an admin on a protected route.
+      // The useEffect above will handle the redirect.
+      // A loading spinner can be shown here to avoid a flash of content.
       return <LoadingSpinner />;
   }
 
