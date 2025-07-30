@@ -61,7 +61,6 @@ export default function InboxPage() {
     // Query for notifications targeted at the user specifically.
     const notificationsQuery = query(
         collection(db, "notifications"),
-        where("target.type", "==", "user"),
         where("target.userId", "==", user.uid),
         orderBy("createdAt", "desc")
     );
@@ -73,8 +72,15 @@ export default function InboxPage() {
         read: false, // This is a simplified read status. A real app would store read status per user.
       })) as Notification[];
       
-      setMessages(notificationsData);
+      // We only want to show messages targeted at the user in the inbox
+      const userMessages = notificationsData.filter(n => n.target.type === 'user');
+
+      setMessages(userMessages);
       setLoading(false);
+    }, (error) => {
+        console.error("Error fetching inbox messages:", error);
+        setMessages([]);
+        setLoading(false);
     });
 
     return () => unsubscribe();

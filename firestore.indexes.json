@@ -1,13 +1,10 @@
+
 {
   "indexes": [
     {
       "collectionGroup": "notifications",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "target.type",
-          "order": "ASCENDING"
-        },
         {
           "fieldPath": "target.userId",
           "order": "ASCENDING"
