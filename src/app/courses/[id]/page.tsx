@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardHeader,
@@ -16,8 +16,10 @@ import { PlayCircle, FileText, CheckSquare, Bot, Video } from 'lucide-react';
 import Link from 'next/link';
 import ChallengeInterface from '@/components/challenge-interface';
 import LearningPathGenerator from '@/components/learning-path-generator';
-import { getCourseById } from '@/lib/course-data';
 import EnrollmentCard from '@/components/enrollment-card';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Mock challenges data
 const challenges: { [key: string]: any } = {
@@ -29,6 +31,14 @@ const challenges: { [key: string]: any } = {
     defaultCode: `/* Your CSS selectors here */`
   }
 };
+
+interface Course {
+    id: string;
+    title: string;
+    description: string;
+    tags: string[];
+    modules: any[];
+}
 
 
 function getLessonIcon(type: string) {
@@ -47,14 +57,65 @@ function getLessonIcon(type: string) {
 }
 
 export default function CourseDetailPage({ params }: { params: { id: string } }) {
-  // In a real app, enrollment status would come from a database.
-  // We mock it here. Change this to `false` to see the locked state.
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [course, setCourse] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const course = getCourseById(params.id);
+  useEffect(() => {
+    const fetchCourse = async () => {
+        if (!params.id) return;
+        try {
+            const courseDoc = await getDoc(doc(db, 'courses', params.id));
+            if (courseDoc.exists()) {
+                // In a real app, module content would be structured better.
+                // For now, we mock the lesson structure.
+                const data = courseDoc.data();
+                setCourse({
+                    id: data.id,
+                    title: data.title,
+                    description: data.description,
+                    tags: data.tags || [],
+                    // Mocking modules and lessons based on uploaded file names
+                    modules: (data.modules || []).map((mod: any, index: number) => ({
+                        title: `Module ${index + 1}: ${mod.name.split('.').slice(0, -1).join('.')}`,
+                        lessons: [
+                            { title: `Introduction to ${mod.name}`, type: 'reading', completed: false },
+                            { title: 'Core Concepts', type: 'video', completed: false },
+                        ]
+                    }))
+                });
+            } else {
+                console.log("No such course!");
+            }
+        } catch (error) {
+            console.error("Error fetching course:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchCourse();
+  }, [params.id]);
   
   const challengeId = course?.modules?.flatMap((m: any) => m.lessons).find((l: any) => l.type === 'challenge')?.id;
   const challenge = challengeId ? challenges[challengeId] : null;
+
+  if (loading) {
+    return (
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+                <div>
+                   <Skeleton className="h-10 w-96 mb-2" />
+                   <Skeleton className="h-4 w-[500px] mb-4" />
+                    <div className="flex items-center gap-2 mt-4">
+                       <Skeleton className="h-6 w-20" />
+                       <Skeleton className="h-6 w-24" />
+                    </div>
+                </div>
+                 <Skeleton className="h-48 w-full max-w-md" />
+            </div>
+        </main>
+    )
+  }
 
   if (!course) {
     return (
@@ -101,7 +162,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         )}
       </div>
       
-      {isEnrolled ? (
+      {isEnrolled && course.modules.length > 0 && (
         <div className="grid md:grid-cols-3 gap-6 mt-6">
             <div className="md:col-span-2">
                 <Card>
@@ -153,7 +214,15 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 </Card>
             </div>
         </div>
-      ) : null}
+      )}
+
+       {isEnrolled && course.modules.length === 0 && (
+            <Card className="mt-6">
+                <CardContent className="p-8 text-center">
+                    <p className="text-muted-foreground">Course content is not yet available. Check back soon!</p>
+                </CardContent>
+            </Card>
+        )}
 
       <div className="mt-8">
          {isEnrolled && challenge && <ChallengeInterface challenge={challenge} />}

@@ -1,4 +1,6 @@
 
+'use client';
+
 import Link from 'next/link';
 import {
   Card,
@@ -11,21 +13,54 @@ import {
 import { Button } from '@/components/ui/button';
 import { ArrowRight, BookOpenCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { courses as allCourses } from '@/lib/course-data';
+import { useState, useEffect } from 'react';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// For now, we'll mock the user's enrolled courses.
-// In a real app, this would come from a database.
-const enrolledCourseIds = ['web-dev-bootcamp'];
-const courses = allCourses.map(course => {
-    const isEnrolled = enrolledCourseIds.includes(course.id);
-    // This is a simplified progress mock
-    const progress = isEnrolled ? 35 : 0; 
-    const status = isEnrolled ? 'in-progress' : 'not-started';
-    return { ...course, progress, status };
-});
+interface Course {
+  id: string;
+  title: string;
+  description: string;
+  tags: string[];
+  progress: number; // Simplified for now
+  status: 'in-progress' | 'not-started';
+}
 
 
 export default function CoursesPage() {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // In a real app, this would come from a database.
+  const enrolledCourseIds = ['web-dev-bootcamp'];
+
+  useEffect(() => {
+    const coursesQuery = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(coursesQuery, (snapshot) => {
+        const coursesData = snapshot.docs.map(doc => {
+            const data = doc.data();
+            const isEnrolled = enrolledCourseIds.includes(data.id);
+            return {
+                id: data.id,
+                title: data.title,
+                description: data.description,
+                tags: data.tags || [],
+                progress: isEnrolled ? 35 : 0, // Mock progress
+                status: isEnrolled ? 'in-progress' : 'not-started',
+            }
+        });
+        setCourses(coursesData);
+        setLoading(false);
+    }, (error) => {
+        console.error("Error fetching courses:", error);
+        setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <div className="flex items-center">
@@ -35,7 +70,29 @@ export default function CoursesPage() {
         Browse available courses and continue your learning journey.
       </p>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {courses.map((course) => (
+        {loading ? (
+             [...Array(3)].map((_, i) => (
+                <Card key={i} className="flex flex-col">
+                    <CardHeader>
+                        <div className="flex justify-between items-start mb-2">
+                            <Skeleton className="h-8 w-8" />
+                            <Skeleton className="h-6 w-24 rounded-full" />
+                        </div>
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-2/3" />
+                    </CardHeader>
+                    <CardContent className="flex-grow space-x-2">
+                        <Skeleton className="h-5 w-16 inline-block" />
+                        <Skeleton className="h-5 w-20 inline-block" />
+                    </CardContent>
+                    <CardFooter className="flex flex-col items-start gap-2">
+                        <Skeleton className="h-2.5 w-full rounded-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </CardFooter>
+                </Card>
+            ))
+        ) : courses.map((course) => (
           <Card key={course.id} className="flex flex-col">
             <CardHeader>
               <div className="flex justify-between items-start mb-2">
@@ -66,7 +123,7 @@ export default function CoursesPage() {
           </Card>
         ))}
       </div>
-       {courses.length === 0 && (
+       {courses.length === 0 && !loading && (
           <div className="text-center text-muted-foreground py-12 col-span-full">
               <p>No courses available at the moment. Please check back later.</p>
             </div>
