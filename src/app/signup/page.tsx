@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -17,7 +18,7 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
 export default function SignupPage() {
@@ -63,7 +64,7 @@ export default function SignupPage() {
         firstName,
         lastName,
         email,
-        createdAt: new Date(),
+        createdAt: serverTimestamp(),
         displayName: `${firstName} ${lastName}`,
       }).catch((err) => console.error("Failed to create user document:", err));
 
