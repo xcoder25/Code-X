@@ -9,11 +9,12 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
+import { Mail } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -30,20 +31,13 @@ interface Message {
 }
 
 const AudienceTag = ({ message }: { message: Message }) => {
-  switch (message.targetType) {
-    case 'general':
-      return <Badge variant="secondary">To: All Users</Badge>;
-    case 'course':
-      return <Badge variant="secondary">To Course: {message.courseName}</Badge>;
-    case 'user':
-      const userCount = message.userIds?.length || 0;
-      if (userCount > 0) {
-        return <Badge variant="secondary">To: {userCount} user(s)</Badge>;
-      }
-      return <Badge variant="destructive">Direct Message</Badge>;
-    default:
-      return null;
-  }
+    let text = 'General';
+    if (message.targetType === 'course') {
+        text = `Course: ${message.courseName}`;
+    } else if (message.targetType === 'user') {
+        text = 'Direct Message';
+    }
+  return <Badge variant="secondary">{text}</Badge>;
 };
 
 const MessageCard = ({ message }: { message: Message }) => {
@@ -67,7 +61,7 @@ const MessageCard = ({ message }: { message: Message }) => {
   );
 };
 
-export default function NotificationsPage() {
+export default function InboxPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -119,10 +113,10 @@ export default function NotificationsPage() {
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <div className="flex items-center">
-        <h1 className="font-semibold text-3xl">Notifications</h1>
+        <h1 className="font-semibold text-3xl">Inbox</h1>
       </div>
        <p className="text-muted-foreground">
-        New messages from the admin will appear here in real-time.
+        Important messages and announcements will appear here.
       </p>
 
       <div className="space-y-4">
@@ -142,8 +136,9 @@ export default function NotificationsPage() {
           messages.map((msg) => <MessageCard key={msg.id} message={msg} />)
         ) : (
           <Card>
-            <CardContent className="p-8 text-center text-muted-foreground">
-              No messages yet.
+            <CardContent className="p-8 text-center text-muted-foreground flex flex-col items-center gap-4">
+              <Mail className="h-12 w-12 text-muted-foreground/50" />
+              <p>Your inbox is empty.</p>
             </CardContent>
           </Card>
         )}

@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -8,7 +9,7 @@ import {
   Users,
   CreditCard,
   KeyRound,
-  Bell,
+  MessageSquare,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -110,10 +111,10 @@ export default function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/notifications')}>
-              <Link href="/admin/notifications">
-                <Bell />
-                <span>Notifications</span>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/messages')}>
+              <Link href="/admin/messages">
+                <MessageSquare />
+                <span>Messages</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

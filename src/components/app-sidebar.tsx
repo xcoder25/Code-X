@@ -8,7 +8,7 @@ import {
   FileQuestion,
   Bot,
   LogOut,
-  Bell,
+  Mail,
   CreditCard,
   Settings,
   Calendar,
@@ -144,10 +144,10 @@ export default function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.startsWith('/notifications')}>
-              <Link href="/notifications">
-                <Bell />
-                <span>Notifications</span>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/inbox')}>
+              <Link href="/inbox">
+                <Mail />
+                <span>Inbox</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
