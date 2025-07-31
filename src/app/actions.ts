@@ -10,12 +10,12 @@ import {
   serverTimestamp,
   writeBatch,
 } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { z } from 'zod';
 import { sendNotificationFormSchema } from '@/app/schema';
 import { exams } from '@/lib/exam-data';
+import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/analyze-code';
+import { chatWithElara, ChatWithElaraOutput, ChatWithElaraInput } from '@/ai/flows/ai-coach-flow';
 
-// Zod inferred type for notification form
 export async function sendNotificationAction(
   input: z.infer<typeof sendNotificationFormSchema>,
 ): Promise<void> {
@@ -30,10 +30,9 @@ export async function sendNotificationAction(
 
   try {
     if (targetType === 'user' && userIds && userIds.length > 0) {
-      // Send notification to multiple specific users
       const batch = writeBatch(db);
       userIds.forEach(userId => {
-        const notifRef = doc(collection(db, 'notifications')); // auto-generates ID
+        const notifRef = doc(collection(db, 'notifications'));
         batch.set(notifRef, {
           title,
           message,
@@ -48,7 +47,6 @@ export async function sendNotificationAction(
       });
       await batch.commit();
     } else {
-      // Send a general or course notification
       const target: any = { type: targetType };
       if (targetType === 'course' && courseId) {
         const courseDocRef = doc(db, 'courses', courseId);
@@ -76,7 +74,6 @@ export async function sendNotificationAction(
     throw new Error('Could not send notification.');
   }
 }
-
 
 const createCourseFormSchema = z.object({
   title: z.string().min(3),
@@ -114,7 +111,6 @@ const generateAccessCodesSchema = z.object({
   maxRedemptions: z.number().min(1),
 });
 
-
 function generateRandomCode(length = 8) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
@@ -123,7 +119,6 @@ function generateRandomCode(length = 8) {
     }
     return result;
 }
-
 
 export async function generateAccessCodesAction(
   input: z.infer<typeof generateAccessCodesSchema>
@@ -164,12 +159,10 @@ export async function generateAccessCodesAction(
   return { success: true, count: quantity };
 }
 
-
 const submitExamSchema = z.object({
   examId: z.string(),
   answers: z.record(z.string()),
 });
-
 
 export async function submitExamAction(
   input: z.infer<typeof submitExamSchema>
@@ -195,21 +188,8 @@ export async function submitExamAction(
 
   const score = (correctAnswers / exam.questions.length) * 100;
 
-  // In a real app, you would save this result to Firestore
-  // await addDoc(collection(db, 'examResults'), { ... });
-
   return { score };
 }
-
-'use server';
-
-import { z } from 'zod';
-import type { BaseMessage } from '@google/generative-ai';
-import { ai as genkitAi } from '@/ai/genkit';
-import { diagnosePlant, DiagnosePlantOutput, DiagnosePlantInput } from '@/ai/flows/diagnose-plant-flow';
-import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/analyze-code';
-import { chatWithElara, ChatWithElaraOutput, ChatWithElaraInput } from '@/ai/flows/ai-coach-flow';
-
 
 export async function chatWithElaraAction(
   input: ChatWithElaraInput,
@@ -217,7 +197,6 @@ export async function chatWithElaraAction(
   const isLearningPathRequest = input.message.toLowerCase().includes('learning path');
   return chatWithElara(input, isLearningPathRequest);
 }
-
 
 export async function analyzeCodeAction(input: AnalyzeCodeInput): Promise<AnalyzeCodeOutput> {
     return analyzeCode(input);
