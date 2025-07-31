@@ -156,8 +156,8 @@ export async function sendNotificationAction(
             description: message,
             createdAt: serverTimestamp(),
             readBy: [],
-            type: 'announcement', // or 'direct_message'
-            target: { type: 'user', userId },
+            type: 'announcement', // This should probably be 'direct_message' but keeping for consistency
+            target: { type: 'user', userId: userId },
         });
       });
       await batch.commit();
@@ -166,8 +166,8 @@ export async function sendNotificationAction(
         if (targetType === 'course' && courseId) {
             const courseDoc = await getDoc(doc(db, 'courses', courseId));
             if (courseDoc.exists()) {
-            target.courseId = courseId;
-            target.courseTitle = courseDoc.data().title;
+              target.courseId = courseId;
+              target.courseTitle = courseDoc.data().title;
             }
         }
         
