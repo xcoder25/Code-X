@@ -6,6 +6,8 @@ export const sendMessageFormSchema = z.object({
   targetType: z.enum(['general', 'course', 'user', 'admin']),
   courseId: z.string().optional(),
   userIds: z.array(z.string()).optional(),
+  senderId: z.string().optional(),
+  senderName: z.string().optional(),
 }).refine(data => {
   if (data.targetType === 'course') return !!data.courseId && data.courseId.length > 0;
   if (data.targetType === 'user') return data.userIds && data.userIds.length > 0;

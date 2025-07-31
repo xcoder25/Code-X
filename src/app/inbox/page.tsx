@@ -7,10 +7,9 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-  CardFooter,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -88,6 +87,7 @@ const MessageCard = ({ message, currentUserId }: { message: Message, currentUser
 
 
 const ComposeMessageDialog = () => {
+    const { user } = useAuth();
     const [open, setOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [title, setTitle] = useState('');
@@ -96,6 +96,10 @@ const ComposeMessageDialog = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to send a message.' });
+            return;
+        }
         if (!title || !body) {
             toast({ variant: 'destructive', title: 'Error', description: 'Please fill out all fields.' });
             return;
@@ -106,13 +110,15 @@ const ComposeMessageDialog = () => {
                 title,
                 body,
                 targetType: 'admin',
+                senderId: user.uid,
+                senderName: user.displayName || user.email || 'Anonymous',
             });
             toast({ title: 'Message Sent!', description: 'Your message has been sent to the admin.' });
             setOpen(false);
             setTitle('');
             setBody('');
         } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error', description: error.message });
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not send message.' });
         } finally {
             setIsLoading(false);
         }

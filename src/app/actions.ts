@@ -15,7 +15,6 @@ import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/ana
 import { chatWithElara, ChatWithElaraOutput, ChatWithElaraInput } from '@/ai/flows/ai-coach-flow';
 import { sendMessageFormSchema } from './schema';
 import { exams } from '@/lib/exam-data';
-import { auth } from '@/lib/firebase';
 
 export async function sendMessageAction(
   input: z.infer<typeof sendMessageFormSchema>,
@@ -26,7 +25,7 @@ export async function sendMessageAction(
     throw new Error(`Invalid input: ${errorMessage}`);
   }
 
-  const { title, body, targetType, courseId, userIds } = parsed.data;
+  const { title, body, targetType, courseId, userIds, senderId, senderName } = parsed.data;
 
   const messagePayload: any = {
     title,
@@ -34,8 +33,6 @@ export async function sendMessageAction(
     targetType,
     createdAt: serverTimestamp(),
   };
-  
-  const currentUser = auth.currentUser;
 
   if (targetType === 'course') {
     if (!courseId) throw new Error('Course ID is required for course-specific messages.');
@@ -49,9 +46,9 @@ export async function sendMessageAction(
     if (!userIds || userIds.length === 0) throw new Error('At least one user ID is required for user-specific messages.');
     messagePayload.userIds = userIds;
   } else if (targetType === 'admin') {
-      if (!currentUser) throw new Error('You must be logged in to send a message.');
-      messagePayload.senderId = currentUser.uid;
-      messagePayload.senderName = currentUser.displayName || currentUser.email;
+      if (!senderId || !senderName) throw new Error('Sender information is missing for admin message.');
+      messagePayload.senderId = senderId;
+      messagePayload.senderName = senderName;
   }
   
   try {
