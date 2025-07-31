@@ -4,7 +4,7 @@ export const sendMessageFormSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
   body: z.string().min(1, 'Body is required.'),
   targetType: z.enum(['general', 'course', 'user', 'admin']),
-  courseId: z.string().optional(),
+  courseId: z.string().optional().or(z.literal('')),
   userIds: z.array(z.string()).optional(),
   senderId: z.string().optional(),
   senderName: z.string().optional(),

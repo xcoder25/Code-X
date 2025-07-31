@@ -37,6 +37,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { sendMessageFormSchema } from '@/app/schema';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAdminAuth } from '@/app/admin-auth-provider';
 
 interface Course {
   id: string;
@@ -109,6 +110,7 @@ export default function AdminMessagesPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isFeedLoading, setIsFeedLoading] = useState(true);
   const { toast } = useToast();
+  const { user: adminUser } = useAdminAuth();
 
   const form = useForm<z.infer<typeof sendMessageFormSchema>>({
     resolver: zodResolver(sendMessageFormSchema),
@@ -118,6 +120,8 @@ export default function AdminMessagesPage() {
       targetType: 'general',
       courseId: '',
       userIds: [],
+      senderId: adminUser?.uid || 'admin',
+      senderName: adminUser?.displayName || 'Admin',
     },
   });
 
@@ -189,6 +193,8 @@ export default function AdminMessagesPage() {
         targetType: 'general',
         courseId: '',
         userIds: [],
+        senderId: adminUser?.uid || 'admin',
+        senderName: adminUser?.displayName || 'Admin',
       });
     } catch (error: any) {
       toast({

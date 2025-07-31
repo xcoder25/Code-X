@@ -39,9 +39,11 @@ export async function sendMessageAction(
     const courseDocRef = doc(db, 'courses', courseId);
     const courseDoc = await getDoc(courseDocRef);
     if (!courseDoc.exists()) throw new Error('Course not found.');
-    messagePayload.courseId = courseId;
+    
     const courseData = courseDoc.data();
+    messagePayload.courseId = courseId;
     messagePayload.courseName = courseData?.title || 'Untitled Course';
+
   } else if (targetType === 'user') {
     if (!userIds || userIds.length === 0) throw new Error('At least one user ID is required for user-specific messages.');
     messagePayload.userIds = userIds;
