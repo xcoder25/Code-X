@@ -156,7 +156,7 @@ export async function sendNotificationAction(
             description: message,
             createdAt: serverTimestamp(),
             readBy: [],
-            type: 'announcement', // This should probably be 'direct_message' but keeping for consistency
+            type: 'announcement', // This can be customized later if needed
             target: { type: 'user', userId: userId },
         });
       });
@@ -185,6 +185,7 @@ export async function sendNotificationAction(
     throw new Error('Could not send notification.');
   }
 }
+
 
 // ──────────────────────────────────────
 // 5. Create Course
