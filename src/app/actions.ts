@@ -37,8 +37,6 @@ export async function sendNotificationAction(
           title,
           message,
           createdAt: serverTimestamp(),
-          read: false,
-          type: 'announcement',
           target: {
             type: 'user',
             userId,
@@ -64,8 +62,6 @@ export async function sendNotificationAction(
         title,
         message,
         createdAt: serverTimestamp(),
-        read: false,
-        type: 'announcement',
         target,
       });
     }
