@@ -13,14 +13,8 @@ import {
 import { z } from 'zod';
 import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/analyze-code';
 import { chatWithElara, ChatWithElaraOutput, ChatWithElaraInput } from '@/ai/flows/ai-coach-flow';
-
-const sendMessageFormSchema = z.object({
-  title: z.string().min(1, 'Title is required.'),
-  body: z.string().min(1, 'Body is required.'),
-  targetType: z.enum(['general', 'course', 'user']),
-  courseId: z.string().optional(),
-  userIds: z.array(z.string()).optional(),
-});
+import { sendMessageFormSchema } from './schema';
+import { exams } from '@/lib/exam-data';
 
 export async function sendMessageAction(
   input: z.infer<typeof sendMessageFormSchema>,
@@ -46,7 +40,8 @@ export async function sendMessageAction(
     const courseDoc = await getDoc(courseDocRef);
     if (!courseDoc.exists()) throw new Error('Course not found.');
     messagePayload.courseId = courseId;
-    messagePayload.courseName = courseDoc.data().title || 'Untitled Course';
+    const courseData = courseDoc.data();
+    messagePayload.courseName = courseData?.title || 'Untitled Course';
   } else if (targetType === 'user') {
     if (!userIds || userIds.length === 0) throw new Error('At least one user ID is required for user-specific messages.');
     messagePayload.userIds = userIds;
@@ -123,7 +118,8 @@ export async function generateAccessCodesAction(
     throw new Error('Selected course not found.');
   }
 
-  const courseTitle = courseDoc.data().title || 'Untitled Course';
+  const courseData = courseDoc.data();
+  const courseTitle = courseData?.title || 'Untitled Course';
 
   const batch = writeBatch(db);
   for (let i = 0; i < quantity; i++) {

@@ -35,21 +35,7 @@ import { db } from '@/lib/firebase';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-
-const sendMessageFormSchema = z.object({
-  title: z.string().min(1, 'Title is required.'),
-  body: z.string().min(1, 'Body is required.'),
-  targetType: z.enum(['general', 'course', 'user']),
-  courseId: z.string().optional(),
-  userIds: z.array(z.string()).optional(),
-}).refine(data => {
-  if (data.targetType === 'course') return !!data.courseId;
-  if (data.targetType === 'user') return data.userIds && data.userIds.length > 0;
-  return true;
-}, {
-  message: 'A selection is required for this target type.',
-  path: ['courseId'],
-});
+import { sendMessageFormSchema } from '@/app/schema';
 
 interface Course {
   id: string;
@@ -107,7 +93,7 @@ export default function AdminNotificationsPage() {
       try {
         const usersQuery = query(collection(db, 'users'), orderBy('displayName'));
         const querySnapshot = await getDocs(usersQuery);
-        const usersData = querySnapshot.docs.map(doc => ({ ...doc.data() } as User));
+        const usersData = querySnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
         setUsers(usersData);
       } catch (error) {
         console.error("Error fetching users:", error);
