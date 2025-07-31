@@ -200,3 +200,25 @@ export async function submitExamAction(
 
   return { score };
 }
+
+'use server';
+
+import { z } from 'zod';
+import type { BaseMessage } from '@google/generative-ai';
+import { ai as genkitAi } from '@/ai/genkit';
+import { diagnosePlant, DiagnosePlantOutput, DiagnosePlantInput } from '@/ai/flows/diagnose-plant-flow';
+import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/analyze-code';
+import { chatWithElara, ChatWithElaraOutput, ChatWithElaraInput } from '@/ai/flows/ai-coach-flow';
+
+
+export async function chatWithElaraAction(
+  input: ChatWithElaraInput,
+): Promise<ChatWithElaraOutput> {
+  const isLearningPathRequest = input.message.toLowerCase().includes('learning path');
+  return chatWithElara(input, isLearningPathRequest);
+}
+
+
+export async function analyzeCodeAction(input: AnalyzeCodeInput): Promise<AnalyzeCodeOutput> {
+    return analyzeCode(input);
+}
