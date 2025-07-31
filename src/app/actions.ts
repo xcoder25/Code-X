@@ -12,11 +12,19 @@ import {
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { sendNotificationFormSchema } from '@/app/schema';
+
+// This file is re-exporting from a generated file.
+// We need to keep this file to avoid breaking other parts of the app.
 import {
-  generateAccessCodesAction,
-  createCourseAction,
-  submitExamAction,
-} from '@/app/actions';
+  generateAccessCodesAction as genAccessCodes,
+  createCourseAction as createCourse,
+  submitExamAction as submitExam,
+} from './actions.js';
+
+export const generateAccessCodesAction = genAccessCodes;
+export const createCourseAction = createCourse;
+export const submitExamAction = submitExam;
+
 
 // Zod inferred type
 export async function sendNotificationAction(
@@ -40,10 +48,10 @@ export async function sendNotificationAction(
         const notifRef = doc(collection(db, 'notifications')); // auto-generates ID
         batch.set(notifRef, {
           title,
-          description: message,
+          message: message,
           createdAt: serverTimestamp(),
-          read: false, // Explicitly set read status
-          type: 'announcement', // Or a more specific type like 'direct_message'
+          read: false, 
+          type: 'announcement', 
           target: {
             type: 'user',
             userId,
@@ -60,8 +68,7 @@ export async function sendNotificationAction(
         if (courseDoc.exists()) {
           const courseData = courseDoc.data();
           target.courseId = courseId;
-          // CORRECTED: Access the title property from the course data.
-          target.courseTitle = courseData.title || 'Course'; // Fallback added
+          target.courseTitle = courseData.title || 'Course'; 
         } else {
             throw new Error('Course not found.');
         }
@@ -69,9 +76,9 @@ export async function sendNotificationAction(
 
       await addDoc(collection(db, 'notifications'), {
         title,
-        description: message,
+        message: message,
         createdAt: serverTimestamp(),
-        read: false, // Explicitly set read status
+        read: false, 
         type: 'announcement',
         target,
       });
@@ -81,5 +88,3 @@ export async function sendNotificationAction(
     throw new Error('Could not send notification.');
   }
 }
-
-export { generateAccessCodesAction, createCourseAction, submitExamAction };

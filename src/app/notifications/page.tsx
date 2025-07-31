@@ -19,7 +19,7 @@ import { useAuth } from '@/app/auth-provider';
 interface Notification {
   id: string;
   title: string;
-  description: string;
+  message: string;
   createdAt: {
     seconds: number;
     nanoseconds: number;
@@ -161,7 +161,7 @@ export default function NotificationsPage() {
                         <Badge variant="outline" className="mt-1">{notification.target.courseTitle}</Badge>
                      )}
                     <p className="text-sm text-muted-foreground mt-1">
-                        {notification.description}
+                        {notification.message}
                     </p>
                     <p className="text-xs text-muted-foreground mt-2">
                          {new Date(notification.createdAt.seconds * 1000).toLocaleString()}
