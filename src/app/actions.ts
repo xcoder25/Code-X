@@ -31,7 +31,6 @@ export async function sendMessageAction(
     title,
     body,
     targetType,
-    read: false,
     createdAt: serverTimestamp(),
   };
 

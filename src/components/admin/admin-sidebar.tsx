@@ -111,8 +111,8 @@ export default function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/notifications')}>
-              <Link href="/admin/notifications">
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/messages')}>
+              <Link href="/admin/messages">
                 <MessageSquare />
                 <span>Messages</span>
               </Link>
