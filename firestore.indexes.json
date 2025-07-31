@@ -2,11 +2,25 @@
 {
   "indexes": [
     {
-      "collectionGroup": "notifications",
+      "collectionGroup": "in-app-messages",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "target.userId",
+          "fieldPath": "userIds",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "in-app-messages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "courseId",
           "order": "ASCENDING"
         },
         {
