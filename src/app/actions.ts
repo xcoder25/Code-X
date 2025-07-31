@@ -29,13 +29,13 @@ export async function sendNotificationAction(
       // Send notification to multiple specific users
       const batch = writeBatch(db);
       userIds.forEach(userId => {
-        const notifRef = doc(collection(db, 'notifications')); // ✅ auto-generates ID
+        const notifRef = doc(collection(db, 'notifications')); // auto-generates ID
         batch.set(notifRef, {
           title,
           description: message,
           createdAt: serverTimestamp(),
           readBy: [],
-          type: 'announcement',
+          type: 'announcement', // Or a more specific type like 'direct_message'
           target: {
             type: 'user',
             userId,
@@ -51,6 +51,8 @@ export async function sendNotificationAction(
         if (courseDoc.exists()) {
           target.courseId = courseId;
           target.courseTitle = courseDoc.data().title;
+        } else {
+            throw new Error('Course not found.');
         }
       }
 
