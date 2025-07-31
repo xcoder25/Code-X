@@ -13,19 +13,6 @@ import {
 import { z } from 'zod';
 import { sendNotificationFormSchema } from '@/app/schema';
 
-// This file is re-exporting from a generated file.
-// We need to keep this file to avoid breaking other parts of the app.
-import {
-  generateAccessCodesAction as genAccessCodes,
-  createCourseAction as createCourse,
-  submitExamAction as submitExam,
-} from './actions.js';
-
-export const generateAccessCodesAction = genAccessCodes;
-export const createCourseAction = createCourse;
-export const submitExamAction = submitExam;
-
-
 // Zod inferred type
 export async function sendNotificationAction(
   input: z.infer<typeof sendNotificationFormSchema>,
