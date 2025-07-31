@@ -27,8 +27,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Loader2, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { sendNotificationAction } from '@/app/actions';
-
+import { sendMessageAction } from '@/app/actions';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
@@ -36,8 +35,21 @@ import { db } from '@/lib/firebase';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { sendNotificationFormSchema } from '@/app/schema';
 
+const sendMessageFormSchema = z.object({
+  title: z.string().min(1, 'Title is required.'),
+  body: z.string().min(1, 'Body is required.'),
+  targetType: z.enum(['general', 'course', 'user']),
+  courseId: z.string().optional(),
+  userIds: z.array(z.string()).optional(),
+}).refine(data => {
+  if (data.targetType === 'course') return !!data.courseId;
+  if (data.targetType === 'user') return data.userIds && data.userIds.length > 0;
+  return true;
+}, {
+  message: 'A selection is required for this target type.',
+  path: ['courseId'],
+});
 
 interface Course {
   id: string;
@@ -53,15 +65,16 @@ interface User {
 
 export default function AdminNotificationsPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof sendNotificationFormSchema>>({
-    resolver: zodResolver(sendNotificationFormSchema),
+  const form = useForm<z.infer<typeof sendMessageFormSchema>>({
+    resolver: zodResolver(sendMessageFormSchema),
     defaultValues: {
       title: '',
-      message: '',
+      body: '',
       targetType: 'general',
       courseId: '',
       userIds: [],
@@ -75,43 +88,59 @@ export default function AdminNotificationsPage() {
 
   useEffect(() => {
     async function fetchCourses() {
-      const coursesQuery = query(collection(db, 'courses'), orderBy('title'));
-      const querySnapshot = await getDocs(coursesQuery);
-      const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
-      setCourses(coursesData);
+      setIsFetching(true);
+      try {
+        const coursesQuery = query(collection(db, 'courses'), orderBy('title'));
+        const querySnapshot = await getDocs(coursesQuery);
+        const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+        setCourses(coursesData);
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+        toast({ variant: 'destructive', title: 'Error fetching courses' });
+      } finally {
+        setIsFetching(false);
+      }
     }
 
     async function fetchUsers() {
-      const usersQuery = query(collection(db, 'users'), orderBy('displayName'));
-      const querySnapshot = await getDocs(usersQuery);
-      const usersData = querySnapshot.docs.map(doc => ({ ...doc.data() } as User));
-      setUsers(usersData);
+      setIsFetching(true);
+      try {
+        const usersQuery = query(collection(db, 'users'), orderBy('displayName'));
+        const querySnapshot = await getDocs(usersQuery);
+        const usersData = querySnapshot.docs.map(doc => ({ ...doc.data() } as User));
+        setUsers(usersData);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        toast({ variant: 'destructive', title: 'Error fetching users' });
+      } finally {
+        setIsFetching(false);
+      }
     }
 
     if (targetType === 'course') fetchCourses();
     else if (targetType === 'user') fetchUsers();
-  }, [targetType]);
+  }, [targetType, toast]);
 
-  const onSubmit = async (values: z.infer<typeof sendNotificationFormSchema>) => {
+  const onSubmit = async (values: z.infer<typeof sendMessageFormSchema>) => {
     setIsLoading(true);
     try {
-      await sendNotificationAction(values);
+      await sendMessageAction(values);
       toast({
-        title: 'Notification Sent!',
-        description: 'Your message has been sent.',
+        title: 'Message Sent!',
+        description: 'Your message has been sent successfully.',
       });
       form.reset({
         title: '',
-        message: '',
+        body: '',
         targetType: 'general',
         courseId: '',
         userIds: [],
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to send notification. Please try again.',
+        description: error.message || 'Failed to send message. Please try again.',
       });
     } finally {
       setIsLoading(false);
@@ -120,9 +149,9 @@ export default function AdminNotificationsPage() {
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
-      <h2 className="text-3xl font-bold tracking-tight">Send Notification</h2>
+      <h2 className="text-3xl font-bold tracking-tight">Send Message</h2>
       <p className="text-muted-foreground">
-        Compose and send a broadcast message to all students or a specific course.
+        Compose and send a message to all users, a course, or specific people.
       </p>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -130,7 +159,7 @@ export default function AdminNotificationsPage() {
             <CardHeader>
               <CardTitle>Audience</CardTitle>
               <CardDescription>
-                Choose who should receive this notification.
+                Choose who should receive this message.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -153,19 +182,19 @@ export default function AdminNotificationsPage() {
                           <FormControl>
                             <RadioGroupItem value="general" />
                           </FormControl>
-                          <FormLabel className="font-normal">General Announcement (All Users)</FormLabel>
+                          <FormLabel className="font-normal">General Announcement</FormLabel>
                         </FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0">
                           <FormControl>
                             <RadioGroupItem value="course" />
                           </FormControl>
-                          <FormLabel className="font-normal">Course-specific Announcement</FormLabel>
+                          <FormLabel className="font-normal">Course-specific</FormLabel>
                         </FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0">
                           <FormControl>
                             <RadioGroupItem value="user" />
                           </FormControl>
-                          <FormLabel className="font-normal">Direct Message to a User</FormLabel>
+                          <FormLabel className="font-normal">User-specific</FormLabel>
                         </FormItem>
                       </RadioGroup>
                     </FormControl>
@@ -182,10 +211,10 @@ export default function AdminNotificationsPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Select Course</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isFetching}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select a course to notify" />
+                              <SelectValue placeholder={isFetching ? 'Loading courses...' : 'Select a course'} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -212,12 +241,10 @@ export default function AdminNotificationsPage() {
                         <FormItem>
                            <div className="mb-4">
                             <FormLabel className="text-base">Select Users</FormLabel>
-                            <p className="text-sm text-muted-foreground">
-                              Select the users you want to send a direct message to.
-                            </p>
-                          </div>
+                           </div>
                           <ScrollArea className="h-72 w-full rounded-md border">
                             <div className="p-4">
+                              {isFetching && <p>Loading users...</p>}
                               {users.map((user) => (
                                 <FormField
                                   key={user.uid}
@@ -248,7 +275,7 @@ export default function AdminNotificationsPage() {
                                                 <AvatarImage src={user.photoURL} alt={user.displayName} data-ai-hint="avatar person" />
                                                 <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
                                             </Avatar>
-                                            <FormLabel className="font-normal">
+                                            <FormLabel className="font-normal cursor-pointer">
                                             {user.displayName || user.email}
                                             </FormLabel>
                                         </div>
@@ -271,9 +298,6 @@ export default function AdminNotificationsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Message Details</CardTitle>
-              <CardDescription>
-                The message will appear in the targeted student's notification inbox.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <FormField
@@ -281,7 +305,7 @@ export default function AdminNotificationsPage() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Notification Title</FormLabel>
+                    <FormLabel>Title</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., New Course Available!" {...field} />
                     </FormControl>
@@ -291,10 +315,10 @@ export default function AdminNotificationsPage() {
               />
               <FormField
                 control={form.control}
-                name="message"
+                name="body"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Message</FormLabel>
+                    <FormLabel>Body</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Describe the announcement or update in detail."
@@ -314,7 +338,7 @@ export default function AdminNotificationsPage() {
                 ) : (
                   <Send className="mr-2 h-4 w-4" />
                 )}
-                Send Notification
+                Send Message
               </Button>
             </CardFooter>
           </Card>

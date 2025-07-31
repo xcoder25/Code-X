@@ -11,65 +11,55 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { z } from 'zod';
-import { sendNotificationFormSchema } from '@/app/schema';
-import { exams } from '@/lib/exam-data';
 import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/analyze-code';
 import { chatWithElara, ChatWithElaraOutput, ChatWithElaraInput } from '@/ai/flows/ai-coach-flow';
 
-export async function sendNotificationAction(
-  input: z.infer<typeof sendNotificationFormSchema>,
+const sendMessageFormSchema = z.object({
+  title: z.string().min(1, 'Title is required.'),
+  body: z.string().min(1, 'Body is required.'),
+  targetType: z.enum(['general', 'course', 'user']),
+  courseId: z.string().optional(),
+  userIds: z.array(z.string()).optional(),
+});
+
+export async function sendMessageAction(
+  input: z.infer<typeof sendMessageFormSchema>,
 ): Promise<void> {
-  const parsed = sendNotificationFormSchema.safeParse(input);
+  const parsed = sendMessageFormSchema.safeParse(input);
   if (!parsed.success) {
     const errorMessage = parsed.error.issues.map(issue => issue.message).join(', ');
-    console.error('Zod validation failed:', errorMessage);
-    throw new Error(`Invalid notification input: ${errorMessage}`);
+    throw new Error(`Invalid input: ${errorMessage}`);
   }
 
-  const { title, message, targetType, courseId, userIds } = parsed.data;
+  const { title, body, targetType, courseId, userIds } = parsed.data;
 
+  const messagePayload: any = {
+    title,
+    body,
+    targetType,
+    createdAt: serverTimestamp(),
+  };
+
+  if (targetType === 'course') {
+    if (!courseId) throw new Error('Course ID is required for course-specific messages.');
+    const courseDocRef = doc(db, 'courses', courseId);
+    const courseDoc = await getDoc(courseDocRef);
+    if (!courseDoc.exists()) throw new Error('Course not found.');
+    messagePayload.courseId = courseId;
+    messagePayload.courseName = courseDoc.data().title || 'Untitled Course';
+  } else if (targetType === 'user') {
+    if (!userIds || userIds.length === 0) throw new Error('At least one user ID is required for user-specific messages.');
+    messagePayload.userIds = userIds;
+  }
+  
   try {
-    if (targetType === 'user' && userIds && userIds.length > 0) {
-      const batch = writeBatch(db);
-      userIds.forEach(userId => {
-        const notifRef = doc(collection(db, 'notifications'));
-        batch.set(notifRef, {
-          title,
-          message,
-          createdAt: serverTimestamp(),
-          target: {
-            type: 'user',
-            userId,
-          },
-        });
-      });
-      await batch.commit();
-    } else {
-      const target: any = { type: targetType };
-      if (targetType === 'course' && courseId) {
-        const courseDocRef = doc(db, 'courses', courseId);
-        const courseDoc = await getDoc(courseDocRef);
-        if (courseDoc.exists()) {
-          const courseData = courseDoc.data();
-          target.courseId = courseId;
-          target.courseTitle = courseData.title || 'Course'; 
-        } else {
-            throw new Error('Course not found.');
-        }
-      }
-
-      await addDoc(collection(db, 'notifications'), {
-        title,
-        message,
-        createdAt: serverTimestamp(),
-        target,
-      });
-    }
+    await addDoc(collection(db, 'in-app-messages'), messagePayload);
   } catch (error) {
-    console.error('Error sending notification:', error);
-    throw new Error('Could not send notification.');
+    console.error('Error sending message:', error);
+    throw new Error('Could not send message.');
   }
 }
+
 
 const createCourseFormSchema = z.object({
   title: z.string().min(3),
