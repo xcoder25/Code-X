@@ -49,7 +49,7 @@ interface User {
   photoURL?: string;
 }
 
-export default function AdminNotificationsPage() {
+export default function AdminMessagesPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
