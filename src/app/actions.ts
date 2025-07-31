@@ -12,6 +12,11 @@ import {
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { sendNotificationFormSchema } from '@/app/schema';
+import {
+  generateAccessCodesAction,
+  createCourseAction,
+  submitExamAction,
+} from '@/app/actions';
 
 // Zod inferred type
 export async function sendNotificationAction(
@@ -19,7 +24,10 @@ export async function sendNotificationAction(
 ): Promise<void> {
   const parsed = sendNotificationFormSchema.safeParse(input);
   if (!parsed.success) {
-    throw new Error('Invalid notification input');
+    // This provides more detailed error messages in the console.
+    const errorMessage = parsed.error.issues.map(issue => issue.message).join(', ');
+    console.error('Zod validation failed:', errorMessage);
+    throw new Error(`Invalid notification input: ${errorMessage}`);
   }
 
   const { title, message, targetType, courseId, userIds } = parsed.data;
@@ -34,7 +42,7 @@ export async function sendNotificationAction(
           title,
           description: message,
           createdAt: serverTimestamp(),
-          readBy: [],
+          read: false, // Explicitly set read status
           type: 'announcement', // Or a more specific type like 'direct_message'
           target: {
             type: 'user',
@@ -47,10 +55,13 @@ export async function sendNotificationAction(
       // Send a general or course notification
       const target: any = { type: targetType };
       if (targetType === 'course' && courseId) {
-        const courseDoc = await getDoc(doc(db, 'courses', courseId));
+        const courseDocRef = doc(db, 'courses', courseId);
+        const courseDoc = await getDoc(courseDocRef);
         if (courseDoc.exists()) {
+          const courseData = courseDoc.data();
           target.courseId = courseId;
-          target.courseTitle = courseDoc.data().title;
+          // CORRECTED: Access the title property from the course data.
+          target.courseTitle = courseData.title || 'Course'; // Fallback added
         } else {
             throw new Error('Course not found.');
         }
@@ -60,7 +71,7 @@ export async function sendNotificationAction(
         title,
         description: message,
         createdAt: serverTimestamp(),
-        readBy: [],
+        read: false, // Explicitly set read status
         type: 'announcement',
         target,
       });
@@ -70,3 +81,5 @@ export async function sendNotificationAction(
     throw new Error('Could not send notification.');
   }
 }
+
+export { generateAccessCodesAction, createCourseAction, submitExamAction };
