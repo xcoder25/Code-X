@@ -1,10 +1,43 @@
-
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /notifications/{docId} {
-      allow create: if request.auth != null;
-      allow read: if true;
+    // Helper function to check if a user is an admin
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Admins have full access to everything
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Public read access for courses
+    match /courses/{courseId} {
+      allow get: if true;
+      allow list: if true;
+    }
+    
+    // Users can read other user profiles, but only write to their own
+    match /users/{userId} {
+      allow get: if true;
+      allow list: if request.auth != null;
+      allow create, update, delete: if request.auth.uid == userId;
+    }
+    
+    // Anyone authenticated can create notifications. 
+    // Reading is handled by the admin rule and specific queries.
+    match /notifications/{notificationId} {
+        allow create: if request.auth != null;
+        // Read access is handled by the global admin rule. 
+        // Client-side queries should be secured by rules on who can query what.
+    }
+    
+    // Allow logged-in users to redeem access codes.
+    // Write access is handled by the admin rule.
+    match /accessCodes/{codeId} {
+        allow get: if request.auth != null;
+        allow list: if request.auth != null;
     }
   }
 }
