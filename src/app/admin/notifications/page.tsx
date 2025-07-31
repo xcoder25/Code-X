@@ -36,22 +36,8 @@ import { db } from '@/lib/firebase';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { sendNotificationFormSchema } from '@/app/schema';
 
-
-const notificationFormSchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters.'),
-  message: z.string().min(10, 'Message must be at least 10 characters.'),
-  targetType: z.enum(['general', 'course', 'user'], { required_error: 'You must select a target audience.' }),
-  courseId: z.string().optional(),
-  userIds: z.array(z.string()).optional(),
-}).refine(data => {
-  if (data.targetType === 'course') return !!data.courseId;
-  if (data.targetType === 'user') return !!data.userIds && data.userIds.length > 0;
-  return true;
-}, {
-  message: 'A selection is required for this target type.',
-  path: ['courseId'], // This path is a bit of a misnomer now, but keeps error logic simple
-});
 
 interface Course {
   id: string;
@@ -71,8 +57,8 @@ export default function AdminNotificationsPage() {
   const [users, setUsers] = useState<User[]>([]);
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof notificationFormSchema>>({
-    resolver: zodResolver(notificationFormSchema),
+  const form = useForm<z.infer<typeof sendNotificationFormSchema>>({
+    resolver: zodResolver(sendNotificationFormSchema),
     defaultValues: {
       title: '',
       message: '',
@@ -106,7 +92,7 @@ export default function AdminNotificationsPage() {
     else if (targetType === 'user') fetchUsers();
   }, [targetType]);
 
-  const onSubmit = async (values: z.infer<typeof notificationFormSchema>) => {
+  const onSubmit = async (values: z.infer<typeof sendNotificationFormSchema>) => {
     setIsLoading(true);
     try {
       await sendNotificationAction(values);
