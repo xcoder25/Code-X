@@ -1,10 +1,10 @@
+import type { Timestamp } from 'firebase/firestore';
+
 export interface ChatMessage {
   id: string;
   text: string;
   uid: string;
   photoURL: string | null;
-  createdAt: {
-    seconds: number;
-    nanoseconds: number;
-  };
+  createdAt: Timestamp;
+  displayName?: string | null;
 }
