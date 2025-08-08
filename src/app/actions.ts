@@ -15,6 +15,7 @@ import {
   Timestamp,
   increment,
   setDoc,
+  updateDoc,
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/analyze-code';
@@ -72,12 +73,6 @@ const createCourseFormSchema = z.object({
   title: z.string().min(3),
   description: z.string().min(10),
   tags: z.string(),
-  modules: z.array(z.object({
-    name: z.string(),
-    type: z.string(),
-    size: z.number(),
-    url: z.string().url(),
-  })).optional(),
 });
 
 export async function createCourseAction(
@@ -94,10 +89,35 @@ export async function createCourseAction(
     enrollments: 0,
     status: 'Draft',
     tags: parsed.data.tags.split(',').map(tag => tag.trim()),
+    modules: [],
   });
 
   return { id: courseRef.id };
 }
+
+const updateCourseModulesSchema = z.object({
+    courseId: z.string(),
+    modules: z.array(z.object({
+        name: z.string(),
+        type: z.string(),
+        size: z.number(),
+        url: z.string().url(),
+    })),
+});
+
+export async function updateCourseModulesAction(
+    data: z.infer<typeof updateCourseModulesSchema>
+) {
+    const parsed = updateCourseModulesSchema.safeParse(data);
+    if (!parsed.success) {
+        throw new Error('Invalid module data.');
+    }
+    const courseRef = doc(db, 'courses', parsed.data.courseId);
+    await updateDoc(courseRef, {
+        modules: parsed.data.modules,
+    });
+}
+
 
 const generateAccessCodesSchema = z.object({
   courseId: z.string().min(1, "Course is required."),

@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { createCourseAction } from '@/app/actions';
+import { createCourseAction, updateCourseModulesAction } from '@/app/actions';
 import { uploadBytes, getDownloadURL, ref } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
 
@@ -56,11 +56,21 @@ export default function CreateCourseForm() {
     setLoading(true);
 
     try {
-      let uploadedModules: { name: string, type: string, size: number, url: string }[] = [];
+      // 1. Create the course document immediately without modules
+      const { id: courseId } = await createCourseAction(data);
+      
+      toast({
+        title: 'Success!',
+        description: 'Course created. File uploads will continue in the background.',
+      });
 
+      // 2. Redirect immediately
+      router.push(`/admin/courses`);
+
+      // 3. Handle file uploads in the background
       if (files.length > 0) {
         const uploads = files.map(async (file) => {
-          const storageRef = ref(storage, `course_files/${Date.now()}_${file.name}`);
+          const storageRef = ref(storage, `course_files/${courseId}/${file.name}`);
           await uploadBytes(storageRef, file);
           const url = await getDownloadURL(storageRef);
           return {
@@ -70,22 +80,18 @@ export default function CreateCourseForm() {
             url: url,
           };
         });
-
-        uploadedModules = await Promise.all(uploads);
+        
+        const uploadedModules = await Promise.all(uploads);
+        
+        // 4. Update the course with the module data once uploads are complete
+        await updateCourseModulesAction({ courseId, modules: uploadedModules });
+        
+         toast({
+            title: 'Uploads Complete!',
+            description: `All files for "${data.title}" have been uploaded.`,
+        });
       }
 
-      const courseData = {
-        ...data,
-        modules: uploadedModules,
-      };
-
-      const { id } = await createCourseAction(courseData);
-
-      toast({
-        title: 'Success!',
-        description: 'Course created successfully!',
-      });
-      router.push(`/admin/courses`);
     } catch (error: any) {
       console.error(error);
       toast({
@@ -93,8 +99,7 @@ export default function CreateCourseForm() {
         title: 'Error',
         description: error.message || 'Failed to create course.',
       });
-    } finally {
-      setLoading(false);
+      setLoading(false); // Only set loading to false on error
     }
   };
   
