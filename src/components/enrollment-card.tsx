@@ -16,16 +16,15 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { redeemAccessCodeAction } from '@/app/actions';
 
 interface EnrollmentCardProps {
     courseId: string;
+    userId: string;
     onEnrollmentSuccess: () => void;
 }
 
-// Mock valid access codes for demonstration
-const VALID_CODES = ['BOOTCAMP-2024-S1', 'FREE-ACCESS-123'];
-
-export default function EnrollmentCard({ courseId, onEnrollmentSuccess }: EnrollmentCardProps) {
+export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }: EnrollmentCardProps) {
   const [accessCode, setAccessCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -42,24 +41,26 @@ export default function EnrollmentCard({ courseId, onEnrollmentSuccess }: Enroll
     
     setIsLoading(true);
     
-    // Simulate API call to validate the access code
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    if (VALID_CODES.includes(accessCode)) {
+    try {
+        await redeemAccessCodeAction({
+            accessCode,
+            courseId,
+            userId
+        });
         toast({
             title: 'Success!',
             description: 'Access code redeemed. You are now enrolled in the course.',
         });
         onEnrollmentSuccess();
-    } else {
+    } catch (error: any) {
         toast({
             variant: 'destructive',
-            title: 'Invalid Code',
-            description: 'The access code you entered is not valid. Please try again.',
+            title: 'Enrollment Failed',
+            description: error.message || 'The access code you entered is not valid. Please try again.',
         });
+    } finally {
+        setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
   
   const handlePurchase = () => {

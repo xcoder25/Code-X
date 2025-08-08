@@ -14,9 +14,10 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, BookOpenCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/app/auth-provider';
 
 interface Course {
   id: string;
@@ -27,29 +28,39 @@ interface Course {
   status: 'in-progress' | 'not-started';
 }
 
-
 export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
   
-  // In a real app, this would come from the user's data.
-  const enrolledCourseIds: string[] = [];
-
   useEffect(() => {
     const coursesQuery = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(coursesQuery, (snapshot) => {
-        const coursesData = snapshot.docs.map(doc => {
-            const data = doc.data();
-            const isEnrolled = enrolledCourseIds.includes(data.id);
+    const unsubscribe = onSnapshot(coursesQuery, async (snapshot) => {
+        const coursesDataPromises = snapshot.docs.map(async (docSnapshot) => {
+            const data = docSnapshot.data();
+            let isEnrolled = false;
+            let progress = 0;
+
+            if (user) {
+                const enrollmentDocRef = doc(db, 'users', user.uid, 'enrollments', docSnapshot.id);
+                const enrollmentDoc = await getDoc(enrollmentDocRef);
+                if (enrollmentDoc.exists()) {
+                    isEnrolled = true;
+                    progress = enrollmentDoc.data().progress || 0;
+                }
+            }
+            
             return {
-                id: data.id,
+                id: docSnapshot.id,
                 title: data.title,
                 description: data.description,
                 tags: data.tags || [],
-                progress: isEnrolled ? 35 : 0, // Mock progress
+                progress: progress,
                 status: isEnrolled ? 'in-progress' : 'not-started',
-            }
+            } as Course;
         });
+
+        const coursesData = await Promise.all(coursesDataPromises);
         setCourses(coursesData);
         setLoading(false);
     }, (error) => {
@@ -58,7 +69,7 @@ export default function CoursesPage() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
 
   return (

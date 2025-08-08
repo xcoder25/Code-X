@@ -79,13 +79,13 @@ export default function CreateCourseForm() {
         modules: uploadedModules,
       };
 
-      await createCourseAction(courseData);
+      const { id } = await createCourseAction(courseData);
 
       toast({
         title: 'Success!',
         description: 'Course created successfully!',
       });
-      router.push('/admin/courses');
+      router.push(`/admin/courses`);
     } catch (error: any) {
       console.error(error);
       toast({

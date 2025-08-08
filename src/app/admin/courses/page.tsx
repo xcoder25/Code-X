@@ -42,7 +42,7 @@ export default function AdminCoursesPage() {
   useEffect(() => {
     const coursesQuery = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(coursesQuery, (snapshot) => {
-        const coursesData = snapshot.docs.map(doc => doc.data() as Course);
+        const coursesData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Course);
         setCourses(coursesData);
         setLoading(false);
     }, (error) => {

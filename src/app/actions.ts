@@ -9,6 +9,12 @@ import {
   getDoc,
   serverTimestamp,
   writeBatch,
+  query,
+  where,
+  getDocs,
+  Timestamp,
+  increment,
+  setDoc,
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/analyze-code';
@@ -82,13 +88,15 @@ export async function createCourseAction(
     throw new Error('Invalid course data.');
   }
 
-  await addDoc(collection(db, 'courses'), {
+  const courseRef = await addDoc(collection(db, 'courses'), {
     ...parsed.data,
     createdAt: serverTimestamp(),
     enrollments: 0,
     status: 'Draft',
     tags: parsed.data.tags.split(',').map(tag => tag.trim()),
   });
+
+  return { id: courseRef.id };
 }
 
 const generateAccessCodesSchema = z.object({
@@ -146,6 +154,75 @@ export async function generateAccessCodesAction(
 
   return { success: true, count: quantity };
 }
+
+
+const redeemAccessCodeSchema = z.object({
+  accessCode: z.string().min(1, "Access code is required."),
+  courseId: z.string().min(1, "Course ID is required."),
+  userId: z.string().min(1, "User ID is required."),
+});
+
+export async function redeemAccessCodeAction(
+    input: z.infer<typeof redeemAccessCodeSchema>
+) {
+    const parsed = redeemAccessCodeSchema.safeParse(input);
+    if (!parsed.success) {
+        throw new Error('Invalid input for redeeming access code.');
+    }
+    
+    const { accessCode, courseId, userId } = parsed.data;
+    
+    // Check if user is already enrolled
+    const enrollmentDocRef = doc(db, 'users', userId, 'enrollments', courseId);
+    const enrollmentDoc = await getDoc(enrollmentDocRef);
+    if (enrollmentDoc.exists()) {
+        throw new Error("You are already enrolled in this course.");
+    }
+
+    const accessCodesRef = collection(db, 'accessCodes');
+    const q = query(accessCodesRef, where("code", "==", accessCode));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        throw new Error('Invalid access code.');
+    }
+
+    const codeDoc = querySnapshot.docs[0];
+    const codeData = codeDoc.data();
+    
+    if (codeData.courseId !== courseId) {
+        throw new Error('This code is not valid for this course.');
+    }
+    
+    if (codeData.status !== 'Active') {
+        throw new Error('This access code is not active.');
+    }
+    
+    if (codeData.redemptions >= codeData.maxRedemptions) {
+        throw new Error('This access code has reached its redemption limit.');
+    }
+
+    const batch = writeBatch(db);
+
+    // Increment redemption count on the code
+    batch.update(codeDoc.ref, { redemptions: increment(1) });
+    
+    // Create an enrollment document for the user
+    batch.set(enrollmentDocRef, {
+        courseId: courseId,
+        enrolledAt: serverTimestamp(),
+        progress: 0,
+    });
+    
+    // Increment enrollment count on the course
+    const courseDocRef = doc(db, 'courses', courseId);
+    batch.update(courseDocRef, { enrollments: increment(1) });
+
+    await batch.commit();
+
+    return { success: true };
+}
+
 
 const submitExamSchema = z.object({
   examId: z.string(),

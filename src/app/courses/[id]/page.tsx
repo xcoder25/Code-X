@@ -17,9 +17,11 @@ import Link from 'next/link';
 import ChallengeInterface from '@/components/challenge-interface';
 import LearningPathGenerator from '@/components/learning-path-generator';
 import EnrollmentCard from '@/components/enrollment-card';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/app/auth-provider';
+
 
 // Mock challenges data
 const challenges: { [key: string]: any } = {
@@ -57,6 +59,7 @@ function getLessonIcon(type: string) {
 }
 
 export default function CourseDetailPage({ params }: { params: { id: string } }) {
+  const { user } = useAuth();
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,6 +100,18 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     fetchCourse();
   }, [params.id]);
   
+  useEffect(() => {
+    if (!user || !params.id) return;
+    
+    const enrollmentDocRef = doc(db, 'users', user.uid, 'enrollments', params.id);
+    const unsubscribe = onSnapshot(enrollmentDocRef, (doc) => {
+        setIsEnrolled(doc.exists());
+    });
+    
+    return () => unsubscribe();
+  }, [user, params.id]);
+
+
   const challengeId = course?.modules?.flatMap((m: any) => m.lessons).find((l: any) => l.type === 'challenge')?.id;
   const challenge = challengeId ? challenges[challengeId] : null;
 
@@ -152,9 +167,9 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
             ))}
             </div>
         </div>
-        {!isEnrolled ? (
-          <EnrollmentCard courseId={course.id} onEnrollmentSuccess={handleEnrollmentSuccess} />
-        ) : (
+        {!isEnrolled && user ? (
+          <EnrollmentCard courseId={course.id} userId={user.uid} onEnrollmentSuccess={handleEnrollmentSuccess} />
+        ) : isEnrolled && (
           <Button asChild size="lg">
               <Link href="/dashboard">
                   Return to Dashboard
