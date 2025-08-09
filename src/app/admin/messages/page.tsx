@@ -65,6 +65,8 @@ export default function AdminMessagesPage() {
       targetType: 'general',
       courseId: '',
       userIds: [],
+      senderId: '',
+      senderName: '',
     },
   });
   
@@ -72,6 +74,7 @@ export default function AdminMessagesPage() {
     if (adminUser) {
         form.reset({
             ...form.getValues(),
+            targetType: 'general',
             senderId: adminUser.uid,
             senderName: adminUser.displayName || 'Admin',
         });

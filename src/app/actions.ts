@@ -43,23 +43,29 @@ export async function sendMessageAction(
     createdAt: serverTimestamp(),
   };
 
-  if (targetType === 'course') {
-    if (!courseId) throw new Error('Course ID is required for course-specific messages.');
-    const courseDocRef = doc(db, 'courses', courseId);
-    const courseDoc = await getDoc(courseDocRef);
-    if (!courseDoc.exists()) throw new Error('Course not found.');
-    
-    const courseData = courseDoc.data();
-    messagePayload.courseId = courseId;
-    messagePayload.courseName = courseData?.title || 'Untitled Course';
-
-  } else if (targetType === 'user') {
-    if (!userIds || userIds.length === 0) throw new Error('At least one user ID is required for user-specific messages.');
-    messagePayload.userIds = userIds;
-  }
-  
   try {
+    if (targetType === 'course') {
+        if (!courseId) throw new Error('Course ID is required for course-specific messages.');
+        const courseDocRef = doc(db, 'courses', courseId);
+        const courseDoc = await getDoc(courseDocRef);
+
+        if (!courseDoc.exists()) {
+            throw new Error('Course not found.');
+        }
+        
+        const courseData = courseDoc.data();
+        messagePayload.courseId = courseId;
+        messagePayload.courseName = courseData?.title || 'Untitled Course';
+
+    } else if (targetType === 'user') {
+        if (!userIds || userIds.length === 0) {
+            throw new Error('At least one user ID is required for user-specific messages.');
+        }
+        messagePayload.userIds = userIds;
+    }
+  
     await addDoc(collection(db, 'in-app-messages'), messagePayload);
+
   } catch (error) {
     console.error('Error sending message:', error);
     throw new Error('Could not send message.');
