@@ -9,7 +9,7 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, getDocs, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -28,6 +28,7 @@ interface Message {
   targetType: 'general' | 'course' | 'user';
   courseId?: string;
   courseName?: string;
+  userIds?: string[];
 }
 
 const AudienceTag = ({ message }: { message: Message }) => {
@@ -67,9 +68,6 @@ export default function InboxPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  
-  // In a real app, this would come from the user's profile in the database
-  const userEnrolledCourseIds: string[] = []; 
 
    useEffect(() => {
     if (!user) {
@@ -77,37 +75,66 @@ export default function InboxPage() {
         return;
     };
     
-    // This query is intentionally broad for this example. 
-    // A more complex query would be needed to fetch messages based on user's courses,
-    // which requires creating composite indexes in Firestore.
-    const messagesQuery = query(
-        collection(db, "in-app-messages"),
-        orderBy("createdAt", "desc")
-    );
+    // 1. Fetch user's enrolled courses
+    const getEnrolledCourses = async () => {
+        const enrollmentsQuery = query(collection(db, 'users', user.uid, 'enrollments'));
+        const querySnapshot = await getDocs(enrollmentsQuery);
+        return querySnapshot.docs.map(doc => doc.id);
+    };
 
-    const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
-      const messagesData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Message[];
-      
-      // Client-side filtering to show relevant messages to the user
-      const filteredMessages = messagesData.filter(msg => {
-          if (msg.targetType === 'general') return true;
-          if (msg.targetType === 'course' && msg.courseId && userEnrolledCourseIds.includes(msg.courseId)) return true;
-          if (msg.targetType === 'user' && (msg as any).userIds && (msg as any).userIds.includes(user.uid)) return true;
-          return false;
-      })
+    const setupListener = async () => {
+        const userEnrolledCourseIds = await getEnrolledCourses();
+        
+        // 2. Construct queries
+        const generalQuery = query(
+            collection(db, "in-app-messages"), 
+            where("targetType", "==", "general")
+        );
+        
+        const userSpecificQuery = query(
+            collection(db, "in-app-messages"), 
+            where("userIds", "array-contains", user.uid)
+        );
 
-      setMessages(filteredMessages);
-      setLoading(false);
-    }, (error) => {
-        console.error("Error fetching messages:", error);
-        setMessages([]);
+        const courseSpecificQuery = userEnrolledCourseIds.length > 0 ? query(
+            collection(db, "in-app-messages"),
+            where("courseId", "in", userEnrolledCourseIds)
+        ) : null;
+        
+        // 3. Listen to all relevant queries
+        const unsubscribes = [
+            onSnapshot(generalQuery, (snapshot) => updateMessages(snapshot.docs)),
+            onSnapshot(userSpecificQuery, (snapshot) => updateMessages(snapshot.docs)),
+        ];
+
+        if (courseSpecificQuery) {
+             unsubscribes.push(onSnapshot(courseSpecificQuery, (snapshot) => updateMessages(snapshot.docs)));
+        }
+        
         setLoading(false);
-    });
+        
+        const allMessages: { [id: string]: Message } = {};
 
-    return () => unsubscribe();
+        function updateMessages(docs: any[]) {
+             docs.forEach(doc => {
+                 allMessages[doc.id] = { id: doc.id, ...doc.data() } as Message;
+             });
+
+             const sortedMessages = Object.values(allMessages).sort(
+                (a, b) => b.createdAt.seconds - a.createdAt.seconds
+             );
+
+             setMessages(sortedMessages);
+        }
+
+        return () => unsubscribes.forEach(unsub => unsub());
+    }
+
+    const unsubscribePromise = setupListener();
+
+    return () => {
+        unsubscribePromise.then(unsub => unsub && unsub());
+    };
   }, [user]);
 
   return (
