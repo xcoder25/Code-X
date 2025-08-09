@@ -70,16 +70,21 @@ export default function AdminMessagesPage() {
     },
   });
   
+  const getInitialFormValues = () => ({
+    title: '',
+    body: '',
+    targetType: 'general',
+    courseId: '',
+    userIds: [],
+    senderId: adminUser?.uid || '',
+    senderName: adminUser?.displayName || 'Admin',
+  });
+
   useEffect(() => {
     if (adminUser) {
-        form.reset({
-            ...form.getValues(),
-            targetType: 'general',
-            senderId: adminUser.uid,
-            senderName: adminUser.displayName || 'Admin',
-        });
+        form.reset(getInitialFormValues());
     }
-  }, [adminUser, form]);
+  }, [adminUser, form.reset]);
 
 
   const targetType = useWatch({
@@ -130,15 +135,7 @@ export default function AdminMessagesPage() {
         title: 'Notification Sent!',
         description: 'Your message has been sent successfully.',
       });
-      form.reset({
-        title: '',
-        body: '',
-        targetType: 'general',
-        courseId: '',
-        userIds: [],
-        senderId: adminUser?.uid,
-        senderName: adminUser?.displayName || 'Admin',
-      });
+      form.reset(getInitialFormValues());
     } catch (error: any) {
       toast({
         variant: 'destructive',

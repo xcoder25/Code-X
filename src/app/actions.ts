@@ -38,24 +38,25 @@ export async function sendMessageAction(
     title,
     body,
     targetType,
-    senderId: senderId || null,
-    senderName: senderName || 'Admin',
+    senderId: senderId,
+    senderName: senderName,
     createdAt: serverTimestamp(),
   };
 
   try {
     if (targetType === 'course') {
         if (!courseId) throw new Error('Course ID is required for course-specific messages.');
+        
         const courseDocRef = doc(db, 'courses', courseId);
         const courseDoc = await getDoc(courseDocRef);
 
-        if (!courseDoc.exists()) {
-            throw new Error('Course not found.');
+        if (courseDoc.exists()) {
+            const courseData = courseDoc.data();
+            messagePayload.courseId = courseId;
+            messagePayload.courseName = courseData?.title || 'Untitled Course';
+        } else {
+             throw new Error('Course not found.');
         }
-        
-        const courseData = courseDoc.data();
-        messagePayload.courseId = courseId;
-        messagePayload.courseName = courseData?.title || 'Untitled Course';
 
     } else if (targetType === 'user') {
         if (!userIds || userIds.length === 0) {
