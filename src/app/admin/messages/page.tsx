@@ -73,7 +73,7 @@ export default function AdminMessagesPage() {
             <CardHeader>
               <CardTitle>Notification Details</CardTitle>
               <CardDescription>
-                Write the message you want to broadcast below.
+                Write the message you want to broadcast below. It will be sent to all users.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

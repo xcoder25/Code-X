@@ -8,7 +8,7 @@ import {
   CardDescription,
   CardContent,
 } from '@/components/ui/card';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -54,8 +54,10 @@ export default function InboxPage() {
       return;
     }
 
+    // This query fetches all 'general' notifications for everyone.
     const messagesQuery = query(
       collection(db, 'in-app-messages'),
+      where('targetType', '==', 'general'),
       orderBy('createdAt', 'desc')
     );
 

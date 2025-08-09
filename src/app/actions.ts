@@ -28,6 +28,7 @@ export async function sendMessageAction(
 ): Promise<void> {
   const parsed = sendMessageFormSchema.safeParse(input);
   if (!parsed.success) {
+    // This should not happen if the form validation on the client-side is working.
     const errorMessage = parsed.error.issues.map(issue => issue.message).join(', ');
     throw new Error(`Invalid input: ${errorMessage}`);
   }
@@ -35,14 +36,17 @@ export async function sendMessageAction(
   const { title, body } = parsed.data;
 
   try {
+    // The only action is to create a general notification for all users.
     await addDoc(collection(db, 'in-app-messages'), {
         title,
         body,
-        targetType: 'general',
+        targetType: 'general', // Hardcoded to 'general' for simplicity
         createdAt: serverTimestamp(),
     });
   } catch (error) {
-    console.error('Error sending message:', error);
+    // Log the specific Firestore error to the server console for debugging.
+    console.error('Error sending message to Firestore:', error);
+    // Throw a generic error to the client.
     throw new Error('Could not send message.');
   }
 }
