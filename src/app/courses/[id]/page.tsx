@@ -12,7 +12,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { PlayCircle, FileText, CheckSquare, Bot, Video } from 'lucide-react';
+import { PlayCircle, FileText, CheckSquare, Bot, Video, File } from 'lucide-react';
 import Link from 'next/link';
 import ChallengeInterface from '@/components/challenge-interface';
 import LearningPathGenerator from '@/components/learning-path-generator';
@@ -21,7 +21,6 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
-
 
 // Mock challenges data
 const challenges: { [key: string]: any } = {
@@ -42,20 +41,14 @@ interface Course {
     modules: any[];
 }
 
-
 function getLessonIcon(type: string) {
-  switch (type) {
-    case 'video':
-      return <PlayCircle className="h-5 w-5" />;
-    case 'reading':
-      return <FileText className="h-5 w-5" />;
-    case 'challenge':
-      return <CheckSquare className="h-5 w-5" />;
-    case 'live':
-        return <Video className="h-5 w-5" />;
-    default:
-      return null;
-  }
+    if (type.startsWith('video/')) {
+        return <PlayCircle className="h-5 w-5" />;
+    }
+    if (type.startsWith('application/pdf')) {
+        return <FileText className="h-5 w-5" />;
+    }
+    return <File className="h-5 w-5" />;
 }
 
 export default function CourseDetailPage({ params }: { params: { id: string } }) {
@@ -80,11 +73,9 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                     description: data.description,
                     tags: data.tags || [],
                     modules: (data.modules || []).map((mod: any, index: number) => ({
+                        ...mod,
                         title: `Module ${index + 1}: ${mod.name.split('.').slice(0, -1).join('.')}`,
-                        lessons: [
-                            { title: `Introduction to ${mod.name}`, type: 'reading', completed: false },
-                            { title: 'Core Concepts', type: 'video', completed: false },
-                        ]
+                        completed: false
                     }))
                 });
             } else {
@@ -111,10 +102,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     return () => unsubscribe();
   }, [user, params.id]);
 
-
-  const challengeId = course?.modules?.flatMap((m: any) => m.lessons).find((l: any) => l.type === 'challenge')?.id;
-  const challenge = challengeId ? challenges[challengeId] : null;
-
   if (loading) {
     return (
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -128,6 +115,15 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                     </div>
                 </div>
                  <Skeleton className="h-48 w-full max-w-md" />
+            </div>
+             <div className="grid md:grid-cols-3 gap-6 mt-6">
+                <div className="md:col-span-2 space-y-4">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-64 w-full" />
+                </div>
+                <div>
+                     <Skeleton className="h-48 w-full" />
+                </div>
             </div>
         </main>
     )
@@ -169,13 +165,13 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         </div>
         {!isEnrolled && user ? (
           <EnrollmentCard courseId={course.id} userId={user.uid} onEnrollmentSuccess={handleEnrollmentSuccess} />
-        ) : isEnrolled && (
+        ) : isEnrolled ? (
           <Button asChild size="lg">
               <Link href="/dashboard">
                   Return to Dashboard
               </Link>
           </Button>
-        )}
+        ) : null}
       </div>
       
       {isEnrolled && course.modules.length > 0 && (
@@ -183,31 +179,23 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
             <div className="md:col-span-2">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Course Modules</CardTitle>
+                        <CardTitle>Course Materials</CardTitle>
                         <CardDescription>Follow the curriculum to complete the course.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Accordion type="single" collapsible defaultValue="item-0">
                             {course.modules.map((module: any, index: number) => (
-                            <AccordionItem value={`item-${index}`} key={module.title}>
-                                <AccordionTrigger className="text-lg font-semibold">{module.title}</AccordionTrigger>
+                            <AccordionItem value={`item-${index}`} key={module.url}>
+                                <AccordionTrigger className="text-lg font-semibold">{`Module ${index + 1}`}</AccordionTrigger>
                                 <AccordionContent>
                                 <ul className="space-y-3">
-                                    {module.lessons.map((lesson: any) => (
-                                    <li key={lesson.title} className={`flex items-center justify-between p-3 rounded-md transition-colors ${lesson.completed ? 'bg-accent/50 text-muted-foreground' : 'bg-muted/50'}`}>
+                                    <li className={`flex items-center justify-between p-3 rounded-md transition-colors ${module.completed ? 'bg-accent/50 text-muted-foreground' : 'bg-muted/50'}`}>
                                         <div className="flex items-center gap-3">
-                                            {getLessonIcon(lesson.type)}
-                                            <span className={`${lesson.completed ? 'line-through' : ''}`}>{lesson.title}</span>
+                                            {getLessonIcon(module.type)}
+                                            <a href={module.url} target="_blank" rel="noopener noreferrer" className={`hover:underline ${module.completed ? 'line-through' : ''}`}>{module.name}</a>
                                         </div>
-                                        {lesson.type === 'live' ? (
-                                            <Button asChild size="sm">
-                                                <Link href={lesson.meetingUrl} target="_blank">Join Session</Link>
-                                            </Button>
-                                        ) : (
-                                            <Badge variant={lesson.completed ? "secondary" : "default"}>{lesson.completed ? "Completed" : "Pending"}</Badge>
-                                        )}
+                                        <Badge variant={module.completed ? "secondary" : "default"}>{module.completed ? "Completed" : "Pending"}</Badge>
                                     </li>
-                                    ))}
                                 </ul>
                                 </AccordionContent>
                             </AccordionItem>
@@ -239,10 +227,6 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 </CardContent>
             </Card>
         )}
-
-      <div className="mt-8">
-         {isEnrolled && challenge && <ChallengeInterface challenge={challenge} />}
-      </div>
     </main>
   );
 }

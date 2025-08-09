@@ -1,3 +1,6 @@
+
+'use client';
+
 import Link from 'next/link';
 import {
   Card,
@@ -15,8 +18,6 @@ import {
   Calendar,
   ClipboardList,
   Target,
-  FileQuestion,
-  Video,
 } from 'lucide-react';
 import {
   Table,
@@ -27,28 +28,67 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/app/auth-provider';
+import { useState, useEffect } from 'react';
+import { collection, onSnapshot, query, getDocs, doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const courses: any[] = [];
-const assignments: any[] = [];
-const exams: any[] = [];
-const liveClasses: any[] = [];
+interface Course {
+  id: string;
+  title: string;
+  description: string;
+  progress: number;
+}
 
-
-const getStatusVariant = (status: string) => {
-  switch (status) {
-    case 'Pending':
-      return 'destructive';
-    case 'Graded':
-      return 'secondary';
-    case 'Upcoming':
-      return 'default';
-    default:
-      return 'outline';
-  }
-};
 
 export default function DashboardPage() {
-  const activeCourses = courses.filter((c) => c.status === 'in-progress');
+  const { user } = useAuth();
+  const [activeCourses, setActiveCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+        setLoading(false);
+        return;
+    };
+
+    const enrollmentsQuery = query(collection(db, 'users', user.uid, 'enrollments'));
+    const unsubscribe = onSnapshot(enrollmentsQuery, async (snapshot) => {
+        const enrolledCoursesPromises = snapshot.docs.map(async (enrollmentDoc) => {
+            const courseId = enrollmentDoc.id;
+            const enrollmentData = enrollmentDoc.data();
+            const courseDocRef = doc(db, 'courses', courseId);
+            const courseDoc = await getDoc(courseDocRef);
+
+            if (courseDoc.exists()) {
+                const courseData = courseDoc.data();
+                return {
+                    id: courseId,
+                    title: courseData.title,
+                    description: courseData.description,
+                    progress: enrollmentData.progress || 0
+                } as Course;
+            }
+            return null;
+        });
+
+        const enrolledCourses = (await Promise.all(enrolledCoursesPromises)).filter(Boolean) as Course[];
+        setActiveCourses(enrolledCourses);
+        setLoading(false);
+    }, (error) => {
+        console.error("Error fetching active courses:", error);
+        setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // Mock data for now, will be replaced with Firestore data
+  const assignments: any[] = [];
+  const exams: any[] = [];
+  const liveClasses: any[] = [];
+
   const pendingAssignments = assignments.filter((a) => a.status === 'Pending');
   const upcomingEvents = [
     ...assignments
@@ -61,6 +101,20 @@ export default function DashboardPage() {
     .filter((a) => a.status === 'Graded')
     .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())
     .slice(0, 3);
+  
+   const getStatusVariant = (status: string) => {
+    switch (status) {
+        case 'Pending':
+        return 'destructive';
+        case 'Graded':
+        return 'secondary';
+        case 'Upcoming':
+        return 'default';
+        default:
+        return 'outline';
+    }
+    };
+
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -100,7 +154,7 @@ export default function DashboardPage() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeCourses.length}</div>
+            {loading ? <Skeleton className="h-8 w-8" /> : <div className="text-2xl font-bold">{activeCourses.length}</div>}
             <p className="text-xs text-muted-foreground">
               currently enrolled bootcamps
             </p>
@@ -213,7 +267,27 @@ export default function DashboardPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
-          {activeCourses.length > 0 ? (
+          {loading ? (
+             [...Array(2)].map((_, i) => (
+                <Card key={i}>
+                    <CardHeader>
+                        <div className="flex justify-between items-start mb-2">
+                            <Skeleton className="h-8 w-8" />
+                            <Skeleton className="h-6 w-24" />
+                        </div>
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-full" />
+                    </CardHeader>
+                     <CardContent>
+                       <Skeleton className="h-2.5 w-full rounded-full mb-2" />
+                       <Skeleton className="h-4 w-24" />
+                    </CardContent>
+                    <CardFooter>
+                       <Skeleton className="h-10 w-full" />
+                    </CardFooter>
+                </Card>
+            ))
+          ) : activeCourses.length > 0 ? (
             activeCourses.map((course) => (
               <Card key={course.id}>
                 <CardHeader>

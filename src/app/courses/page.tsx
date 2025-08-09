@@ -42,11 +42,15 @@ export default function CoursesPage() {
             let progress = 0;
 
             if (user) {
-                const enrollmentDocRef = doc(db, 'users', user.uid, 'enrollments', docSnapshot.id);
-                const enrollmentDoc = await getDoc(enrollmentDocRef);
-                if (enrollmentDoc.exists()) {
-                    isEnrolled = true;
-                    progress = enrollmentDoc.data().progress || 0;
+                try {
+                    const enrollmentDocRef = doc(db, 'users', user.uid, 'enrollments', docSnapshot.id);
+                    const enrollmentDoc = await getDoc(enrollmentDocRef);
+                    if (enrollmentDoc.exists()) {
+                        isEnrolled = true;
+                        progress = enrollmentDoc.data().progress || 0;
+                    }
+                } catch (e) {
+                    console.error("Error checking enrollment:", e);
                 }
             }
             
