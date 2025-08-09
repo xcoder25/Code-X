@@ -9,27 +9,12 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
-import { Mail, PlusCircle, Send, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { sendMessageAction } from '../actions';
-import { useToast } from '@/hooks/use-toast';
+import { Mail } from 'lucide-react';
 
 
 interface Message {
@@ -40,37 +25,29 @@ interface Message {
     seconds: number;
     nanoseconds: number;
   };
-  targetType: 'general' | 'course' | 'user' | 'admin';
+  targetType: 'general' | 'course' | 'user';
   courseId?: string;
   courseName?: string;
-  userIds?: string[];
-  senderName?: string;
-  senderId?: string;
 }
 
-const AudienceTag = ({ message, currentUserId }: { message: Message, currentUserId: string | null }) => {
+const AudienceTag = ({ message }: { message: Message }) => {
     let text = 'General';
-    let variant: "default" | "secondary" | "destructive" | "outline" | null | undefined = "secondary";
-    
     if (message.targetType === 'course') {
         text = `Course: ${message.courseName}`;
-    } else if (message.targetType === 'user' || message.senderId === currentUserId) {
+    } else if (message.targetType === 'user') {
         text = 'Direct Message';
-    } else if (message.targetType === 'admin') {
-        text = `From: ${message.senderName || 'User'}`;
     }
 
-  return <Badge variant={variant}>{text}</Badge>;
+  return <Badge variant="secondary">{text}</Badge>;
 };
 
-const MessageCard = ({ message, currentUserId }: { message: Message, currentUserId: string | null }) => {
-  const isFromAdmin = message.targetType !== 'admin';
+const MessageCard = ({ message }: { message: Message }) => {
   return (
-    <Card className={!isFromAdmin ? 'border-l-4 border-primary' : ''}>
+    <Card>
       <CardHeader>
         <div className="flex justify-between items-start">
           <CardTitle>{message.title}</CardTitle>
-          <AudienceTag message={message} currentUserId={currentUserId} />
+          <AudienceTag message={message} />
         </div>
         {message.createdAt && (
           <CardDescription>
@@ -86,86 +63,6 @@ const MessageCard = ({ message, currentUserId }: { message: Message, currentUser
 };
 
 
-const ComposeMessageDialog = () => {
-    const { user } = useAuth();
-    const [open, setOpen] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [title, setTitle] = useState('');
-    const [body, setBody] = useState('');
-    const { toast } = useToast();
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!user) {
-            toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to send a message.' });
-            return;
-        }
-        if (!title || !body) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Please fill out all fields.' });
-            return;
-        }
-        setIsLoading(true);
-        try {
-            await sendMessageAction({
-                title,
-                body,
-                targetType: 'admin',
-                senderId: user.uid,
-                senderName: user.displayName || user.email || 'Anonymous',
-            });
-            toast({ title: 'Message Sent!', description: 'Your message has been sent to the admin.' });
-            setOpen(false);
-            setTitle('');
-            setBody('');
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not send message.' });
-        } finally {
-            setIsLoading(false);
-        }
-    }
-
-    return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Compose Message
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-                <form onSubmit={handleSubmit}>
-                    <DialogHeader>
-                        <DialogTitle>Send a Message to Admin</DialogTitle>
-                        <DialogDescription>
-                            Have a question or need help? Send a message directly to the site administrator.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="title" className="text-right">
-                                Subject
-                            </Label>
-                            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="col-span-3" />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="body" className="text-right">
-                                Message
-                            </Label>
-                            <Textarea id="body" value={body} onChange={(e) => setBody(e.target.value)} className="col-span-3" />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button type="submit" disabled={isLoading}>
-                             {isLoading ? ( <Loader2 className="mr-2 h-4 w-4 animate-spin" /> ) : ( <Send className="mr-2 h-4 w-4" /> )}
-                            Send
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
 export default function InboxPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -180,8 +77,9 @@ export default function InboxPage() {
         return;
     };
     
-    // This query is intentionally broad for the demo. 
-    // A more complex query would be needed to fetch messages based on user's courses.
+    // This query is intentionally broad for this example. 
+    // A more complex query would be needed to fetch messages based on user's courses,
+    // which requires creating composite indexes in Firestore.
     const messagesQuery = query(
         collection(db, "in-app-messages"),
         orderBy("createdAt", "desc")
@@ -193,16 +91,11 @@ export default function InboxPage() {
         ...doc.data(),
       })) as Message[];
       
-      // Client-side filtering
+      // Client-side filtering to show relevant messages to the user
       const filteredMessages = messagesData.filter(msg => {
-          // General announcements
           if (msg.targetType === 'general') return true;
-          // Messages for courses the user is in
           if (msg.targetType === 'course' && msg.courseId && userEnrolledCourseIds.includes(msg.courseId)) return true;
-          // Messages sent directly to this user
-          if (msg.targetType === 'user' && msg.userIds && msg.userIds.includes(user.uid)) return true;
-          // Messages sent *by* this user
-          if (msg.senderId === user.uid) return true;
+          if (msg.targetType === 'user' && (msg as any).userIds && (msg as any).userIds.includes(user.uid)) return true;
           return false;
       })
 
@@ -220,11 +113,10 @@ export default function InboxPage() {
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-semibold text-3xl">Inbox</h1>
-        {user && <ComposeMessageDialog />}
+        <h1 className="font-semibold text-3xl">Notifications</h1>
       </div>
        <p className="text-muted-foreground">
-        Important messages and announcements will appear here.
+        Important messages and announcements from your admin will appear here.
       </p>
 
       <div className="space-y-4">
@@ -241,7 +133,7 @@ export default function InboxPage() {
             </Card>
           ))
         ) : messages.length > 0 ? (
-          messages.map((msg) => <MessageCard key={msg.id} message={msg} currentUserId={user?.uid || null} />)
+          messages.map((msg) => <MessageCard key={msg.id} message={msg} />)
         ) : (
           <Card>
             <CardContent className="p-8 text-center text-muted-foreground flex flex-col items-center gap-4">

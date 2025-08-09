@@ -13,7 +13,6 @@ import {
   Settings,
   Calendar,
   FlaskConical,
-  MessageSquare,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -106,14 +105,6 @@ export default function AppSidebar() {
               <Link href="/lab">
                 <FlaskConical />
                 <span>Code-X Lab</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.startsWith('/chat')}>
-              <Link href="/chat">
-                <MessageSquare />
-                <span>Community Chat</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

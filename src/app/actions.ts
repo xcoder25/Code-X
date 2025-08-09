@@ -39,7 +39,7 @@ export async function sendMessageAction(
     body,
     targetType,
     senderId: senderId || null,
-    senderName: senderName || 'Anonymous',
+    senderName: senderName || 'Admin',
     createdAt: serverTimestamp(),
   };
 
@@ -56,9 +56,6 @@ export async function sendMessageAction(
   } else if (targetType === 'user') {
     if (!userIds || userIds.length === 0) throw new Error('At least one user ID is required for user-specific messages.');
     messagePayload.userIds = userIds;
-  } else if (targetType === 'admin') {
-      if (!senderId || !senderName) throw new Error('Sender information is missing for admin message.');
-      // senderId and senderName are already in the base payload
   }
   
   try {
