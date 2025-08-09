@@ -32,41 +32,15 @@ export async function sendMessageAction(
     throw new Error(`Invalid input: ${errorMessage}`);
   }
 
-  const { title, body, targetType, courseId, userIds, senderId, senderName } = parsed.data;
-
-  const messagePayload: any = {
-    title,
-    body,
-    targetType,
-    senderId: senderId,
-    senderName: senderName,
-    createdAt: serverTimestamp(),
-  };
+  const { title, body } = parsed.data;
 
   try {
-    if (targetType === 'course') {
-        if (!courseId) throw new Error('Course ID is required for course-specific messages.');
-        
-        const courseDocRef = doc(db, 'courses', courseId);
-        const courseDoc = await getDoc(courseDocRef);
-
-        if (courseDoc.exists()) {
-            const courseData = courseDoc.data();
-            messagePayload.courseId = courseId;
-            messagePayload.courseName = courseData?.title || 'Untitled Course';
-        } else {
-             throw new Error('Course not found.');
-        }
-
-    } else if (targetType === 'user') {
-        if (!userIds || userIds.length === 0) {
-            throw new Error('At least one user ID is required for user-specific messages.');
-        }
-        messagePayload.userIds = userIds;
-    }
-  
-    await addDoc(collection(db, 'in-app-messages'), messagePayload);
-
+    await addDoc(collection(db, 'in-app-messages'), {
+        title,
+        body,
+        targetType: 'general',
+        createdAt: serverTimestamp(),
+    });
   } catch (error) {
     console.error('Error sending message:', error);
     throw new Error('Could not send message.');
