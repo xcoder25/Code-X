@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 export const sendMessageFormSchema = z.object({
@@ -8,11 +9,26 @@ export const sendMessageFormSchema = z.object({
   userIds: z.array(z.string()).optional(),
   senderId: z.string().optional(),
   senderName: z.string().optional(),
-}).refine(data => {
-  if (data.targetType === 'course') return !!data.courseId && data.courseId.length > 0;
-  if (data.targetType === 'user') return data.userIds && data.userIds.length > 0;
-  return true;
-}, {
-  message: 'A selection is required for this target type.',
-  path: ['courseId'],
+}).superRefine((data, ctx) => {
+  if (data.targetType === 'course' && !data.courseId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'A course selection is required.',
+      path: ['courseId'],
+    });
+  }
+  if (data.targetType === 'user' && (!data.userIds || data.userIds.length === 0)) {
+     ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'At least one user must be selected.',
+      path: ['userIds'],
+    });
+  }
+  if (data.targetType === 'admin' && !data.senderId) {
+      ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Sender ID is required for admin messages.',
+          path: ['senderId'],
+      })
+  }
 });

@@ -38,6 +38,8 @@ export async function sendMessageAction(
     title,
     body,
     targetType,
+    senderId: senderId || null,
+    senderName: senderName || 'Anonymous',
     createdAt: serverTimestamp(),
   };
 
@@ -56,8 +58,7 @@ export async function sendMessageAction(
     messagePayload.userIds = userIds;
   } else if (targetType === 'admin') {
       if (!senderId || !senderName) throw new Error('Sender information is missing for admin message.');
-      messagePayload.senderId = senderId;
-      messagePayload.senderName = senderName;
+      // senderId and senderName are already in the base payload
   }
   
   try {

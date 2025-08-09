@@ -120,10 +120,20 @@ export default function AdminMessagesPage() {
       targetType: 'general',
       courseId: '',
       userIds: [],
-      senderId: adminUser?.uid || 'admin',
-      senderName: adminUser?.displayName || 'Admin',
     },
   });
+  
+  // Set sender info once adminUser is available
+  useEffect(() => {
+    if (adminUser) {
+        form.reset({
+            ...form.getValues(),
+            senderId: adminUser.uid,
+            senderName: adminUser.displayName || 'Admin',
+        });
+    }
+  }, [adminUser, form]);
+
 
   const targetType = useWatch({
     control: form.control,
@@ -193,7 +203,7 @@ export default function AdminMessagesPage() {
         targetType: 'general',
         courseId: '',
         userIds: [],
-        senderId: adminUser?.uid || 'admin',
+        senderId: adminUser?.uid,
         senderName: adminUser?.displayName || 'Admin',
       });
     } catch (error: any) {
