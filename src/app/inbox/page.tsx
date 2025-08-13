@@ -13,7 +13,8 @@ import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
-import { Mail } from 'lucide-react';
+import { Mail, Link as LinkIcon } from 'lucide-react';
+import Link from 'next/link';
 
 interface Message {
   id: string;
@@ -25,22 +26,42 @@ interface Message {
   };
 }
 
+const urlRegex = /(https?:\/\/[^\s]+)/g;
+
 const MessageCard = ({ message }: { message: Message }) => {
-  return (
-    <Card>
+  const urls = message.body.match(urlRegex);
+  const link = urls ? urls[0] : null;
+
+  const cardContent = (
+    <Card className={link ? 'hover:bg-muted/50 cursor-pointer transition-colors' : ''}>
       <CardHeader>
-        <CardTitle>{message.title}</CardTitle>
-        {message.createdAt && (
-          <CardDescription>
-            {new Date(message.createdAt.seconds * 1000).toLocaleString()}
-          </CardDescription>
-        )}
+        <div className="flex justify-between items-start">
+            <div>
+                <CardTitle>{message.title}</CardTitle>
+                {message.createdAt && (
+                <CardDescription>
+                    {new Date(message.createdAt.seconds * 1000).toLocaleString()}
+                </CardDescription>
+                )}
+            </div>
+             {link && <LinkIcon className="h-5 w-5 text-muted-foreground" />}
+        </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground">{message.body}</p>
+        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{message.body}</p>
       </CardContent>
     </Card>
   );
+
+  if (link) {
+    return (
+        <a href={link} target="_blank" rel="noopener noreferrer" className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-lg block">
+            {cardContent}
+        </a>
+    )
+  }
+
+  return cardContent;
 };
 
 export default function InboxPage() {
