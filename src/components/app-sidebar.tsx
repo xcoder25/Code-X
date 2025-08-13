@@ -15,7 +15,6 @@ import {
   FlaskConical,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 import {
   Sidebar,
@@ -31,6 +30,7 @@ import Image from 'next/image';
 import { useAuth } from '@/app/auth-provider';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import LoadingLink from '@/components/ui/loading-link';
 
 export default function AppSidebar() {
   const pathname = usePathname();
@@ -75,10 +75,10 @@ export default function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/dashboard')}>
-              <Link href="/dashboard">
+              <LoadingLink href="/dashboard">
                 <LayoutDashboard />
                 <span>Dashboard</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
@@ -86,34 +86,34 @@ export default function AppSidebar() {
               asChild
               isActive={pathname.startsWith('/courses')}
             >
-              <Link href="/courses">
+              <LoadingLink href="/courses">
                 <BookOpen />
                 <span>Courses</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/path')}>
-              <Link href="/path">
+              <LoadingLink href="/path">
                 <Bot />
                 <span>AI Coach</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/lab')}>
-              <Link href="/lab">
+              <LoadingLink href="/lab">
                 <FlaskConical />
                 <span>Code-X Lab</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/subscription')}>
-              <Link href="/subscription">
+              <LoadingLink href="/subscription">
                 <CreditCard />
                 <span>Subscription</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
@@ -121,42 +121,42 @@ export default function AppSidebar() {
               asChild
               isActive={pathname.startsWith('/assignments')}
             >
-              <Link href="/assignments">
+              <LoadingLink href="/assignments">
                 <ClipboardList />
                 <span>Assignments</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/exams')}>
-              <Link href="/exams">
+              <LoadingLink href="/exams">
                 <FileQuestion />
                 <span>Exams</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/schedule')}>
-              <Link href="/schedule">
+              <LoadingLink href="/schedule">
                 <Calendar />
                 <span>Schedule</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/inbox')}>
-              <Link href="/inbox">
+              <LoadingLink href="/inbox">
                 <Mail />
                 <span>Inbox</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/settings')}>
-              <Link href="/settings">
+              <LoadingLink href="/settings">
                 <Settings />
                 <span>Settings</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

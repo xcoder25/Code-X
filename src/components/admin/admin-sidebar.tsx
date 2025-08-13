@@ -29,6 +29,7 @@ import Image from 'next/image';
 import { useAdminAuth } from '@/app/admin-auth-provider';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import LoadingLink from '@/components/ui/loading-link';
 
 export default function AppSidebar() {
   const pathname = usePathname();
@@ -73,66 +74,66 @@ export default function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname === ('/admin')}>
-              <Link href="/admin">
+              <LoadingLink href="/admin">
                 <LayoutDashboard />
                 <span>Dashboard</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/courses')}>
-              <Link href="/admin/courses">
+              <LoadingLink href="/admin/courses">
                 <BookOpen />
                 <span>Courses</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/users')}>
-              <Link href="/admin/users">
+              <LoadingLink href="/admin/users">
                 <Users />
                 <span>Users</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/submissions')}>
-              <Link href="/admin/submissions">
+              <LoadingLink href="/admin/submissions">
                 <ClipboardCheck />
                 <span>Submissions</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/subscriptions')}>
-              <Link href="/admin/subscriptions">
+              <LoadingLink href="/admin/subscriptions">
                 <CreditCard />
                 <span>Subscriptions</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/access-codes')}>
-              <Link href="/admin/access-codes">
+              <LoadingLink href="/admin/access-codes">
                 <KeyRound />
                 <span>Access Codes</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/messages')}>
-              <Link href="/admin/messages">
+              <LoadingLink href="/admin/messages">
                 <MessageSquare />
                 <span>Messages</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/settings')}>
-              <Link href="#">
+              <LoadingLink href="#">
                 <Settings />
                 <span>Settings</span>
-              </Link>
+              </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
