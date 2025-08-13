@@ -21,10 +21,8 @@ const LoadingLink = React.forwardRef<HTMLAnchorElement, LoadingLinkProps>(
       // Prevent default navigation if it's a valid Next.js link
       if (href && href.toString().startsWith('/')) {
         e.preventDefault();
-        
-        showLoading(3000, () => {
-            router.push(href.toString());
-        });
+        showLoading();
+        router.push(href.toString());
       }
     };
 
