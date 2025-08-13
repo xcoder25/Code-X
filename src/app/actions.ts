@@ -269,3 +269,38 @@ export async function chatWithElaraAction(
 export async function analyzeCodeAction(input: AnalyzeCodeInput): Promise<AnalyzeCodeOutput> {
     return analyzeCode(input);
 }
+
+
+const submitAssignmentSchema = z.object({
+  assignmentId: z.string(),
+  userId: z.string(),
+  userName: z.string(),
+  colabLink: z.string().url({ message: "Please enter a valid URL." }),
+});
+
+export async function submitAssignmentAction(
+    input: z.infer<typeof submitAssignmentSchema>
+) {
+    const parsed = submitAssignmentSchema.safeParse(input);
+    if (!parsed.success) {
+        const errorMessage = parsed.error.issues.map(issue => issue.message).join(', ');
+        throw new Error(`Invalid input: ${errorMessage}`);
+    }
+    
+    const { assignmentId, userId, userName, colabLink } = parsed.data;
+    
+    // The path will be /users/{userId}/submissions/{assignmentId}
+    const submissionRef = doc(db, 'users', userId, 'submissions', assignmentId);
+    
+    await setDoc(submissionRef, {
+        assignmentId,
+        userId,
+        userName,
+        colabLink,
+        status: 'Pending',
+        grade: null,
+        submittedAt: serverTimestamp(),
+    });
+    
+    return { success: true };
+}
