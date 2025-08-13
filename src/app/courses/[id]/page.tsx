@@ -56,13 +56,15 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
+  const courseId = params.id;
 
   useEffect(() => {
+    if (!courseId) return;
+
     const fetchCourse = async () => {
-        if (!params.id) return;
         setLoading(true);
         try {
-            const courseDocRef = doc(db, 'courses', params.id);
+            const courseDocRef = doc(db, 'courses', courseId);
             const courseDoc = await getDoc(courseDocRef);
 
             if (courseDoc.exists()) {
@@ -89,18 +91,18 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         }
     };
     fetchCourse();
-  }, [params.id]);
+  }, [courseId]);
   
   useEffect(() => {
-    if (!user || !params.id) return;
+    if (!user || !courseId) return;
     
-    const enrollmentDocRef = doc(db, 'users', user.uid, 'enrollments', params.id);
+    const enrollmentDocRef = doc(db, 'users', user.uid, 'enrollments', courseId);
     const unsubscribe = onSnapshot(enrollmentDocRef, (doc) => {
         setIsEnrolled(doc.exists());
     });
     
     return () => unsubscribe();
-  }, [user, params.id]);
+  }, [user, courseId]);
 
   if (loading) {
     return (
