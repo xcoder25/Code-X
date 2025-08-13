@@ -10,6 +10,7 @@ import {
   CreditCard,
   KeyRound,
   MessageSquare,
+  ClipboardCheck,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -91,6 +92,14 @@ export default function AppSidebar() {
               <Link href="/admin/users">
                 <Users />
                 <span>Users</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/submissions')}>
+              <Link href="/admin/submissions">
+                <ClipboardCheck />
+                <span>Submissions</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

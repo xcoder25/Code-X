@@ -22,6 +22,8 @@ import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/ana
 import { chatWithElara, ChatWithElaraOutput, ChatWithElaraInput } from '@/ai/flows/ai-coach-flow';
 import { sendMessageFormSchema } from './schema';
 import { exams } from '@/lib/exam-data';
+import { assignments as assignmentData } from '@/lib/assignment-data';
+
 
 export async function sendMessageAction(
   input: z.infer<typeof sendMessageFormSchema>,
@@ -289,11 +291,17 @@ export async function submitAssignmentAction(
     
     const { assignmentId, userId, userName, colabLink } = parsed.data;
     
-    // The path will be /users/{userId}/submissions/{assignmentId}
+    const assignment = assignmentData.find(a => a.id === assignmentId);
+    if (!assignment) {
+      throw new Error("Assignment not found.");
+    }
+
     const submissionRef = doc(db, 'users', userId, 'submissions', assignmentId);
     
     await setDoc(submissionRef, {
         assignmentId,
+        assignmentTitle: assignment.title,
+        course: assignment.course,
         userId,
         userName,
         colabLink,
@@ -303,4 +311,31 @@ export async function submitAssignmentAction(
     });
     
     return { success: true };
+}
+
+const gradeAssignmentSchema = z.object({
+  userId: z.string(),
+  submissionId: z.string(),
+  grade: z.string().min(1, { message: "Grade is required." }),
+});
+
+export async function gradeAssignmentAction(
+  input: z.infer<typeof gradeAssignmentSchema>
+) {
+  const parsed = gradeAssignmentSchema.safeParse(input);
+  if (!parsed.success) {
+    const errorMessage = parsed.error.issues.map(issue => issue.message).join(', ');
+    throw new Error(`Invalid input: ${errorMessage}`);
+  }
+  
+  const { userId, submissionId, grade } = parsed.data;
+  
+  const submissionRef = doc(db, 'users', userId, 'submissions', submissionId);
+  
+  await updateDoc(submissionRef, {
+    grade: grade,
+    status: 'Graded',
+  });
+  
+  return { success: true };
 }
