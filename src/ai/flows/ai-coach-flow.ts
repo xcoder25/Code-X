@@ -2,7 +2,8 @@
 'use server';
 
 /**
- * @fileOverview A conversational AI coach named Elara, using Genkit.
+ * @fileOverview A conversational AI coach named Elara.
+ * This is a placeholder implementation that does not use Genkit.
  *
  * - chatWithElara - A function that handles the conversational chat with Elara.
  * - ChatWithElaraInput - The input type for the chatWithElara function.
@@ -10,10 +11,8 @@
  */
 
 import { z } from 'zod';
-import { ai } from '@/ai/genkit';
-import { MessageData } from 'genkit';
 
-const ChatWithElaraInputSchema = z.object({
+export const ChatWithElaraInputSchema = z.object({
   userName: z.string().describe('The name of the user engaging with the AI.'),
   message: z.string().describe("The user's message to Elara."),
   history: z
@@ -25,71 +24,28 @@ const ChatWithElaraInputSchema = z.object({
 });
 export type ChatWithElaraInput = z.infer<typeof ChatWithElaraInputSchema>;
 
-const ChatWithElaraOutputSchema = z.object({
+export const ChatWithElaraOutputSchema = z.object({
   reply: z.string().describe("Elara's response to the user."),
 });
 export type ChatWithElaraOutput = z.infer<typeof ChatWithElaraOutputSchema>;
-
-const conversationalSystemInstruction = `You are Elara, an expert, friendly, and encouraging AI learning coach for the Code-X platform. Your goal is to provide personalized guidance, clarify concepts, and help users on their coding journey.
-
-    - Your persona is supportive, patient, and knowledgeable.
-    - DO NOT greet the user or introduce yourself. The user interface already handles the initial greeting. Jump directly into a helpful response.
-    - Keep your responses concise and easy to understand.
-    - You are a programming expert and can explain code, debug issues, and clarify complex topics.`;
-    
-const learningPathSystemInstruction = `You are an expert curriculum planner. Your task is to generate a structured, step-by-step learning path based on a user's goal.
-
-- The output MUST be a numbered list.
-- Each step should be a clear, actionable item.
-- Do not include any introductory or concluding text, only the numbered list.
-- Start directly with "1.".`;
-
-const chatPrompt = ai.definePrompt({
-    name: 'chatWithElaraPrompt',
-    input: { schema: ChatWithElaraInputSchema },
-    output: { schema: ChatWithElaraOutputSchema },
-    prompt: (input) => {
-        const isLearningPath = input.message.toLowerCase().includes('learning path');
-        
-        const history: MessageData[] = (input.history || []).map(msg => ({
-            role: msg.role,
-            content: [{ text: msg.content }],
-        }));
-        
-        const messages: MessageData[] = [
-            {
-                role: 'system',
-                content: [{ text: isLearningPath ? learningPathSystemInstruction : conversationalSystemInstruction }],
-            },
-            ...history,
-            {
-                role: 'user',
-                content: [{ text: `My name is ${input.userName}. ${input.message}` }],
-            }
-        ];
-        return messages;
-    },
-    // We can't use `model` and `prompt` together, so we'll pass the model in the flow.
-});
-
-
-const chatWithElaraFlow = ai.defineFlow(
-  {
-    name: 'chatWithElaraFlow',
-    inputSchema: ChatWithElaraInputSchema,
-    outputSchema: ChatWithElaraOutputSchema,
-  },
-  async (input) => {
-    const { output } = await chatPrompt(input, {
-        model: 'googleai/gemini-1.5-flash',
-    });
-    return { reply: output!.reply };
-  }
-);
 
 
 export async function chatWithElara(
   input: ChatWithElaraInput,
 ): Promise<ChatWithElaraOutput> {
-  return await chatWithElaraFlow(input);
+  console.log("chatWithElara called with:", input);
+  // This is a mock implementation.
+  // In a real scenario, you would call your chosen AI model here.
+  
+  const isLearningPath = input.message.toLowerCase().includes('learning path');
+  
+  if (isLearningPath) {
+    return {
+        reply: `1. Understand the basics of HTML.
+2. Learn CSS for styling.
+3. Dive into JavaScript for interactivity.`
+    };
+  }
+
+  return { reply: `This is a mock response to your message: "${input.message}". The AI implementation needs to be connected.` };
 }
