@@ -12,9 +12,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { PlayCircle, FileText, CheckSquare, Bot, Video, File } from 'lucide-react';
+import { PlayCircle, FileText, Bot, Video, File } from 'lucide-react';
 import Link from 'next/link';
-import ChallengeInterface from '@/components/challenge-interface';
 import LearningPathGenerator from '@/components/learning-path-generator';
 import EnrollmentCard from '@/components/enrollment-card';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
@@ -22,16 +21,6 @@ import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
 
-// Mock challenges data
-const challenges: { [key: string]: any } = {
-  'css-selectors-challenge': {
-    id: 'css-selectors-challenge',
-    title: 'CSS Selectors Challenge',
-    description: 'Master CSS selectors by targeting the correct elements on the page. Use the editor to write your CSS rules.',
-    difficulty: 'Easy',
-    defaultCode: `/* Your CSS selectors here */`
-  }
-};
 
 interface Course {
     id: string;
@@ -76,8 +65,9 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                     tags: data.tags || [],
                     modules: (data.modules || []).map((mod: any, index: number) => ({
                         ...mod,
-                        title: `Module ${index + 1}: ${mod.name.split('.').slice(0, -1).join('.')}`,
-                        completed: false
+                        // Generate a more readable title for the module
+                        title: `Module ${index + 1}: ${mod.name.split('.').slice(0, -1).join('.') || 'Introduction'}`,
+                        completed: false // Placeholder for future progress tracking
                     }))
                 });
             } else {
@@ -176,38 +166,44 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
         ) : null}
       </div>
       
-      {isEnrolled && course.modules.length > 0 && (
+      {isEnrolled ? (
         <div className="grid md:grid-cols-3 gap-6 mt-6">
             <div className="md:col-span-2">
-                <Card>
+                 <Card>
                     <CardHeader>
-                        <CardTitle>Course Materials</CardTitle>
+                        <CardTitle>Course Curriculum</CardTitle>
                         <CardDescription>Follow the curriculum to complete the course.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Accordion type="single" collapsible defaultValue="item-0">
-                            {course.modules.map((module: any, index: number) => (
-                            <AccordionItem value={`item-${index}`} key={module.url}>
-                                <AccordionTrigger className="text-lg font-semibold">{`Module ${index + 1}`}</AccordionTrigger>
-                                <AccordionContent>
-                                <ul className="space-y-3">
-                                    <li className={`flex items-center justify-between p-3 rounded-md transition-colors ${module.completed ? 'bg-accent/50 text-muted-foreground' : 'bg-muted/50'}`}>
-                                        <div className="flex items-center gap-3">
-                                            {getLessonIcon(module.type)}
-                                            <a href={module.url} target="_blank" rel="noopener noreferrer" className={`hover:underline ${module.completed ? 'line-through' : ''}`}>{module.name}</a>
-                                        </div>
-                                        <Badge variant={module.completed ? "secondary" : "default"}>{module.completed ? "Completed" : "Pending"}</Badge>
-                                    </li>
-                                </ul>
-                                </AccordionContent>
-                            </AccordionItem>
-                            ))}
-                        </Accordion>
+                        {course.modules.length > 0 ? (
+                            <Accordion type="single" collapsible defaultValue="item-0" className="w-full">
+                                {course.modules.map((module: any, index: number) => (
+                                <AccordionItem value={`item-${index}`} key={module.url}>
+                                    <AccordionTrigger className="text-lg font-semibold">{module.title}</AccordionTrigger>
+                                    <AccordionContent>
+                                    <ul className="space-y-3 pl-2">
+                                        <li className={`flex items-center justify-between p-3 rounded-md transition-colors ${module.completed ? 'bg-accent/50 text-muted-foreground' : 'hover:bg-muted/50'}`}>
+                                            <div className="flex items-center gap-3">
+                                                {getLessonIcon(module.type)}
+                                                <a href={module.url} target="_blank" rel="noopener noreferrer" className={`hover:underline ${module.completed ? 'line-through' : ''}`}>{module.name}</a>
+                                            </div>
+                                            <Badge variant={module.completed ? "secondary" : "default"}>{module.completed ? "Completed" : "Pending"}</Badge>
+                                        </li>
+                                    </ul>
+                                    </AccordionContent>
+                                </AccordionItem>
+                                ))}
+                            </Accordion>
+                        ) : (
+                            <div className="text-center text-muted-foreground py-8">
+                                <p>Course content is not yet available. Check back soon!</p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
             <div>
-                <Card className="mt-8 md:mt-0">
+                <Card className="sticky top-20">
                     <CardHeader>
                         <CardTitle>Personalized Learning Path</CardTitle>
                         <CardDescription>
@@ -220,15 +216,17 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 </Card>
             </div>
         </div>
+      ) : (
+         <Card className="mt-6">
+            <CardHeader>
+                <CardTitle>Course Content</CardTitle>
+            </CardHeader>
+            <CardContent className="p-8 text-center">
+                <p className="text-muted-foreground">Please enroll in the course to view the content.</p>
+            </CardContent>
+        </Card>
       )}
 
-       {isEnrolled && course.modules.length === 0 && (
-            <Card className="mt-6">
-                <CardContent className="p-8 text-center">
-                    <p className="text-muted-foreground">Course content is not yet available. Check back soon!</p>
-                </CardContent>
-            </Card>
-        )}
     </main>
   );
 }
