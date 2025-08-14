@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview A conversational AI coach named Elara, using the Firebase AI SDK.
+ * @fileOverview A conversational AI coach named Elara, using Genkit.
  *
  * - chatWithElara - A function that handles the conversational chat with Elara.
  * - ChatWithElaraInput - The input type for the chatWithElara function.
@@ -10,9 +10,8 @@
  */
 
 import { z } from 'zod';
-import { getAI, getGenerativeModel } from "firebase/ai";
-import { app } from '@/lib/firebase';
-import type { BaseMessage } from '@google/generative-ai';
+import { ai } from '@/ai/genkit';
+import { MessageData } from 'genkit';
 
 const ChatWithElaraInputSchema = z.object({
   userName: z.string().describe('The name of the user engaging with the AI.'),
@@ -31,9 +30,6 @@ const ChatWithElaraOutputSchema = z.object({
 });
 export type ChatWithElaraOutput = z.infer<typeof ChatWithElaraOutputSchema>;
 
-// Initialize the Gemini Developer API backend service
-const ai = getAI(app);
-
 const conversationalSystemInstruction = `You are Elara, an expert, friendly, and encouraging AI learning coach for the Code-X platform. Your goal is to provide personalized guidance, clarify concepts, and help users on their coding journey.
 
     - Your persona is supportive, patient, and knowledgeable.
@@ -48,32 +44,52 @@ const learningPathSystemInstruction = `You are an expert curriculum planner. You
 - Do not include any introductory or concluding text, only the numbered list.
 - Start directly with "1.".`;
 
+const chatPrompt = ai.definePrompt({
+    name: 'chatWithElaraPrompt',
+    input: { schema: ChatWithElaraInputSchema },
+    output: { schema: ChatWithElaraOutputSchema },
+    prompt: (input) => {
+        const isLearningPath = input.message.toLowerCase().includes('learning path');
+        
+        const history: MessageData[] = (input.history || []).map(msg => ({
+            role: msg.role,
+            content: [{ text: msg.content }],
+        }));
+        
+        const messages: MessageData[] = [
+            {
+                role: 'system',
+                content: [{ text: isLearningPath ? learningPathSystemInstruction : conversationalSystemInstruction }],
+            },
+            ...history,
+            {
+                role: 'user',
+                content: [{ text: `My name is ${input.userName}. ${input.message}` }],
+            }
+        ];
+        return messages;
+    },
+    // We can't use `model` and `prompt` together, so we'll pass the model in the flow.
+});
+
+
+const chatWithElaraFlow = ai.defineFlow(
+  {
+    name: 'chatWithElaraFlow',
+    inputSchema: ChatWithElaraInputSchema,
+    outputSchema: ChatWithElaraOutputSchema,
+  },
+  async (input) => {
+    const { output } = await chatPrompt(input, {
+        model: 'googleai/gemini-1.5-flash',
+    });
+    return { reply: output!.reply };
+  }
+);
+
 
 export async function chatWithElara(
   input: ChatWithElaraInput,
-  isLearningPathRequest: boolean = false
 ): Promise<ChatWithElaraOutput> {
-  const { message, history } = input;
-  
-  const model = getGenerativeModel(ai, { 
-    model: "gemini-1.5-flash",
-    systemInstruction: isLearningPathRequest ? learningPathSystemInstruction : conversationalSystemInstruction,
-  });
-
-  // The SDK expects a `BaseMessage[]` with a specific format.
-  // This maps the incoming history to the required format.
-  const typedHistory: BaseMessage[] = (history || []).map((msg) => ({
-    role: msg.role,
-    parts: [{ text: msg.content }],
-  }));
-  
-  const chat = model.startChat({
-      history: typedHistory,
-  });
-  
-  const result = await chat.sendMessage(message);
-  const response = result.response;
-  const text = response.text();
-
-  return { reply: text };
+  return await chatWithElaraFlow(input);
 }

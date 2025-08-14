@@ -2,14 +2,13 @@
 'use server';
 
 /**
- * @fileOverview An AI agent that analyzes and provides feedback on code snippets.
+ * @fileOverview An AI agent that analyzes and provides feedback on code snippets using Genkit.
  *
  * - analyzeCode - A function that takes a code snippet and returns an analysis.
  * - AnalyzeCodeInput - The input type for the analyzeCode function.
  * - AnalyzeCodeOutput - The return type for the analyzeCode function.
  */
-import { getAI, getGenerativeModel } from "firebase/ai";
-import { app } from '@/lib/firebase';
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const AnalyzeCodeInputSchema = z.object({
@@ -17,53 +16,46 @@ const AnalyzeCodeInputSchema = z.object({
 });
 export type AnalyzeCodeInput = z.infer<typeof AnalyzeCodeInputSchema>;
 
-export interface AnalyzeCodeOutput {
-  explanation: string;
-  feedback: string;
-}
+const AnalyzeCodeOutputSchema = z.object({
+  explanation: z.string().describe("A description of what the code is intended to do, its logic, and flow."),
+  feedback: z.string().describe("Constructive feedback identifying potential bugs, style issues, or areas for improvement. If the code is good, acknowledge it."),
+});
+export type AnalyzeCodeOutput = z.infer<typeof AnalyzeCodeOutputSchema>;
 
-const ai = getAI(app);
 
-const model = getGenerativeModel(ai, { 
-    model: "gemini-1.5-flash",
-    systemInstruction: `You are an expert code reviewer and AI assistant. Your task is to analyze the following code snippet and provide a clear explanation and constructive feedback.
+const analyzeCodePrompt = ai.definePrompt({
+    name: 'analyzeCodePrompt',
+    input: { schema: AnalyzeCodeInputSchema },
+    output: { schema: AnalyzeCodeOutputSchema },
+    system: `You are an expert code reviewer and AI assistant. Your task is to analyze the following code snippet and provide a clear explanation and constructive feedback. Your output must be in the specified JSON format.`,
+    prompt: `Task:
+1.  **Explain the Code**: Describe what the code is intended to do. Explain the logic and flow.
+2.  **Provide Feedback**: Identify any potential bugs, style issues, or areas for improvement. Suggest specific changes and explain why they are better. If the code is good, acknowledge it.
 
-    Your output must be a valid JSON object with two keys: "explanation" and "feedback".
-    
-    - "explanation": Describe what the code is intended to do. Explain the logic and flow.
-    - "feedback": Identify any potential bugs, style issues, or areas for improvement. Suggest specific changes and explain why they are better. If the code is good, acknowledge it.`
+Code to analyze:
+\`\`\`
+{{{code}}}
+\`\`\`
+
+Generate your analysis now.`
 });
 
-export async function analyzeCode(input: AnalyzeCodeInput): Promise<AnalyzeCodeOutput> {
-  const prompt = `Task:
-  1.  **Explain the Code**: Describe what the code is intended to do. Explain the logic and flow.
-  2.  **Provide Feedback**: Identify any potential bugs, style issues, or areas for improvement. Suggest specific changes and explain why they are better. If the code is good, acknowledge it.
-  
-  Code to analyze:
-  \`\`\`
-  ${input.code}
-  \`\`\`
-  
-  Generate your analysis now in JSON format.`;
-  
-  const result = await model.generateContent(prompt, {
-    responseMimeType: "application/json",
-  });
-  
-  const response = result.response;
-  const text = response.text();
-  
-  try {
-    const parsed = JSON.parse(text);
-    return {
-        explanation: parsed.explanation || "No explanation provided.",
-        feedback: parsed.feedback || "No feedback provided."
-    }
-  } catch (e) {
-      console.error("Failed to parse AI response:", text);
-      return {
-          explanation: "The AI returned an invalid response.",
-          feedback: "Could not get feedback due to a formatting error."
-      }
+
+const analyzeCodeFlow = ai.defineFlow(
+  {
+    name: 'analyzeCodeFlow',
+    inputSchema: AnalyzeCodeInputSchema,
+    outputSchema: AnalyzeCodeOutputSchema,
+  },
+  async (input) => {
+    const { output } = await analyzeCodePrompt(input, {
+        model: 'googleai/gemini-1.5-flash',
+        config: { responseMimeType: "application/json" }
+    });
+    return output!;
   }
+);
+
+export async function analyzeCode(input: AnalyzeCodeInput): Promise<AnalyzeCodeOutput> {
+    return analyzeCodeFlow(input);
 }

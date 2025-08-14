@@ -264,8 +264,7 @@ export async function submitExamAction(
 export async function chatWithElaraAction(
   input: ChatWithElaraInput,
 ): Promise<ChatWithElaraOutput> {
-  const isLearningPathRequest = input.message.toLowerCase().includes('learning path');
-  return chatWithElara(input, isLearningPathRequest);
+  return chatWithElara(input);
 }
 
 export async function analyzeCodeAction(input: AnalyzeCodeInput): Promise<AnalyzeCodeOutput> {

@@ -19,35 +19,33 @@ const plans = [
         features: [
             "Access to introductory courses",
             "Basic coding challenges",
-            "Community support",
+            "Limited AI Coach interactions"
         ],
         cta: "Edit Plan",
         variant: 'outline' as const
     },
     {
-        name: "Pro",
-        price: "$29",
-        description: "For serious learners who want to go pro.",
+        name: "AI Essentials",
+        price: "$3",
+        description: "For learners who need regular AI assistance.",
         features: [
-            "Access to all courses and bootcamps",
-            "Advanced coding challenges",
-            "AI-powered learning path generator",
+            "All Free features",
+            "50 AI Coach messages per month",
+            "10 Code Analyses per month",
             "Priority support",
-            "Discord community access"
         ],
         cta: "Edit Plan",
         variant: 'outline' as const
     },
      {
-        name: "Team",
-        price: "$99",
-        description: "For organizations that want to upskill their team.",
+        name: "AI Pro",
+        price: "$5",
+        description: "For power users who rely heavily on AI.",
         features: [
-            "All features in Pro",
-            "Team management dashboard",
-            "Custom bootcamps",
-            "Dedicated account manager",
-            "Centralized billing"
+            "All AI Essentials features",
+            "Unlimited AI Coach messages",
+            "Unlimited Code Analyses",
+            "Discord community access"
         ],
         cta: "Edit Plan",
         variant: 'outline' as const
@@ -58,14 +56,14 @@ export default function AdminSubscriptionPage() {
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-semibold text-3xl">Manage Subscriptions</h1>
+        <h1 className="font-semibold text-3xl">Manage AI Subscriptions</h1>
         <Button>
             <PlusCircle className="mr-2 h-4 w-4" />
             Add New Plan
         </Button>
       </div>
       <p className="text-muted-foreground">
-        Create, edit, and manage subscription plans for your users.
+        Create, edit, and manage AI subscription plans for your users.
       </p>
 
       <div className="grid gap-6 md:grid-cols-3 mt-4">
