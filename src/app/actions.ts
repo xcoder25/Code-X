@@ -23,6 +23,7 @@ import { chatWithElara, ChatWithElaraOutput, ChatWithElaraInput } from '@/ai/flo
 import { sendMessageFormSchema } from './schema';
 import { exams } from '@/lib/exam-data';
 import { assignments as assignmentData } from '@/lib/assignment-data';
+import { getDownloadURL, ref, uploadString } from 'firebase/storage';
 
 
 export async function sendMessageAction(
@@ -337,4 +338,57 @@ export async function gradeAssignmentAction(
   });
   
   return { success: true };
+}
+
+const enrollWithReceiptSchema = z.object({
+  courseId: z.string(),
+  userId: z.string(),
+  receiptDataUrl: z.string(),
+  receiptFileName: z.string(),
+});
+
+export async function enrollWithReceiptAction(
+  input: z.infer<typeof enrollWithReceiptSchema>
+) {
+    const parsed = enrollWithReceiptSchema.safeParse(input);
+    if (!parsed.success) {
+        throw new Error('Invalid input for receipt enrollment.');
+    }
+    const { courseId, userId, receiptDataUrl, receiptFileName } = parsed.data;
+
+    // Check if user is already enrolled
+    const enrollmentDocRef = doc(db, 'users', userId, 'enrollments', courseId);
+    const enrollmentDoc = await getDoc(enrollmentDocRef);
+    if (enrollmentDoc.exists()) {
+        throw new Error("You are already enrolled in this course.");
+    }
+
+    // 1. Upload receipt to storage for verification
+    const storageRef = ref(storage, `receipt_submissions/${courseId}/${userId}/${receiptFileName}`);
+    const uploadResult = await uploadString(storageRef, receiptDataUrl, 'data_url');
+    const receiptUrl = await getDownloadURL(uploadResult.ref);
+
+    // 2. SIMULATE verification and grant access.
+    // In a real app, you might create a "pending verification" document for an admin to review.
+    // For this prototype, we will enroll the user immediately.
+
+    const batch = writeBatch(db);
+
+    // Create an enrollment document for the user
+    batch.set(enrollmentDocRef, {
+        courseId: courseId,
+        enrolledAt: serverTimestamp(),
+        progress: 0,
+        enrollmentMethod: 'receipt',
+        receiptUrl: receiptUrl,
+        verificationStatus: 'auto-approved', // for tracking
+    });
+
+    // Increment enrollment count on the course
+    const courseDocRef = doc(db, 'courses', courseId);
+    batch.update(courseDocRef, { enrollments: increment(1) });
+
+    await batch.commit();
+
+    return { success: true };
 }
