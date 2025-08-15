@@ -1,15 +1,13 @@
 
-'use client';
-
 import type { Metadata } from 'next';
 import './globals.css';
 import { cn } from '@/lib/utils';
-import { Toaster } from '@/components/ui/toaster';
-import AppProvider from './app-provider';
-import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider } from './auth-provider';
-import { LoadingProvider } from '@/context/loading-provider';
-import LoadingOverlay from '@/components/ui/loading-overlay';
+import { ClientProviders } from './client-providers';
+
+export const metadata: Metadata = {
+    title: 'Code-X',
+    description: 'Your personal coding academy.',
+};
 
 export default function RootLayout({
   children,
@@ -19,8 +17,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>Code-X</title>
-        <meta name="description" content="Your personal coding academy." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
@@ -29,20 +25,7 @@ export default function RootLayout({
         ></link>
       </head>
       <body className={cn('font-body antialiased')}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            <LoadingProvider>
-              <LoadingOverlay />
-              <AppProvider>{children}</AppProvider>
-              <Toaster />
-            </LoadingProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );
