@@ -10,24 +10,7 @@
  * - ChatWithElaraOutput - The return type for the chatWithElara function.
  */
 
-import { z } from 'zod';
-
-export const ChatWithElaraInputSchema = z.object({
-  userName: z.string().describe('The name of the user engaging with the AI.'),
-  message: z.string().describe("The user's message to Elara."),
-  history: z
-    .array(z.object({
-        role: z.enum(['user', 'model']),
-        content: z.string(),
-    }))
-    .describe('The history of the conversation so far.'),
-});
-export type ChatWithElaraInput = z.infer<typeof ChatWithElaraInputSchema>;
-
-export const ChatWithElaraOutputSchema = z.object({
-  reply: z.string().describe("Elara's response to the user."),
-});
-export type ChatWithElaraOutput = z.infer<typeof ChatWithElaraOutputSchema>;
+import type { ChatWithElaraInput, ChatWithElaraOutput } from '@/app/schema';
 
 
 export async function chatWithElara(
