@@ -15,16 +15,18 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { AlertCircle, CheckCircle, Timer, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { getExamQuestions, getExamDetails } from '@/lib/exam-data';
 import { submitExamAction } from '@/app/actions';
 
-export default function ExamTakingPage({ params }: { params: { id: string } }) {
+export default function ExamTakingPage() {
   const router = useRouter();
+  const params = useParams();
+  const examId = params.id as string;
   const { toast } = useToast();
-  const examDetails = getExamDetails(params.id);
-  const examQuestions = getExamQuestions(params.id);
+  const examDetails = getExamDetails(examId);
+  const examQuestions = getExamQuestions(examId);
 
   const [timeLeft, setTimeLeft] = useState(examDetails?.duration || 0);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
@@ -56,7 +58,7 @@ export default function ExamTakingPage({ params }: { params: { id: string } }) {
 
     setIsSubmitting(true);
     try {
-      const result = await submitExamAction({ examId: params.id, answers });
+      const result = await submitExamAction({ examId, answers });
       setScore(result.score);
       setIsSubmitted(true);
       toast({

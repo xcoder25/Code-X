@@ -20,6 +20,7 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
+import { useParams } from 'next/navigation';
 
 
 interface Course {
@@ -40,12 +41,13 @@ function getLessonIcon(type: string) {
     return <File className="h-5 w-5" />;
 }
 
-export default function CourseDetailPage({ params }: { params: { id: string } }) {
+export default function CourseDetailPage() {
   const { user } = useAuth();
+  const params = useParams();
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
-  const courseId = params.id;
+  const courseId = params.id as string;
 
   useEffect(() => {
     if (!courseId) return;
@@ -220,7 +222,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
          <Card className="mt-6">
             <CardHeader>
                 <CardTitle>Course Content</CardTitle>
-            </CardHeader>
+            </Header>
             <CardContent className="p-8 text-center">
                 <p className="text-muted-foreground">Please enroll in the course to view the content.</p>
             </CardContent>
