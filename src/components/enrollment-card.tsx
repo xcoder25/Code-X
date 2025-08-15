@@ -37,7 +37,7 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
   const { toast } = useToast();
   const { user } = useAuth();
   
-  const handlePurchase = () => {
+  const handlePurchase = async () => {
     if (!user?.email) {
        toast({
         variant: 'destructive',
@@ -46,31 +46,65 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
       });
       return;
     }
-    
-    const paystack = new PaystackPop();
-    paystack.newTransaction({
-        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
-        email: user.email,
-        amount: 500000, // Amount in kobo (e.g., 5000 NGN)
-        onSuccess: (transaction) => {
-            // In a real app, you would make an API call to your backend to verify the transaction
-            // and then generate an access code or directly enroll the user.
-            toast({
-                title: "Payment Successful!",
-                description: `Your payment was successful. Reference: ${transaction.reference}. Please wait for enrollment confirmation.`,
-            });
-            // For now, we'll simulate giving an access code after successful payment
-            // This part should be handled by your backend in production
-            onEnrollmentSuccess(); 
-        },
-        onCancel: () => {
-             toast({
-                variant: 'destructive',
-                title: "Payment Cancelled",
-                description: "You have cancelled the payment process.",
-            });
+
+    setLoadingAction('purchase');
+    setIsLoading(true);
+
+    try {
+        // Step 1: Call your own backend to initialize the transaction
+        const response = await fetch('/api/paystack/initialize', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: user.email,
+                amount: '500000', // Amount in kobo (e.g., 5000 NGN)
+            }),
+        });
+
+        const { data } = await response.json();
+
+        if (!response.ok || !data.access_code) {
+             throw new Error(data.message || 'Failed to initialize payment.');
         }
-    });
+
+        const accessCode = data.access_code;
+        
+        // Step 2: Use access_code to pop up Paystack modal
+        const paystack = new PaystackPop();
+        paystack.newTransaction({
+            key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
+            email: user.email,
+            amount: 500000,
+            access_code: accessCode, 
+            onSuccess: (transaction) => {
+                // In a real app, you would make another API call to your backend to verify the transaction
+                // and then enroll the user.
+                toast({
+                    title: "Payment Successful!",
+                    description: `Your payment was successful. Reference: ${transaction.reference}. Please wait for enrollment confirmation.`,
+                });
+                onEnrollmentSuccess(); 
+            },
+            onCancel: () => {
+                 toast({
+                    variant: 'destructive',
+                    title: "Payment Cancelled",
+                    description: "You have cancelled the payment process.",
+                });
+            }
+        });
+    } catch (error: any) {
+         toast({
+            variant: 'destructive',
+            title: 'Payment Error',
+            description: error.message || 'An unexpected error occurred.',
+        });
+    } finally {
+        setIsLoading(false);
+        setLoadingAction(null);
+    }
   }
 
 
@@ -231,7 +265,7 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
                     onChange={(e) => setAccessCode(e.target.value)}
                     disabled={isLoading}
                 />
-                <Button onClick={handleRedeemCode} disabled={isLoading}>
+                <Button onClick={handleRedeemCode} disabled={isLoading || loadingAction === 'purchase'}>
                     {isLoading && loadingAction === 'redeem' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Redeem
                 </Button>
@@ -263,7 +297,7 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
                 />
             </div>
             {receiptFile && (
-                <Button onClick={handleReceiptUpload} className="w-full mt-2" disabled={isLoading}>
+                <Button onClick={handleReceiptUpload} className="w-full mt-2" disabled={isLoading || loadingAction === 'purchase'}>
                     {isLoading && loadingAction === 'receipt' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Submit Receipt
                 </Button>
@@ -277,6 +311,7 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
         </div>
         
         <Button onClick={handlePurchase} className="w-full" size="lg" disabled={isLoading}>
+            {isLoading && loadingAction === 'purchase' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Purchase Course
         </Button>
       </CardContent>
