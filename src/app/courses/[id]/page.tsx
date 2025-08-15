@@ -50,7 +50,10 @@ export default function CourseDetailPage() {
   const courseId = params.id as string;
 
   useEffect(() => {
-    if (!courseId) return;
+    if (!courseId) {
+        setLoading(false);
+        return;
+    }
 
     const fetchCourse = async () => {
         setLoading(true);
@@ -68,7 +71,7 @@ export default function CourseDetailPage() {
                     modules: (data.modules || []).map((mod: any, index: number) => ({
                         ...mod,
                         title: `Module ${index + 1}: ${mod.name.split('.').slice(0, -1).join('.') || 'Introduction'}`,
-                        completed: false 
+                        completed: false
                     }))
                 });
             } else {
@@ -94,6 +97,10 @@ export default function CourseDetailPage() {
     
     return () => unsubscribe();
   }, [user, courseId]);
+
+  const handleEnrollmentSuccess = () => {
+    setIsEnrolled(true);
+  };
 
   if (loading) {
     return (
@@ -121,10 +128,6 @@ export default function CourseDetailPage() {
         </main>
     );
   }
-
-  const handleEnrollmentSuccess = () => {
-    setIsEnrolled(true);
-  };
 
   if (!course) {
     return (
