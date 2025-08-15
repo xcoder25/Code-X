@@ -108,7 +108,9 @@ export default function AdminCoursesPage() {
                                 <TableCell>{course.enrollments.toLocaleString()}</TableCell>
                                 <TableCell>{new Date(course.createdAt.seconds * 1000).toLocaleDateString()}</TableCell>
                                 <TableCell className="text-right">
-                                    <Button variant="outline" size="sm">Edit</Button>
+                                    <Button asChild variant="outline" size="sm">
+                                      <Link href={`/admin/courses/${course.id}/edit`}>Edit</Link>
+                                    </Button>
                                 </TableCell>
                             </TableRow>
                         ))}

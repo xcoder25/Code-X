@@ -23,7 +23,7 @@ import { chatWithElara, ChatWithElaraOutput, ChatWithElaraInput } from '@/ai/flo
 import { sendMessageFormSchema } from './schema';
 import { exams } from '@/lib/exam-data';
 import { assignments as assignmentData } from '@/lib/assignment-data';
-import { getDownloadURL, ref, uploadString } from 'firebase/storage';
+import { getDownloadURL, ref, uploadString, deleteObject } from 'firebase/storage';
 
 
 export async function sendMessageAction(
@@ -80,6 +80,63 @@ export async function createCourseAction(
 
   return { id: courseRef.id };
 }
+
+const updateCourseSchema = z.object({
+    courseId: z.string(),
+    title: z.string().min(3, "Title must be at least 3 characters."),
+    description: z.string().min(10, "Description must be at least 10 characters."),
+    tags: z.string().min(1, "Please provide at least one tag."),
+    modules: z.array(z.object({
+        name: z.string(),
+        type: z.string(),
+        size: z.number(),
+        url: z.string().url(),
+    })),
+});
+
+
+export async function updateCourseAction(data: z.infer<typeof updateCourseSchema>) {
+    const parsed = updateCourseSchema.safeParse(data);
+    if (!parsed.success) {
+        throw new Error('Invalid course data.');
+    }
+
+    const { courseId, title, description, tags, modules } = parsed.data;
+    
+    const courseRef = doc(db, 'courses', courseId);
+    
+    const courseDoc = await getDoc(courseRef);
+    if (!courseDoc.exists()) {
+        throw new Error('Course not found.');
+    }
+
+    // Identify files to be deleted
+    const existingModules = courseDoc.data().modules || [];
+    const newModuleUrls = new Set(modules.map(m => m.url));
+    const modulesToDelete = existingModules.filter((m: any) => !newModuleUrls.has(m.url));
+
+    // Delete files from storage
+    for (const module of modulesToDelete) {
+        try {
+            const fileRef = ref(storage, module.url);
+            await deleteObject(fileRef);
+        } catch (error: any) {
+            // Ignore if file doesn't exist (e.g., already deleted)
+            if (error.code !== 'storage/object-not-found') {
+                console.error(`Failed to delete module from storage: ${module.url}`, error);
+            }
+        }
+    }
+
+    await updateDoc(courseRef, {
+        title,
+        description,
+        tags: tags.split(',').map(tag => tag.trim()),
+        modules,
+    });
+}
+
+
 
 const updateCourseModulesSchema = z.object({
     courseId: z.string(),
