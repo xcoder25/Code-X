@@ -476,7 +476,13 @@ export async function markMessagesAsRead(userId: string) {
     
     querySnapshot.docs.forEach(docSnap => {
         const messageData = docSnap.data();
-        if (!messageData.readBy.includes(userId)) {
+        // Ensure readBy exists and is an array before checking
+        if (Array.isArray(messageData.readBy) && !messageData.readBy.includes(userId)) {
+            batch.update(docSnap.ref, {
+                readBy: arrayUnion(userId)
+            });
+        } else if (!messageData.readBy) {
+            // If readBy doesn't exist, create it with the current user.
             batch.update(docSnap.ref, {
                 readBy: arrayUnion(userId)
             });
