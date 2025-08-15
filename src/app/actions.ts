@@ -87,10 +87,15 @@ const updateCourseSchema = z.object({
     description: z.string().min(10, "Description must be at least 10 characters."),
     tags: z.string().min(1, "Please provide at least one tag."),
     modules: z.array(z.object({
-        name: z.string(),
-        type: z.string(),
-        size: z.number(),
-        url: z.string().url(),
+        id: z.string(),
+        title: z.string().min(1, "Module title is required."),
+        lessons: z.array(z.object({
+            id: z.string(),
+            name: z.string(),
+            type: z.string(),
+            size: z.number(),
+            url: z.string().url(),
+        })),
     })),
 });
 
@@ -98,7 +103,9 @@ const updateCourseSchema = z.object({
 export async function updateCourseAction(data: z.infer<typeof updateCourseSchema>) {
     const parsed = updateCourseSchema.safeParse(data);
     if (!parsed.success) {
-        throw new Error('Invalid course data.');
+        // Log detailed error for debugging
+        console.error("Course update validation failed:", parsed.error.issues);
+        throw new Error('Invalid course data submitted.');
     }
 
     const { courseId, title, description, tags, modules } = parsed.data;
@@ -110,20 +117,23 @@ export async function updateCourseAction(data: z.infer<typeof updateCourseSchema
         throw new Error('Course not found.');
     }
 
-    // Identify files to be deleted
+    // --- File Deletion Logic ---
     const existingModules = courseDoc.data().modules || [];
-    const newModuleUrls = new Set(modules.map(m => m.url));
-    const modulesToDelete = existingModules.filter((m: any) => !newModuleUrls.has(m.url));
+    const newLessonUrls = new Set(modules.flatMap(m => m.lessons.map(l => l.url)));
+    
+    const lessonsToDelete = existingModules.flatMap((mod: any) => 
+        (mod.lessons || []).filter((lesson: any) => !newLessonUrls.has(lesson.url))
+    );
 
-    // Delete files from storage
-    for (const module of modulesToDelete) {
+    // Delete files from storage that are no longer referenced
+    for (const lesson of lessonsToDelete) {
         try {
-            const fileRef = ref(storage, module.url);
+            const fileRef = ref(storage, lesson.url);
             await deleteObject(fileRef);
         } catch (error: any) {
-            // Ignore if file doesn't exist (e.g., already deleted)
+            // Ignore if file doesn't exist (e.g., already deleted or was never there)
             if (error.code !== 'storage/object-not-found') {
-                console.error(`Failed to delete module from storage: ${module.url}`, error);
+                console.error(`Failed to delete lesson from storage: ${lesson.url}`, error);
             }
         }
     }
@@ -137,14 +147,18 @@ export async function updateCourseAction(data: z.infer<typeof updateCourseSchema
 }
 
 
-
 const updateCourseModulesSchema = z.object({
     courseId: z.string(),
     modules: z.array(z.object({
-        name: z.string(),
-        type: z.string(),
-        size: z.number(),
-        url: z.string().url(),
+        id: z.string(),
+        title: z.string(),
+        lessons: z.array(z.object({
+            id: z.string(),
+            name: z.string(),
+            type: z.string(),
+            size: z.number(),
+            url: z.string().url(),
+        })),
     })),
 });
 

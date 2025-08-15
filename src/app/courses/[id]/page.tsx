@@ -23,22 +23,36 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
 import { db } from '@/lib/firebase';
 
+interface Lesson {
+    id: string;
+    name: string;
+    type: string;
+    url: string;
+    completed?: boolean; // Progress will be tracked separately
+}
+
+interface Module {
+    id: string;
+    title: string;
+    lessons: Lesson[];
+}
+
 interface Course {
     id: string;
     title: string;
     description: string;
     tags: string[];
-    modules: any[];
+    modules: Module[];
 }
 
 function getLessonIcon(type: string) {
     if (type.startsWith('video/')) {
-        return <PlayCircle className="h-5 w-5" />;
+        return <PlayCircle className="h-5 w-5 mr-3 text-muted-foreground" />;
     }
     if (type.startsWith('application/pdf')) {
-        return <FileText className="h-5 w-5" />;
+        return <FileText className="h-5 w-5 mr-3 text-muted-foreground" />;
     }
-    return <File className="h-5 w-5" />;
+    return <File className="h-5 w-5 mr-3 text-muted-foreground" />;
 }
 
 export default function CourseDetailPage() {
@@ -67,11 +81,7 @@ export default function CourseDetailPage() {
           title: data.title,
           description: data.description,
           tags: data.tags || [],
-          modules: (data.modules || []).map((mod: any, index: number) => ({
-            ...mod,
-            title: `Module ${index + 1}: ${mod.name.split('.').slice(0, -1).join('.') || 'Introduction'}`,
-            completed: false
-          }))
+          modules: data.modules || []
         });
       } else {
         setCourse(null);
@@ -87,7 +97,10 @@ export default function CourseDetailPage() {
 
   // Effect to check user enrollment
   useEffect(() => {
-    if (!user || !courseId) return;
+    if (!user || !courseId) {
+        setIsEnrolled(false);
+        return;
+    };
     
     const enrollmentDocRef = doc(db, 'users', user.uid, 'enrollments', courseId);
     const unsubscribeEnrollment = onSnapshot(enrollmentDocRef, (doc) => {
@@ -145,7 +158,7 @@ export default function CourseDetailPage() {
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
         <div>
            <h1 className="font-semibold text-3xl">{course.title}</h1>
-           <p className="text-muted-foreground mt-2">{course.description}</p>
+           <p className="text-muted-foreground mt-2 max-w-3xl">{course.description}</p>
             <div className="flex items-center gap-2 mt-4">
               {course.tags.map((tag: string) => (
                 <Badge key={tag} variant="outline">{tag}</Badge>
@@ -155,9 +168,11 @@ export default function CourseDetailPage() {
         {!isEnrolled && user ? (
           <EnrollmentCard courseId={course.id} userId={user.uid} onEnrollmentSuccess={handleEnrollmentSuccess} />
         ) : isEnrolled ? (
-          <Button asChild size="lg">
-            <Link href="/dashboard">Return to Dashboard</Link>
-          </Button>
+          <Card className="bg-green-500/10 border-green-500/30 text-green-800 dark:text-green-300 w-full max-w-md shrink-0">
+             <CardContent className="p-4">
+                <p className="font-semibold text-center">You are enrolled in this course!</p>
+             </CardContent>
+          </Card>
         ) : null}
       </div>
       
@@ -172,18 +187,30 @@ export default function CourseDetailPage() {
               <CardContent>
                 {course.modules.length > 0 ? (
                   <Accordion type="single" collapsible defaultValue="item-0" className="w-full">
-                    {course.modules.map((module: any, index: number) => (
-                      <AccordionItem value={`item-${index}`} key={module.url}>
-                        <AccordionTrigger className="text-lg font-semibold">{module.title}</AccordionTrigger>
+                    {course.modules.map((module, index) => (
+                      <AccordionItem value={`item-${index}`} key={module.id}>
+                        <AccordionTrigger className="text-lg font-semibold hover:no-underline">
+                            {module.title}
+                        </AccordionTrigger>
                         <AccordionContent>
-                          <ul className="space-y-3 pl-2">
-                            <li className={`flex items-center justify-between p-3 rounded-md transition-colors ${module.completed ? 'bg-accent/50 text-muted-foreground' : 'hover:bg-muted/50'}`}>
-                              <div className="flex items-center gap-3">
-                                {getLessonIcon(module.type)}
-                                <a href={module.url} target="_blank" rel="noopener noreferrer" className={`hover:underline ${module.completed ? 'line-through' : ''}`}>{module.name}</a>
-                              </div>
-                              <Badge variant={module.completed ? "secondary" : "default"}>{module.completed ? "Completed" : "Pending"}</Badge>
-                            </li>
+                          <ul className="space-y-1">
+                            {module.lessons.map(lesson => (
+                               <li key={lesson.id}>
+                                 <a 
+                                    href={lesson.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="flex items-center p-3 rounded-md transition-colors hover:bg-muted/50"
+                                >
+                                  {getLessonIcon(lesson.type)}
+                                  <span className="flex-1">{lesson.name}</span>
+                                  <Badge variant={"secondary"}>Pending</Badge>
+                                </a>
+                              </li>
+                            ))}
+                            {module.lessons.length === 0 && (
+                                <li className="p-3 text-sm text-muted-foreground">No lessons in this module yet.</li>
+                            )}
                           </ul>
                         </AccordionContent>
                       </AccordionItem>
@@ -212,10 +239,17 @@ export default function CourseDetailPage() {
       ) : (
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Course Content</CardTitle>
+            <CardTitle>Course Preview</CardTitle>
+            <CardDescription>The following modules are included in this course.</CardDescription>
           </CardHeader>
-          <CardContent className="p-8 text-center">
-            <p className="text-muted-foreground">Please enroll in the course to view the content.</p>
+          <CardContent className="p-6 text-muted-foreground">
+            <ul className="space-y-2 list-disc list-inside">
+                {course.modules.length > 0 ? course.modules.map(module => (
+                    <li key={module.id}>{module.title}</li>
+                )) : (
+                    <li>Content is being prepared.</li>
+                )}
+            </ul>
           </CardContent>
         </Card>
       )}

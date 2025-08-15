@@ -1,19 +1,18 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useState, useEffect, useId } from 'react';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Upload, X, File as FileIcon, Loader2, ArrowLeft } from 'lucide-react';
+import { Upload, X, File as FileIcon, Loader2, ArrowLeft, GripVertical, Plus } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { updateCourseAction } from '@/app/actions';
 import { uploadBytes, getDownloadURL, ref } from 'firebase/storage';
 import { storage, db } from '@/lib/firebase';
@@ -29,23 +28,30 @@ const courseFormSchema = z.object({
 
 type CourseFormData = z.infer<typeof courseFormSchema>;
 
-interface Module {
+interface Lesson {
+    id: string;
     name: string;
     type: string;
     size: number;
     url: string;
 }
 
+interface Module {
+    id: string;
+    title: string;
+    lessons: Lesson[];
+}
+
 export default function EditCourseForm() {
   const [pageLoading, setPageLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newFiles, setNewFiles] = useState<File[]>([]);
-  const [existingModules, setExistingModules] = useState<Module[]>([]);
+  const [modules, setModules] = useState<Module[]>([]);
   
   const router = useRouter();
   const params = useParams();
   const courseId = params.id as string;
   const { toast } = useToast();
+  const uniqueId = useId();
 
   const form = useForm<CourseFormData>({
     resolver: zodResolver(courseFormSchema),
@@ -71,7 +77,7 @@ export default function EditCourseForm() {
                     description: data.description,
                     tags: (data.tags || []).join(', '),
                 });
-                setExistingModules(data.modules || []);
+                setModules(data.modules || []);
             } else {
                 toast({ variant: 'destructive', title: 'Error', description: 'Course not found.' });
                 router.push('/admin/courses');
@@ -86,40 +92,72 @@ export default function EditCourseForm() {
     fetchCourseData();
   }, [courseId, form, router, toast]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, moduleId: string) => {
     if (e.target.files) {
-      setNewFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        setIsSubmitting(true);
+        try {
+            const uploadedLessons = await Promise.all(files.map(async file => {
+                const storageRef = ref(storage, `course_files/${courseId}/${moduleId}/${file.name}`);
+                await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(storageRef);
+                return { 
+                    id: `${uniqueId}-${file.name}`,
+                    name: file.name, 
+                    type: file.type, 
+                    size: file.size, 
+                    url: url 
+                };
+            }));
+            
+            setModules(prev => prev.map(m => 
+                m.id === moduleId ? { ...m, lessons: [...m.lessons, ...uploadedLessons] } : m
+            ));
+
+             toast({ title: 'Upload successful', description: `${files.length} lesson(s) added.` });
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Upload failed', description: 'Could not upload files.' });
+        } finally {
+            setIsSubmitting(false);
+            // Reset file input
+            e.target.value = '';
+        }
     }
   };
   
-  const removeNewFile = (index: number) => {
-    setNewFiles(prev => prev.filter((_, i) => i !== index));
+  const addModule = () => {
+    const newModule: Module = {
+        id: `${uniqueId}-module-${modules.length}`,
+        title: `New Module ${modules.length + 1}`,
+        lessons: [],
+    };
+    setModules(prev => [...prev, newModule]);
+  };
+
+  const updateModuleTitle = (moduleId: string, newTitle: string) => {
+    setModules(prev => prev.map(m => m.id === moduleId ? { ...m, title: newTitle } : m));
   };
   
-  const removeExistingModule = (url: string) => {
-    setExistingModules(prev => prev.filter(m => m.url !== url));
-  }
+  const removeModule = (moduleId: string) => {
+    setModules(prev => prev.filter(m => m.id !== moduleId));
+  };
+
+  const removeLesson = (moduleId: string, lessonId: string) => {
+    setModules(prev => prev.map(m => 
+        m.id === moduleId ? { ...m, lessons: m.lessons.filter(l => l.id !== lessonId) } : m
+    ));
+  };
 
   const onSubmit = async (data: CourseFormData) => {
     setIsSubmitting(true);
-
     try {
-        // 1. Upload any new files and get their data
-        const newUploadedModules = await Promise.all(newFiles.map(async (file) => {
-            const storageRef = ref(storage, `course_files/${courseId}/${file.name}`);
-            await uploadBytes(storageRef, file);
-            const url = await getDownloadURL(storageRef);
-            return { name: file.name, type: file.type, size: file.size, url: url };
-        }));
-
-        // 2. Combine existing and new modules
-        const allModules = [...existingModules, ...newUploadedModules];
-
-        // 3. Call the update server action
         await updateCourseAction({
             courseId,
             ...data,
-            modules: allModules,
+            modules,
         });
       
       toast({
@@ -128,7 +166,6 @@ export default function EditCourseForm() {
       });
       
       router.push(`/admin/courses`);
-
     } catch (error: any) {
       console.error(error);
       toast({
@@ -160,7 +197,7 @@ export default function EditCourseForm() {
                     <Skeleton className="h-10 w-full" />
                     <Skeleton className="h-24 w-full" />
                     <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-48 w-full" />
                     <Skeleton className="h-10 w-32" />
                 </CardContent>
             </Card>
@@ -184,95 +221,89 @@ export default function EditCourseForm() {
                 </p>
             </div>
         </div>
-        <Card>
-             <CardContent className="pt-6">
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <Card>
+                <CardHeader><CardTitle>Course Details</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
                     <div>
                         <Label>Course Title</Label>
                         <Input {...form.register('title')} placeholder="e.g., Ultimate Next.js Bootcamp" />
                         {form.formState.errors.title && <p className="text-sm text-destructive mt-1">{form.formState.errors.title.message}</p>}
                     </div>
-
                     <div>
                         <Label>Description</Label>
                         <Textarea rows={4} {...form.register('description')} placeholder="A comprehensive course covering..." />
                         {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
                     </div>
-
                     <div>
                         <Label>Tags</Label>
                         <Input {...form.register('tags')} placeholder="e.g., React, Next.js, TypeScript (comma-separated)" />
                         {form.formState.errors.tags && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags.message}</p>}
                     </div>
+                </CardContent>
+            </Card>
 
-
-                    <div>
-                        <Label>Course Materials (Videos, PDFs, etc.)</Label>
-                        <div className="relative flex items-center justify-center border-2 border-dashed rounded-md h-32 cursor-pointer hover:border-primary transition">
-                            <div className="text-center">
-                                <Upload className="mx-auto text-muted-foreground w-8 h-8" />
-                                <p className="text-sm text-muted-foreground mt-2">Drag & drop new files or click to browse</p>
-                            </div>
-                            <Input
-                                type="file"
-                                multiple
-                                accept=".pdf,.doc,.docx,.mp4,.mov,.zip"
-                                onChange={handleFileChange}
-                                className="absolute inset-0 opacity-0 cursor-pointer"
-                                id="file-upload"
-                            />
-                        </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                        {(existingModules.length > 0) && (
-                            <div className="space-y-2">
-                                <h4 className="text-sm font-medium">Current Files:</h4>
-                                <ul className="space-y-2 rounded-md border p-2">
-                                    {existingModules.map((module) => (
-                                    <li key={module.url} className="flex items-center justify-between p-2 bg-muted/50 rounded-md text-sm">
-                                        <div className="flex items-center gap-2 overflow-hidden">
-                                        <FileIcon className="h-4 w-4 shrink-0" />
-                                        <span className="truncate">{module.name}</span>
-                                        <span className="text-muted-foreground text-xs shrink-0">({formatBytes(module.size)})</span>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Course Content</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {modules.map((module) => (
+                        <Card key={module.id} className="bg-muted/50">
+                            <CardHeader className="flex flex-row items-center gap-2 space-y-0 p-4">
+                                <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                <Input 
+                                    value={module.title} 
+                                    onChange={(e) => updateModuleTitle(module.id, e.target.value)}
+                                    className="text-lg font-semibold border-none shadow-none focus-visible:ring-1 p-1 h-auto"
+                                />
+                                <Button variant="ghost" size="icon" className="ml-auto" onClick={() => removeModule(module.id)}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </CardHeader>
+                            <CardContent className="p-4 pt-0">
+                                <div className="space-y-2">
+                                    {module.lessons.map(lesson => (
+                                        <div key={lesson.id} className="flex items-center justify-between p-2 bg-background rounded-md text-sm">
+                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                <FileIcon className="h-4 w-4 shrink-0" />
+                                                <span className="truncate">{lesson.name}</span>
+                                                <span className="text-muted-foreground text-xs shrink-0">({formatBytes(lesson.size)})</span>
+                                            </div>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeLesson(module.id, lesson.id)}>
+                                                <X className="h-4 w-4" />
+                                            </Button>
                                         </div>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeExistingModule(module.url)}>
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </li>
                                     ))}
-                                </ul>
-                            </div>
-                        )}
-                        
-                        {newFiles.length > 0 && (
-                        <div className="space-y-2">
-                            <h4 className="text-sm font-medium">New Files to Upload:</h4>
-                            <ul className="space-y-2 rounded-md border p-2 border-primary/50">
-                                {newFiles.map((file, index) => (
-                                <li key={index} className="flex items-center justify-between p-2 bg-primary/10 rounded-md text-sm">
-                                    <div className="flex items-center gap-2 overflow-hidden">
-                                    <FileIcon className="h-4 w-4 shrink-0" />
-                                    <span className="truncate">{file.name}</span>
-                                    <span className="text-muted-foreground text-xs shrink-0">({formatBytes(file.size)})</span>
+                                </div>
+                                <div className="relative flex items-center justify-center border-2 border-dashed rounded-md h-20 mt-4 cursor-pointer hover:border-primary transition">
+                                    <div className="text-center">
+                                        <Upload className="mx-auto text-muted-foreground w-6 h-6" />
+                                        <p className="text-xs text-muted-foreground mt-1">Upload Lessons</p>
                                     </div>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeNewFile(index)}>
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </li>
-                                ))}
-                            </ul>
-                        </div>
-                        )}
-                    </div>
-
-                    <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        {isSubmitting ? 'Saving Changes...' : 'Save Changes'}
+                                    <Input
+                                        type="file"
+                                        multiple
+                                        accept=".pdf,.doc,.docx,.mp4,.mov,.zip"
+                                        onChange={(e) => handleFileChange(e, module.id)}
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                        disabled={isSubmitting}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                    <Button type="button" variant="outline" onClick={addModule}>
+                        <Plus className="mr-2 h-4 w-4" /> Add Module
                     </Button>
-                </form>
-             </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </Button>
+        </form>
     </div>
   );
 }
