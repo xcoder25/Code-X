@@ -67,9 +67,8 @@ export default function CourseDetailPage() {
                     tags: data.tags || [],
                     modules: (data.modules || []).map((mod: any, index: number) => ({
                         ...mod,
-                        // Generate a more readable title for the module
                         title: `Module ${index + 1}: ${mod.name.split('.').slice(0, -1).join('.') || 'Introduction'}`,
-                        completed: false // Placeholder for future progress tracking
+                        completed: false 
                     }))
                 });
             } else {
@@ -120,12 +119,12 @@ export default function CourseDetailPage() {
                 </div>
             </div>
         </main>
-    )
+    );
   }
 
   const handleEnrollmentSuccess = () => {
     setIsEnrolled(true);
-  }
+  };
 
   if (!course) {
     return (
