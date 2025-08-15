@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { BookOpen, Target, Code, Users } from 'lucide-react';
 import Image from 'next/image';
 import LandingPageFooter from '@/components/landing-page-footer';
+import SkillsSection from '@/components/skills-section';
 
 export default function LandingPage() {
   return (
@@ -103,6 +104,7 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+        <SkillsSection />
       </main>
       <LandingPageFooter />
     </div>
