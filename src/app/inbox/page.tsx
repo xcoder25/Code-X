@@ -86,7 +86,7 @@ export default function InboxPage() {
                 ) : messages.length > 0 ? (
                     <div className="p-2">
                         {messages.map((msg) => {
-                            const isRead = user ? msg.readBy.includes(user.uid) : true;
+                            const isRead = user && msg.readBy ? msg.readBy.includes(user.uid) : true;
                             return (
                             <button
                                 key={msg.id}
