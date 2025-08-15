@@ -123,6 +123,10 @@ export default function CourseDetailPage() {
     )
   }
 
+  const handleEnrollmentSuccess = () => {
+    setIsEnrolled(true);
+  }
+
   if (!course) {
     return (
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -137,10 +141,6 @@ export default function CourseDetailPage() {
          </Button>
       </main>
     );
-  }
-
-  const handleEnrollmentSuccess = () => {
-    setIsEnrolled(true);
   }
 
   return (
