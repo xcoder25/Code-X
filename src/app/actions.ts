@@ -16,6 +16,7 @@ import {
   increment,
   setDoc,
   updateDoc,
+  arrayUnion,
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/analyze-code';
@@ -45,6 +46,7 @@ export async function sendMessageAction(
         body,
         targetType: 'general', // Hardcoded to 'general' for simplicity
         createdAt: serverTimestamp(),
+        readBy: [], // Add an empty array to track who has read the message
     });
   } catch (error) {
     // Log the specific Firestore error to the server console for debugging.
@@ -462,4 +464,24 @@ export async function enrollWithReceiptAction(
     await batch.commit();
 
     return { success: true };
+}
+
+export async function markMessagesAsRead(userId: string) {
+    const messagesRef = collection(db, 'in-app-messages');
+    const q = query(messagesRef, where('targetType', '==', 'general'));
+    
+    const querySnapshot = await getDocs(q);
+    
+    const batch = writeBatch(db);
+    
+    querySnapshot.docs.forEach(docSnap => {
+        const messageData = docSnap.data();
+        if (!messageData.readBy.includes(userId)) {
+            batch.update(docSnap.ref, {
+                readBy: arrayUnion(userId)
+            });
+        }
+    });
+
+    await batch.commit();
 }

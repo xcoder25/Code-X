@@ -1,73 +1,30 @@
 
 'use client';
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from '@/components/ui/card';
-import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
-import { Mail, Link as LinkIcon } from 'lucide-react';
-import Link from 'next/link';
+import { Mail, MessageCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { markMessagesAsRead } from '../actions';
+import { useLoading } from '@/context/loading-provider';
 
 interface Message {
   id: string;
   title: string;
   body: string;
-  createdAt: {
-    seconds: number;
-    nanoseconds: number;
-  };
+  createdAt: Timestamp;
+  readBy: string[];
 }
-
-const urlRegex = /(https?:\/\/[^\s]+)/g;
-
-const MessageCard = ({ message }: { message: Message }) => {
-  const urls = message.body.match(urlRegex);
-  const link = urls ? urls[0] : null;
-
-  const cardContent = (
-    <Card className={link ? 'hover:bg-muted/50 cursor-pointer transition-colors' : ''}>
-      <CardHeader>
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle>{message.title}</CardTitle>
-                {message.createdAt && (
-                <CardDescription>
-                    {new Date(message.createdAt.seconds * 1000).toLocaleString()}
-                </CardDescription>
-                )}
-            </div>
-             {link && <LinkIcon className="h-5 w-5 text-muted-foreground" />}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{message.body}</p>
-      </CardContent>
-    </Card>
-  );
-
-  if (link) {
-    return (
-        <a href={link} target="_blank" rel="noopener noreferrer" className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-lg block">
-            {cardContent}
-        </a>
-    )
-  }
-
-  return cardContent;
-};
 
 export default function InboxPage() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { showLoading, hideLoading } = useLoading();
 
   useEffect(() => {
     if (!user) {
@@ -75,7 +32,6 @@ export default function InboxPage() {
       return;
     }
 
-    // This query fetches all 'general' notifications for everyone.
     const messagesQuery = query(
       collection(db, 'in-app-messages'),
       where('targetType', '==', 'general'),
@@ -88,48 +44,107 @@ export default function InboxPage() {
         ...doc.data(),
       })) as Message[];
       setMessages(messagesData);
+
+      if (messagesData.length > 0 && !selectedMessage) {
+        setSelectedMessage(messagesData[0]);
+      } else if (messagesData.length === 0) {
+        setSelectedMessage(null);
+      }
       setLoading(false);
     }, (error) => {
       console.error("Error fetching messages:", error);
       setLoading(false);
     });
+    
+    // Mark messages as read when the component mounts
+    markMessagesAsRead(user.uid);
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, selectedMessage]);
+  
+  const handleSelectMessage = (message: Message) => {
+    showLoading();
+    setTimeout(() => {
+        setSelectedMessage(message);
+        hideLoading();
+    }, 200); // Simulate network latency for a better UX
+  }
 
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-semibold text-3xl">Notifications</h1>
-      </div>
-      <p className="text-muted-foreground">
-        Important messages and announcements from your admin will appear here.
-      </p>
+    <main className="flex flex-1 flex-col md:p-0 h-[calc(100vh-theme(spacing.14))] overflow-hidden">
+       <div className="flex h-full border rounded-lg">
+            {/* Message List Pane */}
+            <div className={cn("w-full md:w-1/3 lg:w-1/4 border-r overflow-y-auto", selectedMessage && "hidden md:block")}>
+                <div className="p-4 border-b">
+                    <h1 className="font-semibold text-2xl">Inbox</h1>
+                    <p className="text-muted-foreground text-sm">All notifications</p>
+                </div>
+                {loading ? (
+                    <div className="p-4 space-y-3">
+                        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+                    </div>
+                ) : messages.length > 0 ? (
+                    <div className="p-2">
+                        {messages.map((msg) => {
+                            const isRead = user ? msg.readBy.includes(user.uid) : true;
+                            return (
+                            <button
+                                key={msg.id}
+                                onClick={() => handleSelectMessage(msg)}
+                                className={cn(
+                                "w-full text-left p-3 rounded-md flex items-start gap-3 transition-colors",
+                                selectedMessage?.id === msg.id ? "bg-muted" : "hover:bg-muted/50",
+                                !isRead && "font-bold"
+                                )}
+                            >
+                                {!isRead && <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5" />}
+                                <div className={cn("flex-1", isRead ? "pl-5" : "")}>
+                                    <p className="truncate">{msg.title}</p>
+                                    <p className={cn("text-xs text-muted-foreground truncate", !isRead && "text-foreground/80")}>
+                                        {msg.body}
+                                    </p>
+                                </div>
+                            </button>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="p-8 text-center text-muted-foreground flex flex-col items-center gap-4">
+                        <Mail className="h-12 w-12 text-muted-foreground/50" />
+                        <p>Your inbox is empty.</p>
+                    </div>
+                )}
+            </div>
 
-      <div className="space-y-4">
-        {loading ? (
-          [...Array(3)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-10 w-full" />
-              </CardContent>
-            </Card>
-          ))
-        ) : messages.length > 0 ? (
-          messages.map((msg) => <MessageCard key={msg.id} message={msg} />)
-        ) : (
-          <Card>
-            <CardContent className="p-8 text-center text-muted-foreground flex flex-col items-center gap-4">
-              <Mail className="h-12 w-12 text-muted-foreground/50" />
-              <p>Your inbox is empty.</p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+            {/* Message Content Pane */}
+             <div className={cn("flex-1 flex flex-col", !selectedMessage && "hidden md:flex")}>
+                {selectedMessage ? (
+                    <>
+                    <div className="p-4 border-b flex items-start gap-4">
+                         <button onClick={() => setSelectedMessage(null)} className="md:hidden p-2 -ml-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                        </button>
+                        <div className="flex-1">
+                            <h2 className="text-xl font-semibold">{selectedMessage.title}</h2>
+                            <p className="text-sm text-muted-foreground">
+                                {new Date(selectedMessage.createdAt.seconds * 1000).toLocaleString()}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex-1 p-6 overflow-y-auto">
+                        <p className="whitespace-pre-wrap">{selectedMessage.body}</p>
+                    </div>
+                    </>
+                ) : (
+                    <div className="flex-1 flex items-center justify-center text-center text-muted-foreground">
+                       <div className="flex flex-col items-center gap-4">
+                           <MessageCircle className="h-16 w-16 text-muted-foreground/30" />
+                           <p>Select a message to read</p>
+                       </div>
+                    </div>
+                )}
+            </div>
+       </div>
     </main>
   );
 }
