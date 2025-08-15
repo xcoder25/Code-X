@@ -18,6 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, UploadCloud, Copy, CheckCircle } from 'lucide-react';
 import { redeemAccessCodeAction, enrollWithReceiptAction } from '@/app/actions';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { usePaystackPayment } from 'react-paystack';
+import { useAuth } from '@/app/auth-provider';
 
 interface EnrollmentCardProps {
     courseId: string;
@@ -32,6 +34,38 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
   const [loadingAction, setLoadingAction] = useState<'redeem' | 'purchase' | 'receipt' | null>(null);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
+  
+  // Paystack Configuration
+  const paystackConfig = {
+      reference: (new Date()).getTime().toString(),
+      email: user?.email || "",
+      amount: 500000, // Amount in kobo (e.g., 5000 NGN)
+      publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
+  };
+
+  const onPaystackSuccess = (reference: any) => {
+    // In a real app, you would make an API call to your backend to verify the transaction
+    // and then generate an access code or directly enroll the user.
+    toast({
+        title: "Payment Successful!",
+        description: `Your payment was successful. Reference: ${reference.reference}. Please wait for enrollment confirmation.`,
+    });
+    // For now, we'll simulate giving an access code after successful payment
+    // This part should be handled by your backend in production
+    onEnrollmentSuccess(); 
+  };
+
+  const onPaystackClose = () => {
+    toast({
+        variant: 'destructive',
+        title: "Payment Cancelled",
+        description: "You have cancelled the payment process.",
+    });
+  };
+
+  const initializePayment = usePaystackPayment(paystackConfig);
+
 
   const handleRedeemCode = async () => {
     if (!accessCode) {
@@ -132,10 +166,17 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
   };
   
   const handlePurchase = () => {
-    // In a real app, this would redirect to a checkout page (e.g., Stripe)
-    toast({
-        title: 'Redirecting to checkout...',
-        description: 'This is where the payment flow would begin.',
+    if (!user?.email) {
+       toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'You must be logged in to make a purchase.',
+      });
+      return;
+    }
+     initializePayment({
+      onSuccess: onPaystackSuccess,
+      onClose: onPaystackClose,
     });
   }
 
