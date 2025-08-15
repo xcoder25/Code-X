@@ -413,55 +413,6 @@ export async function gradeAssignmentAction(
   return { success: true };
 }
 
-const enrollWithReceiptSchema = z.object({
-  courseId: z.string(),
-  userId: z.string(),
-  receiptDataUrl: z.string(),
-  receiptFileName: z.string(),
-});
-
-export async function enrollWithReceiptAction(
-  input: z.infer<typeof enrollWithReceiptSchema>
-): Promise<{ success: true; accessCode: string; }> {
-    const parsed = enrollWithReceiptSchema.safeParse(input);
-    if (!parsed.success) {
-        throw new Error('Invalid input for receipt enrollment.');
-    }
-    const { courseId, userId, receiptDataUrl, receiptFileName } = parsed.data;
-
-    const courseDocRef = doc(db, 'courses', courseId);
-    const courseDoc = await getDoc(courseDocRef);
-
-    if (!courseDoc.exists()) {
-      throw new Error('Selected course not found.');
-    }
-    const courseTitle = courseDoc.data()?.title || 'Untitled Course';
-
-    // 1. Upload receipt to storage for verification
-    const storageRef = ref(storage, `receipt_submissions/${courseId}/${userId}/${receiptFileName}`);
-    const uploadResult = await uploadString(storageRef, receiptDataUrl, 'data_url');
-    const receiptUrl = await getDownloadURL(uploadResult.ref);
-
-    // 2. Generate a single, unique access code for this transaction
-    const accessCode = `RCPT-${generateRandomCode(8)}`;
-    
-    const codeRef = doc(collection(db, 'accessCodes'));
-    await setDoc(codeRef, {
-        code: accessCode,
-        courseId,
-        courseTitle,
-        maxRedemptions: 1,
-        redemptions: 0,
-        status: 'Active',
-        createdAt: serverTimestamp(),
-        generatedBy: 'receipt-upload',
-        receiptUrl: receiptUrl,
-        userId: userId, // Link code to the user who uploaded
-    });
-
-    return { success: true, accessCode };
-}
-
 export async function markMessagesAsRead(userId: string) {
     const messagesRef = collection(db, 'in-app-messages');
     const q = query(messagesRef, where('targetType', '==', 'general'));
