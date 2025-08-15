@@ -54,9 +54,9 @@ export default function CourseDetailPage() {
         setLoading(false);
         return;
     }
-
+    
+    setLoading(true);
     const fetchCourse = async () => {
-        setLoading(true);
         try {
             const courseDocRef = doc(db, 'courses', courseId);
             const courseDoc = await getDoc(courseDocRef);
