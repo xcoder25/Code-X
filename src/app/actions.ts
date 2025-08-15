@@ -422,48 +422,44 @@ const enrollWithReceiptSchema = z.object({
 
 export async function enrollWithReceiptAction(
   input: z.infer<typeof enrollWithReceiptSchema>
-) {
+): Promise<{ success: true; accessCode: string; }> {
     const parsed = enrollWithReceiptSchema.safeParse(input);
     if (!parsed.success) {
         throw new Error('Invalid input for receipt enrollment.');
     }
     const { courseId, userId, receiptDataUrl, receiptFileName } = parsed.data;
 
-    // Check if user is already enrolled
-    const enrollmentDocRef = doc(db, 'users', userId, 'enrollments', courseId);
-    const enrollmentDoc = await getDoc(enrollmentDocRef);
-    if (enrollmentDoc.exists()) {
-        throw new Error("You are already enrolled in this course.");
+    const courseDocRef = doc(db, 'courses', courseId);
+    const courseDoc = await getDoc(courseDocRef);
+
+    if (!courseDoc.exists()) {
+      throw new Error('Selected course not found.');
     }
+    const courseTitle = courseDoc.data()?.title || 'Untitled Course';
 
     // 1. Upload receipt to storage for verification
     const storageRef = ref(storage, `receipt_submissions/${courseId}/${userId}/${receiptFileName}`);
     const uploadResult = await uploadString(storageRef, receiptDataUrl, 'data_url');
     const receiptUrl = await getDownloadURL(uploadResult.ref);
 
-    // 2. SIMULATE verification and grant access.
-    // In a real app, you might create a "pending verification" document for an admin to review.
-    // For this prototype, we will enroll the user immediately.
-
-    const batch = writeBatch(db);
-
-    // Create an enrollment document for the user
-    batch.set(enrollmentDocRef, {
-        courseId: courseId,
-        enrolledAt: serverTimestamp(),
-        progress: 0,
-        enrollmentMethod: 'receipt',
+    // 2. Generate a single, unique access code for this transaction
+    const accessCode = `RCPT-${generateRandomCode(8)}`;
+    
+    const codeRef = doc(collection(db, 'accessCodes'));
+    await setDoc(codeRef, {
+        code: accessCode,
+        courseId,
+        courseTitle,
+        maxRedemptions: 1,
+        redemptions: 0,
+        status: 'Active',
+        createdAt: serverTimestamp(),
+        generatedBy: 'receipt-upload',
         receiptUrl: receiptUrl,
-        verificationStatus: 'auto-approved', // for tracking
+        userId: userId, // Link code to the user who uploaded
     });
 
-    // Increment enrollment count on the course
-    const courseDocRef = doc(db, 'courses', courseId);
-    batch.update(courseDocRef, { enrollments: increment(1) });
-
-    await batch.commit();
-
-    return { success: true };
+    return { success: true, accessCode };
 }
 
 export async function markMessagesAsRead(userId: string) {

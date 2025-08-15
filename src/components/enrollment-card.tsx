@@ -15,8 +15,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UploadCloud } from 'lucide-react';
+import { Loader2, UploadCloud, Copy, CheckCircle } from 'lucide-react';
 import { redeemAccessCodeAction, enrollWithReceiptAction } from '@/app/actions';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 interface EnrollmentCardProps {
     courseId: string;
@@ -29,6 +30,7 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingAction, setLoadingAction] = useState<'redeem' | 'purchase' | 'receipt' | null>(null);
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleRedeemCode = async () => {
@@ -97,17 +99,20 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
     reader.onload = async () => {
         try {
             const base64DataUrl = reader.result as string;
-            await enrollWithReceiptAction({
+            const result = await enrollWithReceiptAction({
                 courseId,
                 userId,
                 receiptDataUrl: base64DataUrl,
                 receiptFileName: receiptFile.name,
             });
-            toast({
-                title: 'Receipt Submitted!',
-                description: 'Your enrollment is being processed. You are now enrolled.',
-            });
-            onEnrollmentSuccess();
+
+            if (result.success) {
+                setGeneratedCode(result.accessCode);
+                 toast({
+                    title: 'Receipt Submitted!',
+                    description: 'Your unique access code has been generated.',
+                });
+            }
         } catch (error: any) {
              toast({
                 variant: 'destructive',
@@ -132,6 +137,46 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
         title: 'Redirecting to checkout...',
         description: 'This is where the payment flow would begin.',
     });
+  }
+
+  const copyCode = () => {
+    if (!generatedCode) return;
+    navigator.clipboard.writeText(generatedCode);
+    toast({
+        title: "Code Copied!",
+        description: `${generatedCode} has been copied to your clipboard.`,
+    });
+  }
+  
+  if (generatedCode) {
+    return (
+        <Card className="w-full max-w-md shrink-0">
+             <CardHeader>
+                <CardTitle>Code Generated!</CardTitle>
+                <CardDescription>
+                    Your receipt has been submitted. Use the code below to enroll.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Alert className="border-green-500/50 bg-green-500/10">
+                    <CheckCircle className="h-4 w-4 !text-green-600" />
+                    <AlertTitle>Your Access Code</AlertTitle>
+                    <AlertDescription>
+                        Copy this code and paste it into the "Redeem Access Code" field on this page to complete your enrollment.
+                    </AlertDescription>
+                </Alert>
+                <div className="flex items-center space-x-2 mt-4">
+                    <Input value={generatedCode} readOnly className="font-mono text-center"/>
+                    <Button variant="outline" size="icon" onClick={copyCode}>
+                        <Copy className="h-4 w-4" />
+                    </Button>
+                </div>
+            </CardContent>
+            <CardFooter>
+                 <Button className="w-full" onClick={() => setGeneratedCode(null)}>Use a different method</Button>
+            </CardFooter>
+        </Card>
+    );
   }
 
   return (
