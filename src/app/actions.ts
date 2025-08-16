@@ -37,17 +37,27 @@ export async function sendMessageAction(
     throw new Error(`Invalid input: ${errorMessage}`);
   }
 
-  const { title, body } = parsed.data;
+  const { title, body, targetType, userId } = parsed.data;
 
   try {
-    // The only action is to create a general notification for all users.
-    await addDoc(collection(db, 'in-app-messages'), {
-        title,
-        body,
-        targetType: 'general', // Hardcoded to 'general' for simplicity
-        createdAt: serverTimestamp(),
-        readBy: [], // Add an empty array to track who has read the message
-    });
+    if (targetType === 'direct') {
+         await addDoc(collection(db, 'in-app-messages'), {
+            title,
+            body,
+            targetType: 'direct',
+            userIds: [userId], // Store recipient in an array
+            createdAt: serverTimestamp(),
+            readBy: [],
+        });
+    } else {
+        await addDoc(collection(db, 'in-app-messages'), {
+            title,
+            body,
+            targetType: 'general',
+            createdAt: serverTimestamp(),
+            readBy: [],
+        });
+    }
   } catch (error) {
     // Log the specific Firestore error to the server console for debugging.
     console.error('Error sending message to Firestore:', error);
@@ -415,26 +425,35 @@ export async function gradeAssignmentAction(
 
 export async function markMessagesAsRead(userId: string) {
     const messagesRef = collection(db, 'in-app-messages');
-    const q = query(messagesRef, where('targetType', '==', 'general'));
     
-    const querySnapshot = await getDocs(q);
+    // Query for both general messages and direct messages to the user
+    const generalQuery = query(messagesRef, where('targetType', '==', 'general'));
+    const directQuery = query(messagesRef, where('userIds', 'array-contains', userId));
+
+    const [generalSnapshot, directSnapshot] = await Promise.all([
+        getDocs(generalQuery),
+        getDocs(directQuery)
+    ]);
     
     const batch = writeBatch(db);
     
-    querySnapshot.docs.forEach(docSnap => {
-        const messageData = docSnap.data();
-        // Ensure readBy exists and is an array before checking
-        if (Array.isArray(messageData.readBy) && !messageData.readBy.includes(userId)) {
-            batch.update(docSnap.ref, {
-                readBy: arrayUnion(userId)
-            });
-        } else if (!messageData.readBy) {
-            // If readBy doesn't exist, create it with the current user.
-            batch.update(docSnap.ref, {
-                readBy: arrayUnion(userId)
-            });
-        }
-    });
+    const processSnapshot = (snapshot: any) => {
+        snapshot.docs.forEach((docSnap: any) => {
+            const messageData = docSnap.data();
+            if (Array.isArray(messageData.readBy) && !messageData.readBy.includes(userId)) {
+                batch.update(docSnap.ref, {
+                    readBy: arrayUnion(userId)
+                });
+            } else if (!messageData.readBy) {
+                batch.update(docSnap.ref, {
+                    readBy: arrayUnion(userId)
+                });
+            }
+        });
+    };
+
+    processSnapshot(generalSnapshot);
+    processSnapshot(directSnapshot);
 
     await batch.commit();
 }

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { collection, query, orderBy, onSnapshot, where, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where, Timestamp, or } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,7 +34,10 @@ export default function InboxPage() {
 
     const messagesQuery = query(
       collection(db, 'in-app-messages'),
-      where('targetType', '==', 'general'),
+      or(
+        where('targetType', '==', 'general'),
+        where('userIds', 'array-contains', user.uid)
+      ),
       orderBy('createdAt', 'desc')
     );
 

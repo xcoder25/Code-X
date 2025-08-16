@@ -33,7 +33,7 @@ import { useAuth } from '@/app/auth-provider';
 import { auth, db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import LoadingLink from '@/components/ui/loading-link';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, or } from 'firebase/firestore';
 
 
 export default function AppSidebar() {
@@ -48,7 +48,10 @@ export default function AppSidebar() {
 
     const messagesQuery = query(
       collection(db, 'in-app-messages'),
-      where('targetType', '==', 'general')
+      or(
+        where('targetType', '==', 'general'),
+        where('userIds', 'array-contains', user.uid)
+      )
     );
     
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {

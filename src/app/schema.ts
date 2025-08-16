@@ -2,10 +2,21 @@
 import { z } from 'zod';
 
 // Schema for sending general notifications from admin
-export const sendMessageFormSchema = z.object({
-  title: z.string().min(1, 'Title is required.'),
-  body: z.string().min(1, 'Body is required.'),
-});
+export const sendMessageFormSchema = z.discriminatedUnion("targetType", [
+    z.object({
+        targetType: z.literal("general"),
+        title: z.string().min(1, 'Title is required.'),
+        body: z.string().min(1, 'Body is required.'),
+        userId: z.string().optional(), // Not needed for general
+    }),
+    z.object({
+        targetType: z.literal("direct"),
+        title: z.string().min(1, 'Title is required.'),
+        body: z.string().min(1, 'Body is required.'),
+        userId: z.string().min(1, "A recipient is required for direct messages."),
+    }),
+]);
+
 
 // Schema for AI Code Analysis
 export const AnalyzeCodeInputSchema = z.object({
