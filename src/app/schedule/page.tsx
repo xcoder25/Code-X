@@ -1,8 +1,5 @@
 import {
   Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
   CardContent,
 } from '@/components/ui/card';
 import {
@@ -16,10 +13,25 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-
-const schedule: any[] = [];
+import { assignments } from '@/lib/assignment-data';
+import { getAllExamDetails } from '@/lib/exam-data';
 
 export default function SchedulePage() {
+
+  const exams = getAllExamDetails().map(e => ({...e, type: "Exam", date: "TBD", time: "N/A"}));
+  const assignmentEvents = assignments.map(a => ({...a, type: "Assignment", date: a.dueDate, time: "11:59 PM"}));
+  
+  // In a real app, live classes would come from a database
+  const liveClasses: any[] = [];
+  
+  const schedule = [...assignmentEvents, ...exams, ...liveClasses].sort((a,b) => {
+    // This sorting is basic, a real implementation would need more robust date handling
+    if(a.date === "TBD") return 1;
+    if(b.date === "TBD") return -1;
+    return new Date(a.date).getTime() - new Date(b.date).getTime();
+  });
+
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <div className="flex items-center">
@@ -45,7 +57,7 @@ export default function SchedulePage() {
             <TableBody>
               {schedule.length > 0 ? (
                 schedule.map((event) => (
-                    <TableRow key={event.title}>
+                    <TableRow key={`${event.type}-${event.id}`}>
                     <TableCell className="font-medium">{event.title}</TableCell>
                     <TableCell>{event.course}</TableCell>
                     <TableCell>{event.date}</TableCell>
@@ -66,7 +78,7 @@ export default function SchedulePage() {
                     <TableCell className="text-right">
                         {event.type === 'Live Session' && (
                             <Button asChild size="sm">
-                                <Link href={event.meetingUrl || '#'} target="_blank">Join Session</Link>
+                                <Link href={'#'} target="_blank">Join Session</Link>
                             </Button>
                         )}
                         {event.type === 'Assignment' && (
@@ -76,7 +88,7 @@ export default function SchedulePage() {
                         )}
                         {event.type === 'Exam' && (
                             <Button asChild variant="outline" size="sm">
-                                <Link href="/exams">Begin Exam</Link>
+                                <Link href={`/exams/${event.id}`}>Begin Exam</Link>
                             </Button>
                         )}
                     </TableCell>

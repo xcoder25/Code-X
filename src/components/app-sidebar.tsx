@@ -13,9 +13,14 @@ import {
   Settings,
   Calendar,
   FlaskConical,
+  MessageCircle,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useAuth } from '@/app/auth-provider';
+import { auth } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
+import LoadingLink from '@/components/ui/loading-link';
+import { useUnreadCount } from '@/hooks/use-unread-count';
 
 import {
   Sidebar,
@@ -29,42 +34,14 @@ import {
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import Image from 'next/image';
-import { useAuth } from '@/app/auth-provider';
-import { auth, db } from '@/lib/firebase';
-import { useToast } from '@/hooks/use-toast';
-import LoadingLink from '@/components/ui/loading-link';
-import { collection, onSnapshot, query, where, or } from 'firebase/firestore';
-
 
 export default function AppSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { unreadCount } = useUnreadCount();
 
-  useEffect(() => {
-    if (!user) return;
-
-    const messagesQuery = query(
-      collection(db, 'in-app-messages'),
-      or(
-        where('targetType', '==', 'general'),
-        where('userIds', 'array-contains', user.uid)
-      )
-    );
-    
-    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-        const count = snapshot.docs.filter(doc => {
-            const data = doc.data();
-            return !data.readBy || !data.readBy.includes(user.uid);
-        }).length;
-        setUnreadCount(count);
-    });
-
-    return () => unsubscribe();
-
-  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -136,6 +113,14 @@ export default function AppSidebar() {
               </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/chat')}>
+                <LoadingLink href="/chat">
+                    <MessageCircle />
+                    <span>Community Chat</span>
+                </LoadingLink>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/subscription')}>
               <LoadingLink href="/subscription">

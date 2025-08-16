@@ -445,8 +445,9 @@ export async function markMessagesAsRead(userId: string) {
                     readBy: arrayUnion(userId)
                 });
             } else if (!messageData.readBy) {
+                // If readBy doesn't exist, create it.
                 batch.update(docSnap.ref, {
-                    readBy: arrayUnion(userId)
+                    readBy: [userId]
                 });
             }
         });

@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { usePathname } from 'next/navigation';
+import LoadingSpinner from '@/components/ui/loading-spinner';
 
 interface AuthContextType {
   user: User | null;
@@ -31,18 +32,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = { user, loading };
   
-  // Don't suspend public routes while waiting for auth.
-  if (isPublicRoute) {
-    return (
-       <AuthContext.Provider value={value}>
-          {children}
-       </AuthContext.Provider>
-    )
+  if (loading && !isPublicRoute) {
+    return <LoadingSpinner />
   }
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading ? children : null}
+      {children}
     </AuthContext.Provider>
   );
 }

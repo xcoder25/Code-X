@@ -1,4 +1,30 @@
 const exams: { [key: string]: any } = {
+  'html-fundamentals': {
+    id: 'html-fundamentals',
+    title: 'HTML Fundamentals Quiz',
+    course: 'Web Development Bootcamp',
+    duration: 600, // 10 minutes
+    questions: [
+      {
+        id: 'q1',
+        text: 'What does HTML stand for?',
+        options: ['Hyper Text Markup Language', 'Hyperlinks and Text Markup Language', 'Home Tool Markup Language'],
+        correctAnswer: 'Hyper Text Markup Language',
+      },
+      {
+        id: 'q2',
+        text: 'Who is making the Web standards?',
+        options: ['Google', 'Microsoft', 'The World Wide Web Consortium'],
+        correctAnswer: 'The World Wide Web Consortium',
+      },
+      {
+        id: 'q3',
+        text: 'Choose the correct HTML element for the largest heading:',
+        options: ['<heading>', '<h6>', '<h1>'],
+        correctAnswer: '<h1>',
+      },
+    ],
+  },
   'mid-term-exam': {
     id: 'mid-term-exam',
     title: 'Mid-term Exam',
@@ -42,10 +68,18 @@ export function getExamQuestions(examId: string) {
   return exam.questions.map(({ correctAnswer, ...rest }: { correctAnswer: string }) => rest);
 }
 
-// Function to get exam details like title, duration, etc.
+// Function to get exam details like title, duration, etc. for a single exam
 export function getExamDetails(examId: string) {
     const exam = exams[examId as keyof typeof exams];
     if (!exam) return null;
     const { questions, ...details } = exam;
     return details;
+}
+
+// Function to get details for ALL exams
+export function getAllExamDetails() {
+    return Object.keys(exams).map(examId => {
+        const { questions, ...details } = exams[examId];
+        return details;
+    });
 }

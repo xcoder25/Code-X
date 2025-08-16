@@ -16,7 +16,7 @@ interface Message {
   title: string;
   body: string;
   createdAt: Timestamp;
-  readBy: string[];
+  readBy?: string[];
 }
 
 export default function InboxPage() {
@@ -89,7 +89,7 @@ export default function InboxPage() {
                 ) : messages.length > 0 ? (
                     <div className="p-2">
                         {messages.map((msg) => {
-                            const isRead = user && msg.readBy ? msg.readBy.includes(user.uid) : true;
+                            const isRead = user && msg.readBy ? msg.readBy.includes(user.uid) : false;
                             return (
                             <button
                                 key={msg.id}

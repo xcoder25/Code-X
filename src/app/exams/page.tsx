@@ -16,10 +16,11 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-
-const exams: any[] = [];
+import { getAllExamDetails } from '@/lib/exam-data';
 
 export default function ExamsPage() {
+  const exams = getAllExamDetails();
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <div className="flex items-center">
@@ -36,36 +37,22 @@ export default function ExamsPage() {
               <TableRow>
                 <TableHead>Title</TableHead>
                 <TableHead>Course</TableHead>
-                <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Score</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {exams.length > 0 ? (
                 exams.map((exam) => (
-                  <TableRow key={exam.title}>
+                  <TableRow key={exam.id}>
                     <TableCell className="font-medium">{exam.title}</TableCell>
                     <TableCell>{exam.course}</TableCell>
-                    <TableCell>{exam.date}</TableCell>
                     <TableCell>
-                      <Badge
-                        variant={
-                          exam.status === 'Upcoming' ? 'default' : 'secondary'
-                        }
-                      >
-                        {exam.status}
-                      </Badge>
+                      <Badge>Upcoming</Badge>
                     </TableCell>
-                    <TableCell>{exam.score || 'N/A'}</TableCell>
                     <TableCell className="text-right">
-                      <Button asChild
-                        variant="outline"
-                        size="sm"
-                        disabled={exam.status === 'Completed'}
-                      >
-                        {exam.status === 'Completed' ? <Link href="#">View Results</Link> : <Link href={`/exams/${exam.id}`}>Begin Exam</Link>}
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/exams/${exam.id}`}>Begin Exam</Link>
                       </Button>
                     </TableCell>
                   </TableRow>

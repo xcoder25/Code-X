@@ -61,11 +61,11 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   const isProtectedAdminRoute = pathname.startsWith('/admin') && pathname !== '/admin/login';
 
-  if (loading) {
+  if (loading && isProtectedAdminRoute) {
     return <LoadingSpinner />;
   }
-
-  if (!isAdmin && isProtectedAdminRoute) {
+  
+  if (!loading && !isAdmin && isProtectedAdminRoute) {
       // Don't render children if not an admin on a protected route.
       // The useEffect above will handle the redirect.
       return <LoadingSpinner />;
