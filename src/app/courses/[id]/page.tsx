@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import Link from 'next/link';
-import { PlayCircle, FileText, File } from 'lucide-react';
+import { PlayCircle, FileText, File, Library, Download } from 'lucide-react';
 
 import {
   Card,
@@ -17,6 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import LearningPathGenerator from '@/components/learning-path-generator';
 import EnrollmentCard from '@/components/enrollment-card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -28,7 +29,7 @@ interface Lesson {
     name: string;
     type: string;
     url: string;
-    completed?: boolean; // Progress will be tracked separately
+    completed?: boolean;
 }
 
 interface Module {
@@ -37,12 +38,19 @@ interface Module {
     lessons: Lesson[];
 }
 
+interface Resource {
+    id: string;
+    name: string;
+    url: string;
+}
+
 interface Course {
     id: string;
     title: string;
     description: string;
     tags: string[];
     modules: Module[];
+    resources: Resource[];
 }
 
 function getLessonIcon(type: string) {
@@ -81,7 +89,8 @@ export default function CourseDetailPage() {
           title: data.title,
           description: data.description,
           tags: data.tags || [],
-          modules: data.modules || []
+          modules: data.modules || [],
+          resources: data.resources || [],
         });
       } else {
         setCourse(null);
@@ -179,50 +188,92 @@ export default function CourseDetailPage() {
       {isEnrolled ? (
         <div className="grid md:grid-cols-3 gap-6 mt-6">
           <div className="md:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Course Curriculum</CardTitle>
-                <CardDescription>Follow the curriculum to complete the course.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {course.modules.length > 0 ? (
-                  <Accordion type="single" collapsible defaultValue="item-0" className="w-full">
-                    {course.modules.map((module, index) => (
-                      <AccordionItem value={`item-${index}`} key={module.id}>
-                        <AccordionTrigger className="text-lg font-semibold hover:no-underline">
-                            {module.title}
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <ul className="space-y-1">
-                            {module.lessons.map(lesson => (
-                               <li key={lesson.id}>
-                                 <a 
-                                    href={lesson.url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="flex items-center p-3 rounded-md transition-colors hover:bg-muted/50"
-                                >
-                                  {getLessonIcon(lesson.type)}
-                                  <span className="flex-1">{lesson.name}</span>
-                                  <Badge variant={"secondary"}>Pending</Badge>
-                                </a>
-                              </li>
+             <Tabs defaultValue="curriculum">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
+                    <TabsTrigger value="resources">Resource Library</TabsTrigger>
+                </TabsList>
+                <TabsContent value="curriculum">
+                    <Card>
+                    <CardHeader>
+                        <CardTitle>Course Curriculum</CardTitle>
+                        <CardDescription>Follow the curriculum to complete the course.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {course.modules.length > 0 ? (
+                        <Accordion type="single" collapsible defaultValue="item-0" className="w-full">
+                            {course.modules.map((module, index) => (
+                            <AccordionItem value={`item-${index}`} key={module.id}>
+                                <AccordionTrigger className="text-lg font-semibold hover:no-underline">
+                                    {module.title}
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                <ul className="space-y-1">
+                                    {module.lessons.map(lesson => (
+                                    <li key={lesson.id}>
+                                        <a 
+                                            href={lesson.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className="flex items-center p-3 rounded-md transition-colors hover:bg-muted/50"
+                                        >
+                                        {getLessonIcon(lesson.type)}
+                                        <span className="flex-1">{lesson.name}</span>
+                                        <Badge variant={"secondary"}>Pending</Badge>
+                                        </a>
+                                    </li>
+                                    ))}
+                                    {module.lessons.length === 0 && (
+                                        <li className="p-3 text-sm text-muted-foreground">No lessons in this module yet.</li>
+                                    )}
+                                </ul>
+                                </AccordionContent>
+                            </AccordionItem>
                             ))}
-                            {module.lessons.length === 0 && (
-                                <li className="p-3 text-sm text-muted-foreground">No lessons in this module yet.</li>
+                        </Accordion>
+                        ) : (
+                        <div className="text-center text-muted-foreground py-8">
+                            <p>Course content is not yet available. Check back soon!</p>
+                        </div>
+                        )}
+                    </CardContent>
+                    </Card>
+                </TabsContent>
+                 <TabsContent value="resources">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Resource Library</CardTitle>
+                            <CardDescription>Downloadable materials for this course.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {course.resources.length > 0 ? (
+                                <ul className="space-y-2">
+                                    {course.resources.map(resource => (
+                                        <li key={resource.id}>
+                                            <a 
+                                                href={resource.url} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer" 
+                                                className="flex items-center justify-between p-3 rounded-md transition-colors hover:bg-muted/50 border"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <Library className="h-5 w-5 text-muted-foreground" />
+                                                    <span className="flex-1">{resource.name}</span>
+                                                </div>
+                                                <Download className="h-5 w-5 text-muted-foreground" />
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className="text-center text-muted-foreground py-8">
+                                    <p>No resources available for this course yet.</p>
+                                </div>
                             )}
-                          </ul>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
-                ) : (
-                  <div className="text-center text-muted-foreground py-8">
-                    <p>Course content is not yet available. Check back soon!</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                        </CardContent>
+                    </Card>
+                 </TabsContent>
+            </Tabs>
           </div>
           <div>
             <Card className="sticky top-20">

@@ -89,6 +89,7 @@ export async function createCourseAction(
     status: 'Draft',
     tags: parsed.data.tags.split(',').map(tag => tag.trim()),
     modules: [],
+    resources: [],
   });
 
   return { id: courseRef.id };
@@ -110,6 +111,13 @@ const updateCourseSchema = z.object({
             url: z.string().url(),
         })),
     })),
+    resources: z.array(z.object({
+        id: z.string(),
+        name: z.string(),
+        type: z.string(),
+        size: z.number(),
+        url: z.string().url(),
+    }))
 });
 
 
@@ -121,7 +129,7 @@ export async function updateCourseAction(data: z.infer<typeof updateCourseSchema
         throw new Error('Invalid course data submitted.');
     }
 
-    const { courseId, title, description, tags, modules } = parsed.data;
+    const { courseId, title, description, tags, modules, resources } = parsed.data;
     
     const courseRef = doc(db, 'courses', courseId);
     
@@ -131,22 +139,28 @@ export async function updateCourseAction(data: z.infer<typeof updateCourseSchema
     }
 
     // --- File Deletion Logic ---
-    const existingModules = courseDoc.data().modules || [];
+    const existingData = courseDoc.data();
+    const existingModules = existingData.modules || [];
+    const existingResources = existingData.resources || [];
+    
     const newLessonUrls = new Set(modules.flatMap(m => m.lessons.map(l => l.url)));
+    const newResourceUrls = new Set(resources.map(r => r.url));
     
     const lessonsToDelete = existingModules.flatMap((mod: any) => 
         (mod.lessons || []).filter((lesson: any) => !newLessonUrls.has(lesson.url))
     );
 
-    // Delete files from storage that are no longer referenced
-    for (const lesson of lessonsToDelete) {
+    const resourcesToDelete = existingResources.filter((res: any) => !newResourceUrls.has(res.url));
+
+    const filesToDelete = [...lessonsToDelete, ...resourcesToDelete];
+
+    for (const file of filesToDelete) {
         try {
-            const fileRef = ref(storage, lesson.url);
+            const fileRef = ref(storage, file.url);
             await deleteObject(fileRef);
         } catch (error: any) {
-            // Ignore if file doesn't exist (e.g., already deleted or was never there)
             if (error.code !== 'storage/object-not-found') {
-                console.error(`Failed to delete lesson from storage: ${lesson.url}`, error);
+                console.error(`Failed to delete file from storage: ${file.url}`, error);
             }
         }
     }
@@ -156,6 +170,7 @@ export async function updateCourseAction(data: z.infer<typeof updateCourseSchema
         description,
         tags: tags.split(',').map(tag => tag.trim()),
         modules,
+        resources,
     });
 }
 

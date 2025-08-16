@@ -12,8 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { createCourseAction, updateCourseModulesAction } from '@/app/actions';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { createCourseAction, updateCourseAction } from '@/app/actions';
 import { uploadBytes, getDownloadURL, ref } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
 
@@ -86,36 +86,43 @@ export default function CreateCourseForm() {
       // 1. Create course document
       const { id: courseId } = await createCourseAction(data);
       
-      toast({ title: 'Course Created', description: 'Now uploading files. Please wait...' });
-      router.push(`/admin/courses`);
-
+      toast({ title: 'Course Created', description: 'Now uploading files. This may take a moment...' });
+      
       // 2. Upload all files and build the final modules structure
       const finalModules = await Promise.all(modules.map(async (module) => {
-        const uploadedLessons = await Promise.all(module.lessons.map(async (lessonFile) => {
-          const storageRef = ref(storage, `course_files/${courseId}/${module.id}/${lessonFile.file.name}`);
-          await uploadBytes(storageRef, lessonFile.file);
-          const url = await getDownloadURL(storageRef);
+          const uploadedLessons = await Promise.all(module.lessons.map(async (lessonFile) => {
+              const storageRef = ref(storage, `course_files/${courseId}/${module.id}/${lessonFile.file.name}`);
+              await uploadBytes(storageRef, lessonFile.file);
+              const url = await getDownloadURL(storageRef);
+              return {
+                  id: lessonFile.id,
+                  name: lessonFile.file.name,
+                  type: lessonFile.file.type,
+                  size: lessonFile.file.size,
+                  url: url,
+              };
+          }));
           return {
-            id: lessonFile.id,
-            name: lessonFile.file.name,
-            type: lessonFile.file.type,
-            size: lessonFile.file.size,
-            url: url,
+              id: module.id,
+              title: module.title,
+              lessons: uploadedLessons,
           };
-        }));
-        return {
-          id: module.id,
-          title: module.title,
-          lessons: uploadedLessons,
-        };
       }));
 
-      // 3. Update course with module data
+      // 3. Update course with module data (if any modules exist)
       if (finalModules.length > 0) {
-        await updateCourseModulesAction({ courseId, modules: finalModules });
+        // We use updateCourseAction here to set modules and empty resources array
+        await updateCourseAction({ 
+            courseId, 
+            ...data, 
+            modules: finalModules,
+            resources: [] 
+        });
       }
 
-      toast({ title: 'Uploads Complete!', description: `All content for "${data.title}" has been uploaded.` });
+      toast({ title: 'Success!', description: `Course "${data.title}" and its content have been created.` });
+      router.push(`/admin/courses`);
+
     } catch (error: any) {
       console.error(error);
       toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to create course.' });
@@ -161,6 +168,7 @@ export default function CreateCourseForm() {
             <Card>
                 <CardHeader>
                     <CardTitle>Course Content</CardTitle>
+                    <CardDescription>Add modules and lessons to build your curriculum.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {modules.map((module) => (

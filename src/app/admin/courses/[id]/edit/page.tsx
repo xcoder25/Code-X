@@ -5,14 +5,14 @@ import { useState, useEffect, useId } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Upload, X, File as FileIcon, Loader2, ArrowLeft, GripVertical, Plus } from 'lucide-react';
+import { Upload, X, File as FileIcon, Loader2, ArrowLeft, GripVertical, Plus, Library } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { updateCourseAction } from '@/app/actions';
 import { uploadBytes, getDownloadURL, ref } from 'firebase/storage';
 import { storage, db } from '@/lib/firebase';
@@ -42,10 +42,19 @@ interface Module {
     lessons: Lesson[];
 }
 
+interface Resource {
+    id: string;
+    name: string;
+    type: string;
+    size: number;
+    url: string;
+}
+
 export default function EditCourseForm() {
   const [pageLoading, setPageLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modules, setModules] = useState<Module[]>([]);
+  const [resources, setResources] = useState<Resource[]>([]);
   
   const router = useRouter();
   const params = useParams();
@@ -78,6 +87,7 @@ export default function EditCourseForm() {
                     tags: (data.tags || []).join(', '),
                 });
                 setModules(data.modules || []);
+                setResources(data.resources || []);
             } else {
                 toast({ variant: 'destructive', title: 'Error', description: 'Course not found.' });
                 router.push('/admin/courses');
@@ -122,7 +132,38 @@ export default function EditCourseForm() {
             toast({ variant: 'destructive', title: 'Upload failed', description: 'Could not upload files.' });
         } finally {
             setIsSubmitting(false);
-            // Reset file input
+            e.target.value = '';
+        }
+    }
+  };
+
+  const handleResourceFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        setIsSubmitting(true);
+        try {
+            const uploadedResources = await Promise.all(files.map(async file => {
+                const storageRef = ref(storage, `course_resources/${courseId}/${file.name}`);
+                await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(storageRef);
+                return { 
+                    id: `${uniqueId}-resource-${file.name}`,
+                    name: file.name, 
+                    type: file.type, 
+                    size: file.size, 
+                    url: url 
+                };
+            }));
+            
+            setResources(prev => [...prev, ...uploadedResources]);
+            toast({ title: 'Upload successful', description: `${files.length} resource(s) added.` });
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Upload failed', description: 'Could not upload resources.' });
+        } finally {
+            setIsSubmitting(false);
             e.target.value = '';
         }
     }
@@ -151,6 +192,10 @@ export default function EditCourseForm() {
     ));
   };
 
+  const removeResource = (resourceId: string) => {
+    setResources(prev => prev.filter(r => r.id !== resourceId));
+  }
+
   const onSubmit = async (data: CourseFormData) => {
     setIsSubmitting(true);
     try {
@@ -158,6 +203,7 @@ export default function EditCourseForm() {
             courseId,
             ...data,
             modules,
+            resources,
         });
       
       toast({
@@ -246,6 +292,7 @@ export default function EditCourseForm() {
             <Card>
                 <CardHeader>
                     <CardTitle>Course Content</CardTitle>
+                    <CardDescription>Manage the modules and lessons for this course.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {modules.map((module) => (
@@ -298,6 +345,43 @@ export default function EditCourseForm() {
                     </Button>
                 </CardContent>
             </Card>
+
+             <Card>
+                <CardHeader>
+                    <CardTitle>Resource Library</CardTitle>
+                     <CardDescription>Upload supplementary materials like e-books, source code, or cheat sheets.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <div className="space-y-2">
+                        {resources.map(resource => (
+                            <div key={resource.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-md text-sm">
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <Library className="h-4 w-4 shrink-0" />
+                                    <span className="truncate">{resource.name}</span>
+                                    <span className="text-muted-foreground text-xs shrink-0">({formatBytes(resource.size)})</span>
+                                </div>
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeResource(resource.id)}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                     <div className="relative flex items-center justify-center border-2 border-dashed rounded-md h-20 mt-4 cursor-pointer hover:border-primary transition">
+                        <div className="text-center">
+                            <Upload className="mx-auto text-muted-foreground w-6 h-6" />
+                            <p className="text-xs text-muted-foreground mt-1">Upload Resources</p>
+                        </div>
+                        <Input
+                            type="file"
+                            multiple
+                            onChange={handleResourceFileChange}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                            disabled={isSubmitting}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+
 
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
