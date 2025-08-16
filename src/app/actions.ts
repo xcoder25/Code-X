@@ -17,6 +17,7 @@ import {
   setDoc,
   updateDoc,
   arrayUnion,
+  deleteDoc,
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/analyze-code';
@@ -456,5 +457,17 @@ export async function markMessagesAsRead(userId: string) {
     processSnapshot(generalSnapshot);
     processSnapshot(directSnapshot);
 
-    await batch.commit();
+    try {
+        await batch.commit();
+    } catch(e) {
+        console.error("Error marking messages as read", e);
+    }
+}
+
+export async function deleteCourseAction(courseId: string) {
+    if (!courseId) {
+        throw new Error('Course ID is required.');
+    }
+    const courseRef = doc(db, 'courses', courseId);
+    await deleteDoc(courseRef);
 }
