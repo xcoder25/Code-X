@@ -1,5 +1,8 @@
+
+'use client';
+
 import { Bell } from 'lucide-react';
-import Link from 'next/link';
+import LoadingLink from '@/components/ui/loading-link';
 
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -13,10 +16,10 @@ export default function AppHeader() {
         <SidebarTrigger />
         <ThemeToggle />
         <Button asChild variant="outline" size="icon">
-          <Link href="/notifications">
+          <LoadingLink href="/admin/messages">
             <Bell />
             <span className="sr-only">Notifications</span>
-          </Link>
+          </LoadingLink>
         </Button>
       </div>
     </header>
