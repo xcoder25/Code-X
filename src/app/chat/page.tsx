@@ -10,127 +10,230 @@ import {
   onSnapshot, 
   addDoc, 
   serverTimestamp,
-  doc,
+  collectionGroup,
+  where,
+  getDocs,
   limit
 } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import type { ChatMessage as ChatMessageType } from '@/types';
+import type { ChatMessage as ChatMessageType, User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, Send, Hash, Users, Code } from 'lucide-react';
+import { LogOut, Send, Hash, Users, Code, ArrowLeft, User as UserIcon, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Mock data for chat groups
 const chatGroups = [
-  { id: 'general', name: 'General Chat', icon: <Users /> },
-  { id: 'web-dev', name: 'Web Development', icon: <Code /> },
-  { id: 'python-intro', name: 'Intro to Python', icon: <Hash /> },
-  { id: 'random', name: 'Random', icon: <Hash /> },
+  { id: 'general', name: 'General Chat', icon: <Users className="h-5 w-5" /> },
+  { id: 'web-dev', name: 'Web Development', icon: <Code className="h-5 w-5" /> },
+  { id: 'python-intro', name: 'Intro to Python', icon: <Hash className="h-5 w-5" /> },
+  { id: 'random', name: 'Random', icon: <Hash className="h-5 w-5" /> },
 ];
+
+type Chat = {
+  id: string;
+  name: string;
+  type: 'group' | 'dm';
+  icon?: React.ReactNode;
+  photoURL?: string | null;
+}
 
 const ChatPage: React.FC = () => {
   const [user] = useAuthState(auth);
-  const [selectedGroup, setSelectedGroup] = useState(chatGroups[0]);
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
 
   return (
-    <main className="flex flex-1 flex-col p-4 md:p-0 h-[calc(100vh-theme(spacing.14))] overflow-hidden">
-      <Card className="h-full flex flex-col">
-        <CardHeader className="border-b">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-3xl">Community Chat</CardTitle>
-              <CardDescription>Talk with other students in real-time.</CardDescription>
-            </div>
-            {user && <SignOut />}
-          </div>
-        </CardHeader>
-        <CardContent className="p-0 flex-1 overflow-hidden">
+    <main className="flex flex-1 flex-col p-0 h-[calc(100vh-theme(spacing.14))] overflow-hidden">
+      <div className="flex h-full border rounded-lg overflow-hidden relative">
           {user ? (
-            <div className="flex h-full">
-              <GroupList 
-                groups={chatGroups} 
-                selectedGroup={selectedGroup} 
-                setSelectedGroup={setSelectedGroup} 
-              />
-              <ChatRoom group={selectedGroup} />
-            </div>
+            <>
+              <div className={cn(
+                "w-full md:w-1/3 lg:w-1/4 flex flex-col transition-transform duration-300 ease-in-out",
+                selectedChat ? "-translate-x-full md:translate-x-0" : "translate-x-0"
+              )}>
+                  <ChatList onSelectChat={setSelectedChat} />
+              </div>
+              <div className={cn(
+                  "absolute top-0 left-0 w-full h-full md:static md:w-2/3 lg:w-3/4 flex flex-col bg-background transition-transform duration-300 ease-in-out",
+                  selectedChat ? "translate-x-0" : "translate-x-full md:translate-x-0"
+              )}>
+                 {selectedChat ? (
+                    <ChatRoom chat={selectedChat} onBack={() => setSelectedChat(null)} />
+                ) : (
+                    <div className="hidden md:flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                        <Users className="h-16 w-16" />
+                        <p className="mt-4">Select a chat to start messaging</p>
+                    </div>
+                )}
+              </div>
+            </>
           ) : (
             <SignIn />
           )}
-        </CardContent>
-      </Card>
+        </div>
     </main>
   );
 };
 
-// Sign-in component (unchanged)
+// Sign-in component
 const SignIn: React.FC = () => {
   const { toast } = useToast();
   const signInWithGoogle = () => {
-    // Note: In a real app, you would likely use signInWithPopup, but that's already in your login flow.
-    // This is a placeholder for the signed-out state.
     toast({ description: "Please log in to use the chat." });
   };
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-4">
+    <div className="flex flex-col items-center justify-center h-full w-full gap-4">
       <p className="text-muted-foreground">Please sign in to join the chat.</p>
       <Button onClick={signInWithGoogle}>Sign in to Chat</Button>
     </div>
   );
 };
 
-// Sign-out component (unchanged)
-const SignOut: React.FC = () => {
-  return auth.currentUser && (
-    <Button variant="ghost" onClick={() => auth.signOut()}>
-      <LogOut className="mr-2" />
-      Sign Out
-    </Button>
-  );
-};
-
-interface GroupListProps {
-    groups: typeof chatGroups;
-    selectedGroup: typeof chatGroups[0];
-    setSelectedGroup: (group: typeof chatGroups[0]) => void;
+interface ChatListProps {
+  onSelectChat: (chat: Chat) => void;
 }
 
-const GroupList: React.FC<GroupListProps> = ({ groups, selectedGroup, setSelectedGroup }) => {
-    return (
-        <div className="w-full md:w-1/3 lg:w-1/4 border-r overflow-y-auto p-2">
-            <h2 className="p-2 text-lg font-semibold">Channels</h2>
-            <nav className="flex flex-col gap-1">
-                {groups.map((group) => (
-                    <Button
-                        key={group.id}
-                        variant={selectedGroup.id === group.id ? "secondary" : "ghost"}
-                        className="w-full justify-start"
-                        onClick={() => setSelectedGroup(group)}
-                    >
-                        <div className="mr-2">{group.icon}</div>
-                        {group.name}
-                    </Button>
-                ))}
-            </nav>
+const ChatList: React.FC<ChatListProps> = ({ onSelectChat }) => {
+  return (
+    <div className="flex flex-col h-full border-r">
+       <div className="p-4 border-b">
+        <h1 className="font-semibold text-2xl">Community Chat</h1>
+      </div>
+      <Tabs defaultValue="groups" className="flex flex-col flex-1">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="groups">Groups</TabsTrigger>
+          <TabsTrigger value="people">People</TabsTrigger>
+        </TabsList>
+        <TabsContent value="groups" className="flex-1 overflow-y-auto">
+          <div className="p-2 space-y-1">
+            {chatGroups.map((group) => (
+              <Button
+                key={group.id}
+                variant="ghost"
+                className="w-full justify-start h-14"
+                onClick={() => onSelectChat({ ...group, type: 'group' })}
+              >
+                 <Avatar className="h-10 w-10 mr-3">
+                    <AvatarFallback>{group.icon}</AvatarFallback>
+                </Avatar>
+                <span className="font-medium">{group.name}</span>
+              </Button>
+            ))}
+          </div>
+        </TabsContent>
+        <TabsContent value="people" className="flex-1 overflow-y-auto">
+            <ClassmatesList onSelectUser={(user) => onSelectChat({
+                id: getDirectMessageId(auth.currentUser!.uid, user.id),
+                name: user.displayName,
+                photoURL: user.photoURL,
+                type: 'dm'
+            })}/>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
+
+const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSelectUser }) => {
+    const { user } = useAuthState(auth);
+    const [classmates, setClassmates] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!user) {
+            setLoading(false);
+            return;
+        }
+
+        async function fetchClassmates() {
+            setLoading(true);
+            try {
+                const enrollmentSnap = await getDocs(collection(db, 'users', user!.uid, 'enrollments'));
+                const courseIds = enrollmentSnap.docs.map(doc => doc.id);
+                
+                if (courseIds.length === 0) {
+                    setLoading(false);
+                    return;
+                }
+                
+                const enrollmentsQuery = query(collectionGroup(db, 'enrollments'), where('courseId', 'in', courseIds));
+                const enrollmentsSnap = await getDocs(enrollmentsQuery);
+                const userIds = Array.from(new Set(enrollmentsSnap.docs.map(doc => doc.ref.parent.parent!.id)));
+
+                if (userIds.length === 0) {
+                    setLoading(false);
+                    return;
+                }
+
+                const usersQuery = query(collection(db, 'users'), where('uid', 'in', userIds));
+                const userDocsSnap = await getDocs(usersQuery);
+                const usersData = userDocsSnap.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() } as User))
+                    .filter(u => u.id !== user.uid); // Exclude self
+                
+                setClassmates(usersData);
+            } catch (error) {
+                console.error("Error fetching classmates:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchClassmates();
+    }, [user]);
+
+    if (loading) {
+        return <div className="p-2 space-y-1">
+            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
         </div>
-    );
-};
+    }
+
+    if (classmates.length === 0) {
+        return <div className="text-center p-8 text-muted-foreground text-sm">No classmates found. Enroll in a course to connect with others!</div>;
+    }
+
+    return <div className="p-2 space-y-1">
+        {classmates.map((classmate) => (
+            <Button
+                key={classmate.id}
+                variant="ghost"
+                className="w-full justify-start h-14"
+                onClick={() => onSelectUser(classmate)}
+            >
+                <Avatar className="h-10 w-10 mr-3">
+                    <AvatarImage src={classmate.photoURL || undefined} data-ai-hint="avatar person" />
+                    <AvatarFallback>{classmate.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
+                <span className="font-medium">{classmate.displayName}</span>
+            </Button>
+        ))}
+    </div>
+}
+
+const getDirectMessageId = (uid1: string, uid2: string) => {
+    return [uid1, uid2].sort().join('_');
+}
 
 
 interface ChatRoomProps {
-  group: typeof chatGroups[0];
+  chat: Chat;
+  onBack: () => void;
 }
 
-const ChatRoom: React.FC<ChatRoomProps> = ({ group }) => {
+const ChatRoom: React.FC<ChatRoomProps> = ({ chat, onBack }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [formValue, setFormValue] = useState<string>('');
 
-  // Firestore messages reference, now pointing to a sub-collection
-  const messagesRef = collection(db, 'groups', group.id, 'messages');
+  const collectionPath = chat.type === 'group' 
+    ? ['groups', chat.id, 'messages'] 
+    : ['direct-messages', chat.id, 'messages'];
+  
+  const messagesRef = collection(db, ...collectionPath);
   const q = query(messagesRef, orderBy('createdAt', 'asc'), limit(50));
 
   useEffect(() => {
@@ -141,12 +244,11 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ group }) => {
       })) as ChatMessageType[];
       setMessages(msgs);
     }, (error) => {
-      console.error(`Error fetching messages for ${group.name}:`, error);
+      console.error(`Error fetching messages for ${chat.name}:`, error);
     });
-    // Reset messages when group changes
     setMessages([]);
     return unsubscribe;
-  }, [group]);
+  }, [chat.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -170,10 +272,23 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ group }) => {
 
   return (
     <div className="flex-1 flex flex-col h-full">
-      <div className="p-4 border-b">
-         <h3 className="text-xl font-semibold">{group.name}</h3>
+      <div className="p-2 border-b flex items-center gap-2">
+        <Button onClick={onBack} variant="ghost" size="icon" className="md:hidden">
+            <ArrowLeft className="h-5 w-5" />
+        </Button>
+         <Avatar className="h-10 w-10">
+            {chat.type === 'group' ? (
+                <AvatarFallback>{chat.icon || <Users />}</AvatarFallback>
+            ) : (
+                <>
+                <AvatarImage src={chat.photoURL || undefined} data-ai-hint="avatar person" />
+                <AvatarFallback>{chat.name?.charAt(0) || 'U'}</AvatarFallback>
+                </>
+            )}
+        </Avatar>
+        <h3 className="text-lg font-semibold">{chat.name}</h3>
       </div>
-      <div className="flex-1 space-y-4 overflow-y-auto p-4">
+      <div className="flex-1 space-y-4 overflow-y-auto p-4 bg-muted/20">
         {messages.map(msg => <ChatMessage key={msg.id} message={msg} />)}
         <div ref={messagesEndRef} />
       </div>
@@ -181,7 +296,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ group }) => {
         <Input
           value={formValue}
           onChange={(e) => setFormValue(e.target.value)}
-          placeholder={`Message #${group.name}`}
+          placeholder={`Message ${chat.type === 'group' ? '#' : ''}${chat.name}`}
           autoComplete="off"
         />
         <Button type="submit" disabled={!formValue.trim()}>
@@ -193,12 +308,10 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ group }) => {
   );
 };
 
-// Props interface for the ChatMessage component
 interface ChatMessageProps {
   message: ChatMessageType;
 }
 
-// Single Message Component
 const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const { text, uid, photoURL, displayName } = message;
   const messageClass = uid === auth.currentUser?.uid ? 'sent' : 'received';
@@ -213,7 +326,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       )}
       <div className="flex flex-col" style={{ alignItems: messageClass === 'sent' ? 'flex-end' : 'flex-start' }}>
         {messageClass === 'received' && <p className="text-xs text-muted-foreground ml-2 mb-1">{displayName}</p>}
-        <div className={cn('p-3 rounded-lg max-w-sm md:max-w-md', messageClass === 'sent' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+        <div className={cn('p-3 rounded-lg max-w-sm md:max-w-md shadow-sm', messageClass === 'sent' ? 'bg-primary text-primary-foreground' : 'bg-background')}>
             <p className="text-sm whitespace-pre-wrap">{text}</p>
         </div>
       </div>
@@ -228,5 +341,3 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
 };
 
 export default ChatPage;
-
-    
