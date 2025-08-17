@@ -10,7 +10,8 @@ import {
   onSnapshot, 
   addDoc, 
   serverTimestamp,
-  doc
+  doc,
+  limit
 } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import type { ChatMessage as ChatMessageType } from '@/types';
