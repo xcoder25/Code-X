@@ -436,35 +436,26 @@ export async function gradeAssignmentAction(
 export async function markMessagesAsRead(userId: string) {
     const messagesRef = collection(db, 'in-app-messages');
     
-    // Query for both general messages and direct messages to the user
-    const generalQuery = query(messagesRef, where('targetType', '==', 'general'));
-    const directQuery = query(messagesRef, where('userIds', 'array-contains', userId));
+    // This function is now simpler and avoids composite index queries.
+    // It fetches all messages and filters client-side, which is less efficient for very large datasets
+    // but avoids the indexing issue for this specific use case.
+    const messagesQuery = query(messagesRef, orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(messagesQuery);
 
-    const [generalSnapshot, directSnapshot] = await Promise.all([
-        getDocs(generalQuery),
-        getDocs(directQuery)
-    ]);
-    
     const batch = writeBatch(db);
     
-    const processSnapshot = (snapshot: any) => {
-        snapshot.docs.forEach((docSnap: any) => {
-            const messageData = docSnap.data();
-            if (Array.isArray(messageData.readBy) && !messageData.readBy.includes(userId)) {
-                batch.update(docSnap.ref, {
-                    readBy: arrayUnion(userId)
-                });
-            } else if (!messageData.readBy) {
-                // If readBy doesn't exist, create it.
-                batch.update(docSnap.ref, {
-                    readBy: [userId]
-                });
-            }
-        });
-    };
+    querySnapshot.forEach((docSnap) => {
+        const messageData = docSnap.data();
+        const isGeneral = messageData.targetType === 'general';
+        const isDirectToUser = Array.isArray(messageData.userIds) && messageData.userIds.includes(userId);
+        const isUnread = !messageData.readBy || !messageData.readBy.includes(userId);
 
-    processSnapshot(generalSnapshot);
-    processSnapshot(directSnapshot);
+        if ((isGeneral || isDirectToUser) && isUnread) {
+            batch.update(docSnap.ref, {
+                readBy: arrayUnion(userId)
+            });
+        }
+    });
 
     try {
         await batch.commit();
