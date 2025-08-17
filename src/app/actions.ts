@@ -19,6 +19,7 @@ import {
   arrayUnion,
   deleteDoc,
   orderBy,
+  runTransaction,
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/analyze-code';
@@ -437,9 +438,8 @@ export async function gradeAssignmentAction(
 export async function markMessagesAsRead(userId: string) {
     const messagesRef = collection(db, 'notifications');
     
-    // This function is now simpler and avoids composite index queries.
-    // It fetches all messages and filters client-side, which is less efficient for very large datasets
-    // but avoids the indexing issue for this specific use case.
+    // This query is intentionally simple to avoid needing a composite index.
+    // It fetches all messages and filters client-side in the hook/component.
     const messagesQuery = query(messagesRef, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(messagesQuery);
 
@@ -471,4 +471,78 @@ export async function deleteCourseAction(courseId: string) {
     }
     const courseRef = doc(db, 'courses', courseId);
     await deleteDoc(courseRef);
+}
+
+const friendActionSchema = z.object({
+  currentUserId: z.string(),
+  targetUserId: z.string(),
+});
+
+export async function sendFriendRequestAction(input: z.infer<typeof friendActionSchema>) {
+  const { currentUserId, targetUserId } = friendActionSchema.parse(input);
+  if (currentUserId === targetUserId) throw new Error("You cannot add yourself as a friend.");
+
+  const currentUserRef = doc(db, 'users', currentUserId);
+  const targetUserRef = doc(db, 'users', targetUserId);
+  
+  const currentUserSnap = await getDoc(currentUserRef);
+  const targetUserSnap = await getDoc(targetUserRef);
+
+  if (!currentUserSnap.exists() || !targetUserSnap.exists()) {
+    throw new Error("User not found.");
+  }
+  
+  const currentUserData = currentUserSnap.data();
+  const targetUserData = targetUserSnap.data();
+
+  const batch = writeBatch(db);
+
+  const currentUserFriendRef = doc(db, `users/${currentUserId}/friends/${targetUserId}`);
+  batch.set(currentUserFriendRef, {
+    status: 'sent',
+    since: serverTimestamp(),
+    displayName: targetUserData.displayName,
+    photoURL: targetUserData.photoURL || null
+  });
+
+  const targetUserFriendRef = doc(db, `users/${targetUserId}/friends/${currentUserId}`);
+  batch.set(targetUserFriendRef, {
+    status: 'received',
+    since: serverTimestamp(),
+    displayName: currentUserData.displayName,
+    photoURL: currentUserData.photoURL || null
+  });
+  
+  await batch.commit();
+  return { success: true };
+}
+
+export async function acceptFriendRequestAction(input: z.infer<typeof friendActionSchema>) {
+  const { currentUserId, targetUserId } = friendActionSchema.parse(input);
+
+  const batch = writeBatch(db);
+  
+  const currentUserFriendRef = doc(db, `users/${currentUserId}/friends/${targetUserId}`);
+  batch.update(currentUserFriendRef, { status: 'accepted', since: serverTimestamp() });
+  
+  const targetUserFriendRef = doc(db, `users/${targetUserId}/friends/${currentUserId}`);
+  batch.update(targetUserFriendRef, { status: 'accepted', since: serverTimestamp() });
+  
+  await batch.commit();
+  return { success: true };
+}
+
+export async function declineFriendRequestAction(input: z.infer<typeof friendActionSchema>) {
+  const { currentUserId, targetUserId } = friendActionSchema.parse(input);
+
+  const batch = writeBatch(db);
+  
+  const currentUserFriendRef = doc(db, `users/${currentUserId}/friends/${targetUserId}`);
+  batch.delete(currentUserFriendRef);
+  
+  const targetUserFriendRef = doc(db, `users/${targetUserId}/friends/${currentUserId}`);
+  batch.delete(targetUserFriendRef);
+  
+  await batch.commit();
+  return { success: true };
 }

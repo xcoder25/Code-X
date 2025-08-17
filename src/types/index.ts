@@ -19,3 +19,21 @@ export interface Submission {
     grade: string | null;
     submittedAt: Timestamp;
 }
+
+export interface User {
+    id: string;
+    uid: string;
+    displayName: string;
+    email: string;
+    photoURL?: string | null;
+    status?: 'sent' | 'received' | 'accepted' | null; // For friend status
+    course?: string; // For discovery context
+}
+
+export interface Friend {
+    id: string;
+    displayName: string;
+    photoURL: string | null;
+    status: 'sent' | 'received' | 'accepted';
+    since: Timestamp;
+}

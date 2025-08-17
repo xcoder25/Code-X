@@ -14,6 +14,7 @@ import {
   Calendar,
   FlaskConical,
   MessageCircle,
+  Users,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/app/auth-provider';
@@ -118,6 +119,14 @@ export default function AppSidebar() {
                 <LoadingLink href="/chat">
                     <MessageCircle />
                     <span>Community Chat</span>
+                </LoadingLink>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/friends')}>
+                <LoadingLink href="/friends">
+                    <Users />
+                    <span>Friends</span>
                 </LoadingLink>
                 </SidebarMenuButton>
             </SidebarMenuItem>
