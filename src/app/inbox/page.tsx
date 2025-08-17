@@ -18,6 +18,7 @@ interface Message {
   createdAt: Timestamp;
   readBy?: string[];
   targetType: 'general' | 'direct';
+  userIds?: string[];
 }
 
 export default function InboxPage() {
@@ -38,59 +39,40 @@ export default function InboxPage() {
       return;
     }
 
-    const generalQuery = query(
+    // Query all messages and filter client-side to avoid index issues.
+    const messagesQuery = query(
         collection(db, 'in-app-messages'),
-        where('targetType', '==', 'general'),
         orderBy('createdAt', 'desc')
     );
-
-    const directQuery = query(
-        collection(db, 'in-app-messages'),
-        where('userIds', 'array-contains', user.uid),
-        orderBy('createdAt', 'desc')
-    );
-
-    let generalMessages: Message[] = [];
-    let directMessages: Message[] = [];
-
-    const combineAndSetMessages = () => {
-        const allMessages = [...generalMessages, ...directMessages];
-        const uniqueMessages = allMessages.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-        const sortedMessages = uniqueMessages.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+    
+    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+        const allMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Message);
         
-        setMessages(sortedMessages);
+        const userMessages = allMessages.filter(msg => {
+            const isGeneral = msg.targetType === 'general';
+            const isDirectToUser = Array.isArray(msg.userIds) && msg.userIds.includes(user.uid);
+            return isGeneral || isDirectToUser;
+        });
+
+        setMessages(userMessages);
 
         if (loading) {
-            if (sortedMessages.length > 0 && !selectedMessageRef.current) {
-                setSelectedMessage(sortedMessages[0]);
-            } else if (sortedMessages.length === 0) {
+            if (userMessages.length > 0 && !selectedMessageRef.current) {
+                setSelectedMessage(userMessages[0]);
+            } else if (userMessages.length === 0) {
                 setSelectedMessage(null);
             }
             setLoading(false);
         }
-    };
-    
-    const unsubGeneral = onSnapshot(generalQuery, (snapshot) => {
-        generalMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Message);
-        combineAndSetMessages();
     }, (error) => {
-        console.error("Error fetching general messages:", error);
-        if (loading) setLoading(false);
-    });
-
-    const unsubDirect = onSnapshot(directQuery, (snapshot) => {
-        directMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Message);
-        combineAndSetMessages();
-    }, (error) => {
-        console.error("Error fetching direct messages:", error);
+        console.error("Error fetching messages:", error);
         if (loading) setLoading(false);
     });
 
     markMessagesAsRead(user.uid);
 
     return () => {
-        unsubGeneral();
-        unsubDirect();
+        unsubscribe();
     };
   }, [user, loading]);
   
