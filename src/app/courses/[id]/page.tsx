@@ -3,9 +3,9 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import Link from 'next/link';
-import { PlayCircle, FileText, BookOpen, Library, Download } from 'lucide-react';
+import { PlayCircle, FileText, BookOpen, Library, Download, CheckCircle } from 'lucide-react';
 
 import {
   Card,
@@ -24,13 +24,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
 import { db } from '@/lib/firebase';
 import { pythonCourseData } from '@/lib/python-course-data';
-
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 interface Lesson {
     id: string;
     title: string;
     content: string;
-    completed?: boolean;
 }
 
 interface Module {
@@ -54,6 +55,11 @@ interface Course {
     resources: Resource[];
 }
 
+interface EnrollmentData {
+    completedLessons?: string[];
+    progress?: number;
+}
+
 export default function CourseDetailPage() {
   const { user } = useAuth();
   const params = useParams();
@@ -61,6 +67,7 @@ export default function CourseDetailPage() {
 
   const [course, setCourse] = useState<Course | null>(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrollmentData, setEnrollmentData] = useState<EnrollmentData>({});
   const [loading, setLoading] = useState(true);
 
   // Effect to fetch course data
@@ -70,13 +77,9 @@ export default function CourseDetailPage() {
       return;
     }
 
-    // If it's the hard-coded python course, load it directly
     if (courseId === 'intro-to-python') {
         setCourse(pythonCourseData);
         setLoading(false);
-        // We can't check enrollment for a hard-coded course this way,
-        // so we'll just show the preview. 
-        // A full implementation would check enrollment status.
         setIsEnrolled(false);
         return;
     }
@@ -106,16 +109,23 @@ export default function CourseDetailPage() {
     return () => unsubscribeCourse();
   }, [courseId]);
 
-  // Effect to check user enrollment for firestore courses
+  // Effect to check user enrollment and progress
   useEffect(() => {
     if (!user || !courseId || courseId === 'intro-to-python') {
         setIsEnrolled(false);
+        setEnrollmentData({});
         return;
     };
     
     const enrollmentDocRef = doc(db, 'users', user.uid, 'enrollments', courseId);
     const unsubscribeEnrollment = onSnapshot(enrollmentDocRef, (doc) => {
-      setIsEnrolled(doc.exists());
+      if (doc.exists()) {
+          setIsEnrolled(true);
+          setEnrollmentData(doc.data() as EnrollmentData);
+      } else {
+          setIsEnrolled(false);
+          setEnrollmentData({});
+      }
     });
     
     return () => unsubscribeEnrollment();
@@ -124,6 +134,35 @@ export default function CourseDetailPage() {
   const handleEnrollmentSuccess = () => {
     setIsEnrolled(true);
   };
+
+  const handleLesssonToggle = async (lessonId: string, completed: boolean) => {
+      if (!user) return;
+      const enrollmentDocRef = doc(db, 'users', user.uid, 'enrollments', courseId);
+      
+      const totalLessons = course?.modules.reduce((acc, module) => acc + module.lessons.length, 0) || 0;
+      
+      try {
+          await updateDoc(enrollmentDocRef, {
+              completedLessons: completed ? arrayUnion(lessonId) : arrayRemove(lessonId)
+          });
+
+          // After updating, recalculate progress
+          const docSnap = await getDoc(enrollmentDocRef);
+          if (docSnap.exists()) {
+              const updatedData = docSnap.data();
+              const completedCount = updatedData.completedLessons?.length || 0;
+              const newProgress = totalLessons > 0 ? (completedCount / totalLessons) * 100 : 0;
+              await updateDoc(enrollmentDocRef, { progress: newProgress });
+          }
+
+      } catch (error) {
+          console.error("Error updating lesson progress: ", error);
+      }
+  }
+
+  const isLessonCompleted = (lessonId: string) => {
+      return enrollmentData.completedLessons?.includes(lessonId) || false;
+  }
 
   if (loading) {
     return (
@@ -210,14 +249,29 @@ export default function CourseDetailPage() {
                                     {module.title}
                                 </AccordionTrigger>
                                 <AccordionContent>
-                                <ul className="space-y-1">
+                                <ul className="space-y-2">
                                     {module.lessons.map(lesson => (
                                     <li key={lesson.id}>
-                                        <div className="flex items-center p-3 rounded-md transition-colors hover:bg-muted/50 cursor-pointer">
-                                            <BookOpen className="h-5 w-5 mr-3 text-muted-foreground" />
-                                            <span className="flex-1">{lesson.title}</span>
-                                            <Badge variant={"secondary"}>Pending</Badge>
-                                        </div>
+                                        <Collapsible>
+                                            <div className="flex items-center justify-between p-3 rounded-md transition-colors hover:bg-muted/50">
+                                                <CollapsibleTrigger className="flex items-center flex-1 text-left">
+                                                    <BookOpen className="h-5 w-5 mr-3 text-muted-foreground" />
+                                                    <span className="flex-1">{lesson.title}</span>
+                                                </CollapsibleTrigger>
+                                                 {isLessonCompleted(lesson.id) && <CheckCircle className="h-5 w-5 text-green-500" />}
+                                            </div>
+                                            <CollapsibleContent className="p-4 pt-0 pl-11">
+                                                <p className="text-muted-foreground whitespace-pre-wrap text-sm mb-4">{lesson.content}</p>
+                                                 <div className="flex items-center space-x-2">
+                                                    <Checkbox 
+                                                        id={`complete-${lesson.id}`} 
+                                                        checked={isLessonCompleted(lesson.id)}
+                                                        onCheckedChange={(checked) => handleLesssonToggle(lesson.id, !!checked)}
+                                                    />
+                                                    <Label htmlFor={`complete-${lesson.id}`}>Mark as complete</Label>
+                                                </div>
+                                            </CollapsibleContent>
+                                        </Collapsible>
                                     </li>
                                     ))}
                                     {module.lessons.length === 0 && (
@@ -304,5 +358,3 @@ export default function CourseDetailPage() {
     </main>
   );
 }
-
-    
