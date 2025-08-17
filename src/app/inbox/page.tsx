@@ -1,7 +1,7 @@
 
 'use client';
 
-import { collection, query, orderBy, onSnapshot, where, Timestamp, or } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where, Timestamp, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -32,37 +32,54 @@ export default function InboxPage() {
       return;
     }
 
-    const messagesQuery = query(
-      collection(db, 'in-app-messages'),
-      or(
+    const generalQuery = query(
+        collection(db, 'in-app-messages'),
         where('targetType', '==', 'general'),
-        where('userIds', 'array-contains', user.uid)
-      ),
-      orderBy('createdAt', 'desc')
+        orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-      const messagesData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Message[];
-      setMessages(messagesData);
+    const directQuery = query(
+        collection(db, 'in-app-messages'),
+        where('userIds', 'array-contains', user.uid),
+        orderBy('createdAt', 'desc')
+    );
 
-      if (messagesData.length > 0 && !selectedMessage) {
-        setSelectedMessage(messagesData[0]);
-      } else if (messagesData.length === 0) {
-        setSelectedMessage(null);
-      }
-      setLoading(false);
+    const unsubGeneral = onSnapshot(generalQuery, (generalSnapshot) => {
+        const generalMessages = generalSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Message);
+        
+        // Now get the direct messages and combine them
+        getDocs(directQuery).then(directSnapshot => {
+             const directMessages = directSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Message);
+             
+             const allMessages = [...generalMessages, ...directMessages];
+             
+             // Sort all messages by date
+             const sortedMessages = allMessages.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+
+             // Remove duplicates that might occur if a message is both general and direct (unlikely but safe)
+             const uniqueMessages = sortedMessages.filter((v,i,a)=>a.findIndex(t=>(t.id === v.id))===i);
+
+             setMessages(uniqueMessages);
+
+            if (uniqueMessages.length > 0 && !selectedMessage) {
+                setSelectedMessage(uniqueMessages[0]);
+            } else if (uniqueMessages.length === 0) {
+                setSelectedMessage(null);
+            }
+            setLoading(false);
+        });
+
     }, (error) => {
-      console.error("Error fetching messages:", error);
+      console.error("Error fetching general messages:", error);
       setLoading(false);
     });
-    
+
     // Mark messages as read when the component mounts
     markMessagesAsRead(user.uid);
 
-    return () => unsubscribe();
+    return () => {
+        unsubGeneral();
+    };
   }, [user, selectedMessage]);
   
   const handleSelectMessage = (message: Message) => {
