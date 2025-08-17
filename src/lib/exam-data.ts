@@ -55,6 +55,32 @@ const exams: { [key: string]: any } = {
       },
     ],
   },
+  'python-basics': {
+    id: 'python-basics',
+    title: 'Python Basics Quiz',
+    course: 'Introduction to Python',
+    duration: 900, // 15 minutes
+    questions: [
+      {
+        id: 'p_q1',
+        text: "What is the correct way to declare a variable named 'age' with a value of 25 in Python?",
+        options: ['var age = 25;', 'let age = 25;', 'age = 25'],
+        correctAnswer: 'age = 25',
+      },
+      {
+        id: 'p_q2',
+        text: "Which of the following is NOT a built-in data type in Python?",
+        options: ['list', 'tuple', 'array', 'dict'],
+        correctAnswer: 'array',
+      },
+      {
+        id: 'p_q3',
+        text: 'What does the `print()` function do in Python?',
+        options: ['It sends data to the printer.', 'It displays output to the console.', 'It saves data to a file.'],
+        correctAnswer: 'It displays output to the console.',
+      },
+    ],
+  },
 };
 
 // This ensures the `exams` object with correct answers is not exported to the client.
