@@ -17,7 +17,7 @@ export function useUnreadCount() {
     }
 
     const messagesQuery = query(
-      collection(db, 'in-app-messages'),
+      collection(db, 'notifications'),
       or(
         where('targetType', '==', 'general'),
         where('userIds', 'array-contains', user.uid)

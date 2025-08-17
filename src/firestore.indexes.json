@@ -2,7 +2,7 @@
 {
   "indexes": [
     {
-      "collectionGroup": "in-app-messages",
+      "collectionGroup": "notifications",
       "queryScope": "COLLECTION",
       "fields": [
         {
@@ -16,7 +16,7 @@
       ]
     },
     {
-      "collectionGroup": "in-app-messages",
+      "collectionGroup": "notifications",
       "queryScope": "COLLECTION",
       "fields": [
         {
@@ -42,4 +42,3 @@
   ],
   "fieldOverrides": []
 }
-

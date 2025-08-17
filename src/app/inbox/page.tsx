@@ -1,9 +1,9 @@
 
 'use client';
 
-import { collection, query, orderBy, onSnapshot, where, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
 import { Mail, MessageCircle, ArrowLeft } from 'lucide-react';
@@ -39,7 +39,7 @@ export default function InboxPage() {
 
     // Query all messages and filter client-side to avoid index issues.
     const messagesQuery = query(
-        collection(db, 'in-app-messages'),
+        collection(db, 'notifications'),
         orderBy('createdAt', 'desc')
     );
     

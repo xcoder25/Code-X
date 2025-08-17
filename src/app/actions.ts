@@ -18,6 +18,7 @@ import {
   updateDoc,
   arrayUnion,
   deleteDoc,
+  orderBy,
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/analyze-code';
@@ -42,7 +43,7 @@ export async function sendMessageAction(
 
   try {
     if (targetType === 'direct') {
-         await addDoc(collection(db, 'in-app-messages'), {
+         await addDoc(collection(db, 'notifications'), {
             title,
             body,
             targetType: 'direct',
@@ -51,7 +52,7 @@ export async function sendMessageAction(
             readBy: [],
         });
     } else {
-        await addDoc(collection(db, 'in-app-messages'), {
+        await addDoc(collection(db, 'notifications'), {
             title,
             body,
             targetType: 'general',
@@ -434,7 +435,7 @@ export async function gradeAssignmentAction(
 }
 
 export async function markMessagesAsRead(userId: string) {
-    const messagesRef = collection(db, 'in-app-messages');
+    const messagesRef = collection(db, 'notifications');
     
     // This function is now simpler and avoids composite index queries.
     // It fetches all messages and filters client-side, which is less efficient for very large datasets
@@ -471,5 +472,3 @@ export async function deleteCourseAction(courseId: string) {
     const courseRef = doc(db, 'courses', courseId);
     await deleteDoc(courseRef);
 }
-
-    
