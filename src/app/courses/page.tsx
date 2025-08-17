@@ -18,6 +18,7 @@ import { collection, onSnapshot, query, orderBy, doc, getDoc } from 'firebase/fi
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
+import { pythonCourse } from '@/lib/python-course-data';
 
 interface Course {
   id: string;
@@ -64,11 +65,24 @@ export default function CoursesPage() {
             } as Course;
         });
 
-        const coursesData = await Promise.all(coursesDataPromises);
-        setCourses(coursesData);
+        const firestoreCourses = await Promise.all(coursesDataPromises);
+        
+        // Combine firestore courses with the hard-coded one
+        const allCourses = [...firestoreCourses, pythonCourse];
+        
+        // Prevent duplicates if the python course is ever added to firestore
+        const uniqueCourses = allCourses.filter((course, index, self) =>
+            index === self.findIndex((c) => (
+                c.id === course.id
+            ))
+        );
+
+        setCourses(uniqueCourses);
         setLoading(false);
     }, (error) => {
         console.error("Error fetching courses:", error);
+        // Still add the python course even if firestore fails
+        setCourses([pythonCourse]);
         setLoading(false);
     });
 

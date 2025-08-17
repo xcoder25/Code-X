@@ -23,6 +23,8 @@ import EnrollmentCard from '@/components/enrollment-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
 import { db } from '@/lib/firebase';
+import { pythonCourseData } from '@/lib/python-course-data';
+
 
 interface Lesson {
     id: string;
@@ -79,6 +81,17 @@ export default function CourseDetailPage() {
       return;
     }
 
+    // If it's the hard-coded python course, load it directly
+    if (courseId === 'intro-to-python') {
+        setCourse(pythonCourseData);
+        setLoading(false);
+        // We can't check enrollment for a hard-coded course this way,
+        // so we'll just show the preview. 
+        // A full implementation would check enrollment status.
+        setIsEnrolled(false);
+        return;
+    }
+
     const courseDocRef = doc(db, 'courses', courseId);
     
     const unsubscribeCourse = onSnapshot(courseDocRef, (docSnapshot) => {
@@ -104,9 +117,9 @@ export default function CourseDetailPage() {
     return () => unsubscribeCourse();
   }, [courseId]);
 
-  // Effect to check user enrollment
+  // Effect to check user enrollment for firestore courses
   useEffect(() => {
-    if (!user || !courseId) {
+    if (!user || !courseId || courseId === 'intro-to-python') {
         setIsEnrolled(false);
         return;
     };
@@ -174,7 +187,7 @@ export default function CourseDetailPage() {
               ))}
             </div>
         </div>
-        {!isEnrolled && user ? (
+        {!isEnrolled && user && course.id !== 'intro-to-python' ? (
           <EnrollmentCard courseId={course.id} userId={user.uid} onEnrollmentSuccess={handleEnrollmentSuccess} />
         ) : isEnrolled ? (
           <Card className="bg-green-500/10 border-green-500/30 text-green-800 dark:text-green-300 w-full max-w-md shrink-0">
