@@ -2,10 +2,10 @@
 'use client';
 
 import { useState, useEffect, useId } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Upload, X, File as FileIcon, Loader2, ArrowLeft, GripVertical, Plus, Library } from 'lucide-react';
+import { Upload, X, File as FileIcon, Loader2, ArrowLeft, GripVertical, Plus, Library, Trash2, Edit } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -19,28 +19,46 @@ import { storage, db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
+const lessonSchema = z.object({
+    id: z.string(),
+    title: z.string().min(1, "Lesson title is required."),
+    content: z.string().min(1, "Lesson content is required."),
+});
+
+const moduleSchema = z.object({
+    id: z.string(),
+    title: z.string().min(1, "Module title is required."),
+    lessons: z.array(lessonSchema),
+});
+
+const resourceSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    type: z.string(),
+    size: z.number(),
+    url: z.string().url(),
+});
 
 const courseFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters."),
   description: z.string().min(10, "Description must be at least 10 characters."),
   tags: z.string().min(1, "Please provide at least one tag."),
+  modules: z.array(moduleSchema),
 });
 
 type CourseFormData = z.infer<typeof courseFormSchema>;
-
-interface Lesson {
-    id: string;
-    name: string;
-    type: string;
-    size: number;
-    url: string;
-}
-
-interface Module {
-    id: string;
-    title: string;
-    lessons: Lesson[];
-}
 
 interface Resource {
     id: string;
@@ -53,7 +71,6 @@ interface Resource {
 export default function EditCourseForm() {
   const [pageLoading, setPageLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [modules, setModules] = useState<Module[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   
   const router = useRouter();
@@ -68,7 +85,13 @@ export default function EditCourseForm() {
       title: '',
       description: '',
       tags: '',
+      modules: [],
     },
+  });
+
+  const { fields: moduleFields, append: appendModule, remove: removeModule, update: updateModule } = useFieldArray({
+    control: form.control,
+    name: "modules",
   });
 
   useEffect(() => {
@@ -85,8 +108,8 @@ export default function EditCourseForm() {
                     title: data.title,
                     description: data.description,
                     tags: (data.tags || []).join(', '),
+                    modules: data.modules || [],
                 });
-                setModules(data.modules || []);
                 setResources(data.resources || []);
             } else {
                 toast({ variant: 'destructive', title: 'Error', description: 'Course not found.' });
@@ -101,41 +124,6 @@ export default function EditCourseForm() {
     };
     fetchCourseData();
   }, [courseId, form, router, toast]);
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, moduleId: string) => {
-    if (e.target.files) {
-        const files = Array.from(e.target.files);
-        if (files.length === 0) return;
-
-        setIsSubmitting(true);
-        try {
-            const uploadedLessons = await Promise.all(files.map(async file => {
-                const storageRef = ref(storage, `course_files/${courseId}/${moduleId}/${file.name}`);
-                await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(storageRef);
-                return { 
-                    id: `${uniqueId}-${file.name}`,
-                    name: file.name, 
-                    type: file.type, 
-                    size: file.size, 
-                    url: url 
-                };
-            }));
-            
-            setModules(prev => prev.map(m => 
-                m.id === moduleId ? { ...m, lessons: [...m.lessons, ...uploadedLessons] } : m
-            ));
-
-             toast({ title: 'Upload successful', description: `${files.length} lesson(s) added.` });
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'Upload failed', description: 'Could not upload files.' });
-        } finally {
-            setIsSubmitting(false);
-            e.target.value = '';
-        }
-    }
-  };
 
   const handleResourceFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -170,26 +158,28 @@ export default function EditCourseForm() {
   };
   
   const addModule = () => {
-    const newModule: Module = {
-        id: `${uniqueId}-module-${modules.length}`,
-        title: `New Module ${modules.length + 1}`,
+    appendModule({
+        id: `${uniqueId}-module-${moduleFields.length}`,
+        title: `New Module ${moduleFields.length + 1}`,
         lessons: [],
+    });
+  };
+
+  const addLesson = (moduleIndex: number) => {
+    const modules = form.getValues('modules');
+    const newLesson = {
+        id: `${uniqueId}-lesson-${modules[moduleIndex].lessons.length}`,
+        title: 'New Lesson',
+        content: 'Write your lesson content here. You can use Markdown.',
     };
-    setModules(prev => [...prev, newModule]);
+    const updatedLessons = [...modules[moduleIndex].lessons, newLesson];
+    updateModule(moduleIndex, { ...modules[moduleIndex], lessons: updatedLessons });
   };
 
-  const updateModuleTitle = (moduleId: string, newTitle: string) => {
-    setModules(prev => prev.map(m => m.id === moduleId ? { ...m, title: newTitle } : m));
-  };
-  
-  const removeModule = (moduleId: string) => {
-    setModules(prev => prev.filter(m => m.id !== moduleId));
-  };
-
-  const removeLesson = (moduleId: string, lessonId: string) => {
-    setModules(prev => prev.map(m => 
-        m.id === moduleId ? { ...m, lessons: m.lessons.filter(l => l.id !== lessonId) } : m
-    ));
+  const removeLesson = (moduleIndex: number, lessonIndex: number) => {
+    const modules = form.getValues('modules');
+    const updatedLessons = modules[moduleIndex].lessons.filter((_, i) => i !== lessonIndex);
+    updateModule(moduleIndex, { ...modules[moduleIndex], lessons: updatedLessons });
   };
 
   const removeResource = (resourceId: string) => {
@@ -202,7 +192,6 @@ export default function EditCourseForm() {
         await updateCourseAction({
             courseId,
             ...data,
-            modules,
             resources,
         });
       
@@ -295,48 +284,49 @@ export default function EditCourseForm() {
                     <CardDescription>Manage the modules and lessons for this course.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {modules.map((module) => (
+                    {moduleFields.map((module, moduleIndex) => (
                         <Card key={module.id} className="bg-muted/50">
                             <CardHeader className="flex flex-row items-center gap-2 space-y-0 p-4">
-                                <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
                                 <Input 
-                                    value={module.title} 
-                                    onChange={(e) => updateModuleTitle(module.id, e.target.value)}
+                                    {...form.register(`modules.${moduleIndex}.title`)}
                                     className="text-lg font-semibold border-none shadow-none focus-visible:ring-1 p-1 h-auto"
                                 />
-                                <Button variant="ghost" size="icon" className="ml-auto" onClick={() => removeModule(module.id)}>
+                                <Button variant="ghost" size="icon" className="ml-auto" onClick={() => removeModule(moduleIndex)}>
                                     <X className="h-4 w-4" />
                                 </Button>
                             </CardHeader>
-                            <CardContent className="p-4 pt-0">
+                            <CardContent className="p-4 pt-0 space-y-4">
                                 <div className="space-y-2">
-                                    {module.lessons.map(lesson => (
-                                        <div key={lesson.id} className="flex items-center justify-between p-2 bg-background rounded-md text-sm">
-                                            <div className="flex items-center gap-2 overflow-hidden">
-                                                <FileIcon className="h-4 w-4 shrink-0" />
-                                                <span className="truncate">{lesson.name}</span>
-                                                <span className="text-muted-foreground text-xs shrink-0">({formatBytes(lesson.size)})</span>
+                                    {module.lessons.map((lesson, lessonIndex) => (
+                                        <div key={lesson.id} className="flex flex-col gap-2 p-3 bg-background rounded-md border">
+                                            <div className="flex items-center justify-between">
+                                                <Label htmlFor={`lesson-title-${module.id}-${lesson.id}`}>Lesson Title</Label>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeLesson(moduleIndex, lessonIndex)}>
+                                                    <X className="h-4 w-4" />
+                                                </Button>
                                             </div>
-                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeLesson(module.id, lesson.id)}>
-                                                <X className="h-4 w-4" />
-                                            </Button>
+                                            <Input
+                                                id={`lesson-title-${module.id}-${lesson.id}`}
+                                                {...form.register(`modules.${moduleIndex}.lessons.${lessonIndex}.title`)}
+                                                placeholder="e.g., Introduction to React"
+                                            />
+                                            {form.formState.errors.modules?.[moduleIndex]?.lessons?.[lessonIndex]?.title && <p className="text-sm text-destructive mt-1">{form.formState.errors.modules?.[moduleIndex]?.lessons?.[lessonIndex]?.title?.message}</p>}
+                                            
+                                            <Label htmlFor={`lesson-content-${module.id}-${lesson.id}`} className="mt-2">Lesson Content (Markdown supported)</Label>
+                                            <Textarea
+                                                id={`lesson-content-${module.id}-${lesson.id}`}
+                                                {...form.register(`modules.${moduleIndex}.lessons.${lessonIndex}.content`)}
+                                                placeholder="Write lesson content here..."
+                                                rows={6}
+                                            />
+                                            {form.formState.errors.modules?.[moduleIndex]?.lessons?.[lessonIndex]?.content && <p className="text-sm text-destructive mt-1">{form.formState.errors.modules?.[moduleIndex]?.lessons?.[lessonIndex]?.content?.message}</p>}
                                         </div>
                                     ))}
                                 </div>
-                                <div className="relative flex items-center justify-center border-2 border-dashed rounded-md h-20 mt-4 cursor-pointer hover:border-primary transition">
-                                    <div className="text-center">
-                                        <Upload className="mx-auto text-muted-foreground w-6 h-6" />
-                                        <p className="text-xs text-muted-foreground mt-1">Upload Lessons</p>
-                                    </div>
-                                    <Input
-                                        type="file"
-                                        multiple
-                                        accept=".pdf,.doc,.docx,.mp4,.mov,.zip"
-                                        onChange={(e) => handleFileChange(e, module.id)}
-                                        className="absolute inset-0 opacity-0 cursor-pointer"
-                                        disabled={isSubmitting}
-                                    />
-                                </div>
+                                <Button type="button" variant="outline" size="sm" onClick={() => addLesson(moduleIndex)}>
+                                    <Plus className="mr-2 h-4 w-4" /> Add Lesson
+                                </Button>
                             </CardContent>
                         </Card>
                     ))}
@@ -391,3 +381,5 @@ export default function EditCourseForm() {
     </div>
   );
 }
+
+    

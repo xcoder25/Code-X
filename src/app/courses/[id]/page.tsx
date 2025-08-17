@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import Link from 'next/link';
-import { PlayCircle, FileText, File, Library, Download } from 'lucide-react';
+import { PlayCircle, FileText, BookOpen, Library, Download } from 'lucide-react';
 
 import {
   Card,
@@ -28,9 +28,8 @@ import { pythonCourseData } from '@/lib/python-course-data';
 
 interface Lesson {
     id: string;
-    name: string;
-    type: string;
-    url: string;
+    title: string;
+    content: string;
     completed?: boolean;
 }
 
@@ -53,16 +52,6 @@ interface Course {
     tags: string[];
     modules: Module[];
     resources: Resource[];
-}
-
-function getLessonIcon(type: string) {
-    if (type.startsWith('video/')) {
-        return <PlayCircle className="h-5 w-5 mr-3 text-muted-foreground" />;
-    }
-    if (type.startsWith('application/pdf')) {
-        return <FileText className="h-5 w-5 mr-3 text-muted-foreground" />;
-    }
-    return <File className="h-5 w-5 mr-3 text-muted-foreground" />;
 }
 
 export default function CourseDetailPage() {
@@ -224,16 +213,11 @@ export default function CourseDetailPage() {
                                 <ul className="space-y-1">
                                     {module.lessons.map(lesson => (
                                     <li key={lesson.id}>
-                                        <a 
-                                            href={lesson.url} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer" 
-                                            className="flex items-center p-3 rounded-md transition-colors hover:bg-muted/50"
-                                        >
-                                        {getLessonIcon(lesson.type)}
-                                        <span className="flex-1">{lesson.name}</span>
-                                        <Badge variant={"secondary"}>Pending</Badge>
-                                        </a>
+                                        <div className="flex items-center p-3 rounded-md transition-colors hover:bg-muted/50 cursor-pointer">
+                                            <BookOpen className="h-5 w-5 mr-3 text-muted-foreground" />
+                                            <span className="flex-1">{lesson.title}</span>
+                                            <Badge variant={"secondary"}>Pending</Badge>
+                                        </div>
                                     </li>
                                     ))}
                                     {module.lessons.length === 0 && (
@@ -320,3 +304,5 @@ export default function CourseDetailPage() {
     </main>
   );
 }
+
+    

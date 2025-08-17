@@ -67,11 +67,23 @@ export async function sendMessageAction(
   }
 }
 
+const lessonSchema = z.object({
+    id: z.string(),
+    title: z.string().min(1),
+    content: z.string().min(1),
+});
+
+const moduleSchema = z.object({
+    id: z.string(),
+    title: z.string().min(1),
+    lessons: z.array(lessonSchema),
+});
 
 const createCourseFormSchema = z.object({
   title: z.string().min(3),
   description: z.string().min(10),
   tags: z.string(),
+  modules: z.array(moduleSchema),
 });
 
 export async function createCourseAction(
@@ -79,17 +91,21 @@ export async function createCourseAction(
 ) {
   const parsed = createCourseFormSchema.safeParse(data);
   if (!parsed.success) {
+    console.error("Course creation validation failed:", parsed.error.issues);
     throw new Error('Invalid course data.');
   }
 
+  const { title, description, tags, modules } = parsed.data;
+
   const courseRef = await addDoc(collection(db, 'courses'), {
-    ...parsed.data,
+    title,
+    description,
+    tags: tags.split(',').map(tag => tag.trim()),
+    modules,
     createdAt: serverTimestamp(),
     enrollments: 0,
     status: 'Draft',
-    tags: parsed.data.tags.split(',').map(tag => tag.trim()),
-    modules: [],
-    resources: [],
+    resources: [], // Initialize with empty resources
   });
 
   return { id: courseRef.id };
@@ -100,17 +116,7 @@ const updateCourseSchema = z.object({
     title: z.string().min(3, "Title must be at least 3 characters."),
     description: z.string().min(10, "Description must be at least 10 characters."),
     tags: z.string().min(1, "Please provide at least one tag."),
-    modules: z.array(z.object({
-        id: z.string(),
-        title: z.string().min(1, "Module title is required."),
-        lessons: z.array(z.object({
-            id: z.string(),
-            name: z.string(),
-            type: z.string(),
-            size: z.number(),
-            url: z.string().url(),
-        })),
-    })),
+    modules: z.array(moduleSchema),
     resources: z.array(z.object({
         id: z.string(),
         name: z.string(),
@@ -138,23 +144,13 @@ export async function updateCourseAction(data: z.infer<typeof updateCourseSchema
         throw new Error('Course not found.');
     }
 
-    // --- File Deletion Logic ---
+    // --- File Deletion Logic for Resources ---
     const existingData = courseDoc.data();
-    const existingModules = existingData.modules || [];
     const existingResources = existingData.resources || [];
-    
-    const newLessonUrls = new Set(modules.flatMap(m => m.lessons.map(l => l.url)));
     const newResourceUrls = new Set(resources.map(r => r.url));
-    
-    const lessonsToDelete = existingModules.flatMap((mod: any) => 
-        (mod.lessons || []).filter((lesson: any) => !newLessonUrls.has(lesson.url))
-    );
-
     const resourcesToDelete = existingResources.filter((res: any) => !newResourceUrls.has(res.url));
 
-    const filesToDelete = [...lessonsToDelete, ...resourcesToDelete];
-
-    for (const file of filesToDelete) {
+    for (const file of resourcesToDelete) {
         try {
             const fileRef = ref(storage, file.url);
             await deleteObject(fileRef);
@@ -182,10 +178,8 @@ const updateCourseModulesSchema = z.object({
         title: z.string(),
         lessons: z.array(z.object({
             id: z.string(),
-            name: z.string(),
-            type: z.string(),
-            size: z.number(),
-            url: z.string().url(),
+            title: z.string(),
+            content: z.string(),
         })),
     })),
 });
@@ -486,3 +480,5 @@ export async function deleteCourseAction(courseId: string) {
     const courseRef = doc(db, 'courses', courseId);
     await deleteDoc(courseRef);
 }
+
+    
