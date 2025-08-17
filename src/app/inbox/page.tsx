@@ -1,12 +1,12 @@
 
 'use client';
 
-import { collection, query, orderBy, onSnapshot, where, Timestamp, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
-import { Mail, MessageCircle } from 'lucide-react';
+import { Mail, MessageCircle, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { markMessagesAsRead } from '../actions';
 import { useLoading } from '@/context/loading-provider';
@@ -17,6 +17,7 @@ interface Message {
   body: string;
   createdAt: Timestamp;
   readBy?: string[];
+  targetType: 'general' | 'direct';
 }
 
 export default function InboxPage() {
@@ -25,6 +26,11 @@ export default function InboxPage() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { showLoading, hideLoading } = useLoading();
+  const selectedMessageRef = useRef<Message | null>(null);
+
+  useEffect(() => {
+    selectedMessageRef.current = selectedMessage;
+  }, [selectedMessage]);
 
   useEffect(() => {
     if (!user) {
@@ -44,50 +50,64 @@ export default function InboxPage() {
         orderBy('createdAt', 'desc')
     );
 
-    const unsubGeneral = onSnapshot(generalQuery, (generalSnapshot) => {
-        const generalMessages = generalSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Message);
+    let generalMessages: Message[] = [];
+    let directMessages: Message[] = [];
+
+    const combineAndSetMessages = () => {
+        const allMessages = [...generalMessages, ...directMessages];
+        const uniqueMessages = allMessages.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+        const sortedMessages = uniqueMessages.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
         
-        // Now get the direct messages and combine them
-        getDocs(directQuery).then(directSnapshot => {
-             const directMessages = directSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Message);
-             
-             const allMessages = [...generalMessages, ...directMessages];
-             
-             // Sort all messages by date
-             const sortedMessages = allMessages.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+        setMessages(sortedMessages);
 
-             // Remove duplicates that might occur if a message is both general and direct (unlikely but safe)
-             const uniqueMessages = sortedMessages.filter((v,i,a)=>a.findIndex(t=>(t.id === v.id))===i);
-
-             setMessages(uniqueMessages);
-
-            if (uniqueMessages.length > 0 && !selectedMessage) {
-                setSelectedMessage(uniqueMessages[0]);
-            } else if (uniqueMessages.length === 0) {
+        if (loading) {
+            if (sortedMessages.length > 0 && !selectedMessageRef.current) {
+                setSelectedMessage(sortedMessages[0]);
+            } else if (sortedMessages.length === 0) {
                 setSelectedMessage(null);
             }
             setLoading(false);
-        });
-
+        }
+    };
+    
+    const unsubGeneral = onSnapshot(generalQuery, (snapshot) => {
+        generalMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Message);
+        combineAndSetMessages();
     }, (error) => {
-      console.error("Error fetching general messages:", error);
-      setLoading(false);
+        console.error("Error fetching general messages:", error);
+        if (loading) setLoading(false);
     });
 
-    // Mark messages as read when the component mounts
+    const unsubDirect = onSnapshot(directQuery, (snapshot) => {
+        directMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Message);
+        combineAndSetMessages();
+    }, (error) => {
+        console.error("Error fetching direct messages:", error);
+        if (loading) setLoading(false);
+    });
+
     markMessagesAsRead(user.uid);
 
     return () => {
         unsubGeneral();
+        unsubDirect();
     };
-  }, [user, selectedMessage]);
+  }, [user, loading]);
   
-  const handleSelectMessage = (message: Message) => {
+  const handleSelectMessage = useCallback((message: Message) => {
     showLoading();
     setTimeout(() => {
         setSelectedMessage(message);
         hideLoading();
-    }, 200); // Simulate network latency for a better UX
+    }, 200);
+  }, [showLoading, hideLoading]);
+
+  const handleBackToList = () => {
+    showLoading();
+    setTimeout(() => {
+        setSelectedMessage(null);
+        hideLoading();
+    }, 200);
   }
 
   return (
@@ -117,8 +137,8 @@ export default function InboxPage() {
                                 !isRead && "font-bold"
                                 )}
                             >
-                                {!isRead && <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5" />}
-                                <div className={cn("flex-1", isRead ? "pl-5" : "")}>
+                                {!isRead && <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5 shrink-0" />}
+                                <div className={cn("flex-1 overflow-hidden", isRead && "pl-5")}>
                                     <p className="truncate">{msg.title}</p>
                                     <p className={cn("text-xs text-muted-foreground truncate", !isRead && "text-foreground/80")}>
                                         {msg.body}
@@ -129,7 +149,7 @@ export default function InboxPage() {
                         })}
                     </div>
                 ) : (
-                    <div className="p-8 text-center text-muted-foreground flex flex-col items-center gap-4">
+                    <div className="p-8 text-center text-muted-foreground flex flex-col items-center gap-4 h-full justify-center">
                         <Mail className="h-12 w-12 text-muted-foreground/50" />
                         <p>Your inbox is empty.</p>
                     </div>
@@ -141,8 +161,8 @@ export default function InboxPage() {
                 {selectedMessage ? (
                     <>
                     <div className="p-4 border-b flex items-start gap-4">
-                         <button onClick={() => setSelectedMessage(null)} className="md:hidden p-2 -ml-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                         <button onClick={handleBackToList} className="md:hidden p-2 -ml-2">
+                            <ArrowLeft />
                         </button>
                         <div className="flex-1">
                             <h2 className="text-xl font-semibold">{selectedMessage.title}</h2>
@@ -155,14 +175,14 @@ export default function InboxPage() {
                         <p className="whitespace-pre-wrap">{selectedMessage.body}</p>
                     </div>
                     </>
-                ) : (
+                ) : !loading ? (
                     <div className="flex-1 flex items-center justify-center text-center text-muted-foreground">
                        <div className="flex flex-col items-center gap-4">
                            <MessageCircle className="h-16 w-16 text-muted-foreground/30" />
                            <p>Select a message to read</p>
                        </div>
                     </div>
-                )}
+                ): null}
             </div>
        </div>
     </main>
