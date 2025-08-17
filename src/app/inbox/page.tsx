@@ -9,7 +9,6 @@ import { useAuth } from '@/app/auth-provider';
 import { Mail, MessageCircle, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { markMessagesAsRead } from '../actions';
-import { useLoading } from '@/context/loading-provider';
 
 interface Message {
   id: string;
@@ -26,7 +25,6 @@ export default function InboxPage() {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const { showLoading, hideLoading } = useLoading();
   const selectedMessageRef = useRef<Message | null>(null);
 
   useEffect(() => {
@@ -76,20 +74,12 @@ export default function InboxPage() {
     };
   }, [user, loading]);
   
-  const handleSelectMessage = useCallback((message: Message) => {
-    showLoading();
-    setTimeout(() => {
-        setSelectedMessage(message);
-        hideLoading();
-    }, 200);
-  }, [showLoading, hideLoading]);
+  const handleSelectMessage = (message: Message) => {
+    setSelectedMessage(message);
+  };
 
   const handleBackToList = () => {
-    showLoading();
-    setTimeout(() => {
-        setSelectedMessage(null);
-        hideLoading();
-    }, 200);
+    setSelectedMessage(null);
   }
 
   return (
