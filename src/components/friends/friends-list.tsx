@@ -25,17 +25,23 @@ export default function FriendsList({ type }: FriendsListProps) {
       return;
     }
 
+    // Simplified query to fetch all friend documents for the user
     const friendsQuery = query(
       collection(db, 'users', user.uid, 'friends'),
-      where('status', '==', type === 'friends' ? 'accepted' : 'received'),
       orderBy('since', 'desc')
     );
 
     const unsubscribe = onSnapshot(friendsQuery, (snapshot) => {
-      const friendsData = snapshot.docs.map(doc => ({
+      const allFriendData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
       } as Friend));
+      
+      // Filter the results on the client-side based on the 'type' prop
+      const friendsData = allFriendData.filter(friend => 
+        friend.status === (type === 'friends' ? 'accepted' : 'received')
+      );
+      
       setFriends(friendsData);
       setLoading(false);
     }, (error) => {
