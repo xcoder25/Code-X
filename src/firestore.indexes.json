@@ -38,6 +38,20 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "friends",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "since",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []
