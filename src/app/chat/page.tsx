@@ -29,10 +29,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 // Mock data for chat groups
 const chatGroups = [
-  { id: 'general', name: 'General Chat', icon: <Users className="h-5 w-5" /> },
-  { id: 'web-dev', name: 'Web Development', icon: <Code className="h-5 w-5" /> },
   { id: 'python-intro', name: 'Intro to Python', icon: <Hash className="h-5 w-5" /> },
-  { id: 'random', name: 'Random', icon: <Hash className="h-5 w-5" /> },
 ];
 
 type Chat = {
@@ -143,6 +140,7 @@ const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSe
     const { user } = useAuthState(auth);
     const [classmates, setClassmates] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+    const pythonCourseId = 'intro-to-python';
 
     useEffect(() => {
         if (!user) {
@@ -153,16 +151,11 @@ const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSe
         async function fetchClassmates() {
             setLoading(true);
             try {
-                const enrollmentSnap = await getDocs(collection(db, 'users', user!.uid, 'enrollments'));
-                const courseIds = enrollmentSnap.docs.map(doc => doc.id);
-                
-                if (courseIds.length === 0) {
-                    setLoading(false);
-                    return;
-                }
-                
-                const enrollmentsQuery = query(collectionGroup(db, 'enrollments'), where('courseId', 'in', courseIds));
+                // Fetch all enrollments for the "Intro to Python" course
+                const enrollmentsQuery = query(collectionGroup(db, 'enrollments'), where('courseId', '==', pythonCourseId));
                 const enrollmentsSnap = await getDocs(enrollmentsQuery);
+                
+                // Get the unique user IDs from those enrollments
                 const userIds = Array.from(new Set(enrollmentsSnap.docs.map(doc => doc.ref.parent.parent!.id)));
 
                 if (userIds.length === 0) {
@@ -170,11 +163,14 @@ const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSe
                     return;
                 }
 
+                // Fetch the user documents for all those user IDs
                 const usersQuery = query(collection(db, 'users'), where('uid', 'in', userIds));
                 const userDocsSnap = await getDocs(usersQuery);
+                
+                // Map to User objects and filter out the current user
                 const usersData = userDocsSnap.docs
                     .map(doc => ({ id: doc.id, ...doc.data() } as User))
-                    .filter(u => u.id !== user.uid); // Exclude self
+                    .filter(u => u.id !== user.uid);
                 
                 setClassmates(usersData);
             } catch (error) {
@@ -193,7 +189,7 @@ const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSe
     }
 
     if (classmates.length === 0) {
-        return <div className="text-center p-8 text-muted-foreground text-sm">No classmates found. Enroll in a course to connect with others!</div>;
+        return <div className="text-center p-8 text-muted-foreground text-sm">No classmates found in the Intro to Python course.</div>;
     }
 
     return <div className="p-2 space-y-1">
