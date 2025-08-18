@@ -11,6 +11,7 @@ import {
   KeyRound,
   MessageSquare,
   ClipboardCheck,
+  MessageCircle,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -126,6 +127,14 @@ export default function AppSidebar() {
                 <MessageSquare />
                 <span>Messages</span>
               </LoadingLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/chat')}>
+              <Link href="/chat" target="_blank">
+                <MessageCircle />
+                <span>Community Chat</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
