@@ -146,7 +146,7 @@ export default function CoursesPage() {
               </div>
               <Button asChild className="w-full">
                 <Link href={`/courses/${course.id}`}>
-                   {course.status === 'not-started' ? 'View Course' : 'Continue Course'} <ArrowRight className="ml-2 h-4 w-4" />
+                   {course.status === 'not-started' ? 'Enroll in Course' : 'Continue Course'} <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
             </CardFooter>

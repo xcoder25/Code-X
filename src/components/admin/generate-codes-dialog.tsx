@@ -191,4 +191,3 @@ export default function GenerateCodesDialog({ children }: { children: React.Reac
     </Dialog>
   );
 }
-
