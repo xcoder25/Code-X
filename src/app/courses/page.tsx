@@ -19,6 +19,7 @@ import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
 import { pythonCourse } from '@/lib/python-course-data';
+import { skillsCourses } from '@/lib/skills-course-data';
 
 interface Course {
   id: string;
@@ -68,9 +69,9 @@ export default function CoursesPage() {
         const firestoreCourses = await Promise.all(coursesDataPromises);
         
         // Combine firestore courses with the hard-coded one
-        const allCourses = [...firestoreCourses, pythonCourse];
+        const allCourses = [...firestoreCourses, pythonCourse, ...skillsCourses];
         
-        // Prevent duplicates if the python course is ever added to firestore
+        // Prevent duplicates if a course is ever added to firestore with same id
         const uniqueCourses = allCourses.filter((course, index, self) =>
             index === self.findIndex((c) => (
                 c.id === course.id
@@ -81,8 +82,8 @@ export default function CoursesPage() {
         setLoading(false);
     }, (error) => {
         console.error("Error fetching courses:", error);
-        // Still add the python course even if firestore fails
-        setCourses([pythonCourse]);
+        // Still add the hardcoded courses even if firestore fails
+        setCourses([pythonCourse, ...skillsCourses]);
         setLoading(false);
     });
 
@@ -100,7 +101,7 @@ export default function CoursesPage() {
       </p>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {loading ? (
-             [...Array(3)].map((_, i) => (
+             [...Array(6)].map((_, i) => (
                 <Card key={i} className="flex flex-col">
                     <CardHeader>
                         <div className="flex justify-between items-start mb-2">

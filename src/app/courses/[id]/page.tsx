@@ -24,6 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
 import { db } from '@/lib/firebase';
 import { pythonCourseData } from '@/lib/python-course-data';
+import { getSkillCourseById } from '@/lib/skills-course-data';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -77,12 +78,25 @@ export default function CourseDetailPage() {
       return;
     }
 
-    if (courseId === 'intro-to-python') {
-        setCourse(pythonCourseData);
+    setLoading(true);
+
+    const hardcodedPythonCourse = courseId === 'intro-to-python' ? pythonCourseData : null;
+    const hardcodedSkillCourse = getSkillCourseById(courseId);
+
+    if (hardcodedPythonCourse) {
+        setCourse(hardcodedPythonCourse);
+        setIsEnrolled(false); // Can't enroll in hardcoded courses for now
         setLoading(false);
-        setIsEnrolled(false);
         return;
     }
+
+    if (hardcodedSkillCourse) {
+        setCourse(hardcodedSkillCourse);
+        setIsEnrolled(false);
+        setLoading(false);
+        return;
+    }
+
 
     const courseDocRef = doc(db, 'courses', courseId);
     
@@ -111,7 +125,7 @@ export default function CourseDetailPage() {
 
   // Effect to check user enrollment and progress
   useEffect(() => {
-    if (!user || !courseId || courseId === 'intro-to-python') {
+    if (!user || !courseId || getSkillCourseById(courseId) || courseId === 'intro-to-python') {
         setIsEnrolled(false);
         setEnrollmentData({});
         return;
@@ -203,6 +217,9 @@ export default function CourseDetailPage() {
     );
   }
 
+  const canEnroll = user && !isEnrolled && course.id !== 'intro-to-python' && !getSkillCourseById(course.id);
+
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
@@ -215,7 +232,7 @@ export default function CourseDetailPage() {
               ))}
             </div>
         </div>
-        {!isEnrolled && user && course.id !== 'intro-to-python' ? (
+        {canEnroll ? (
           <EnrollmentCard courseId={course.id} userId={user.uid} onEnrollmentSuccess={handleEnrollmentSuccess} />
         ) : isEnrolled ? (
           <Card className="bg-green-500/10 border-green-500/30 text-green-800 dark:text-green-300 w-full max-w-md shrink-0">
@@ -342,14 +359,14 @@ export default function CourseDetailPage() {
         <Card className="mt-6">
           <CardHeader>
             <CardTitle>Course Preview</CardTitle>
-            <CardDescription>The following modules are included in this course.</CardDescription>
+            <CardDescription>The following modules are included in this course. You can enroll in this course once the content is ready.</CardDescription>
           </CardHeader>
           <CardContent className="p-6 text-muted-foreground">
             <ul className="space-y-2 list-disc list-inside">
                 {course.modules.length > 0 ? course.modules.map(module => (
                     <li key={module.id}>{module.title}</li>
                 )) : (
-                    <li>Content is being prepared.</li>
+                    <li>Course content is being prepared and will be available soon.</li>
                 )}
             </ul>
           </CardContent>
