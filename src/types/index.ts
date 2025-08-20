@@ -37,3 +37,12 @@ export interface Friend {
     status: 'sent' | 'received' | 'accepted';
     since: Timestamp;
 }
+
+
+export interface Teacher {
+    id: string;
+    uid: string;
+    displayName: string;
+    email: string;
+    photoURL?: string | null;
+}

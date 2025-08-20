@@ -29,7 +29,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -44,6 +44,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { deleteCourseAction } from '@/app/actions';
+import { User } from '@/types';
 
 interface Course {
     id: string;
@@ -53,6 +54,8 @@ interface Course {
     createdAt: {
         seconds: number;
     };
+    teacherId?: string;
+    teacherName?: string;
 }
 
 export default function AdminCoursesPage() {
@@ -65,8 +68,19 @@ export default function AdminCoursesPage() {
 
   useEffect(() => {
     const coursesQuery = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(coursesQuery, (snapshot) => {
-        const coursesData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Course);
+    const unsubscribe = onSnapshot(coursesQuery, async (snapshot) => {
+        const coursesDataPromises = snapshot.docs.map(async (docSnapshot) => {
+            const courseData = { ...docSnapshot.data(), id: docSnapshot.id } as Course;
+            if (courseData.teacherId) {
+                const teacherDocRef = doc(db, 'teachers', courseData.teacherId);
+                const teacherDoc = await getDoc(teacherDocRef);
+                if (teacherDoc.exists()) {
+                    courseData.teacherName = teacherDoc.data().displayName;
+                }
+            }
+            return courseData;
+        });
+        const coursesData = await Promise.all(coursesDataPromises);
         setCourses(coursesData);
         setLoading(false);
     }, (error) => {
@@ -126,6 +140,7 @@ export default function AdminCoursesPage() {
                     <TableHeader>
                         <TableRow>
                         <TableHead>Title</TableHead>
+                        <TableHead>Teacher</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Enrollments</TableHead>
                         <TableHead>Date Created</TableHead>
@@ -136,7 +151,8 @@ export default function AdminCoursesPage() {
                         {loading ? (
                             [...Array(3)].map((_, i) => (
                                 <TableRow key={i}>
-                                    <TableCell><Skeleton className="h-4 w-64" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                                     <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
@@ -145,13 +161,14 @@ export default function AdminCoursesPage() {
                             ))
                         ) : courses.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center">
+                                <TableCell colSpan={6} className="h-24 text-center">
                                     No courses created yet.
                                 </TableCell>
                             </TableRow>
                         ) : courses.map(course => (
                             <TableRow key={course.id}>
                                 <TableCell className="font-medium">{course.title}</TableCell>
+                                <TableCell>{course.teacherName || 'Unassigned'}</TableCell>
                                 <TableCell>
                                     <Badge variant={course.status === 'Published' ? 'default' : 'secondary'}>{course.status}</Badge>
                                 </TableCell>

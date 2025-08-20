@@ -5,7 +5,7 @@ import { useState, useEffect, useId } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Upload, X, File as FileIcon, Loader2, ArrowLeft, GripVertical, Plus, Library, Trash2, Edit, Check, ChevronsUpDown } from 'lucide-react';
+import { Upload, X, Loader2, ArrowLeft, GripVertical, Plus, Library } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -16,24 +16,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { updateCourseAction } from '@/app/actions';
 import { uploadBytes, getDownloadURL, ref } from 'firebase/storage';
 import { storage, db } from '@/lib/firebase';
-import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
-import { cn } from '@/lib/utils';
-import { User } from '@/types';
+import { useTeacherAuth } from '@/app/teacher-auth-provider';
 
 
 const lessonSchema = z.object({
@@ -61,7 +47,6 @@ const courseFormSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters."),
   tags: z.string().min(1, "Please provide at least one tag."),
   modules: z.array(moduleSchema),
-  teacherId: z.string().optional(),
 });
 
 type CourseFormData = z.infer<typeof courseFormSchema>;
@@ -74,12 +59,11 @@ interface Resource {
     url: string;
 }
 
-export default function EditCourseForm() {
+export default function TeacherEditCourseForm() {
+  const { user } = useTeacherAuth();
   const [pageLoading, setPageLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resources, setResources] = useState<Resource[]>([]);
-  const [teachers, setTeachers] = useState<User[]>([]);
-  const [popoverOpen, setPopoverOpen] = useState(false);
   
   const router = useRouter();
   const params = useParams();
@@ -94,7 +78,6 @@ export default function EditCourseForm() {
       description: '',
       tags: '',
       modules: [],
-      teacherId: '',
     },
   });
 
@@ -104,35 +87,32 @@ export default function EditCourseForm() {
   });
 
   useEffect(() => {
-    if (!courseId) return;
+    if (!courseId || !user) return;
 
-    const fetchCourseAndTeachers = async () => {
+    const fetchCourseData = async () => {
         setPageLoading(true);
         try {
-            // Fetch Course Data
             const courseRef = doc(db, 'courses', courseId);
             const docSnap = await getDoc(courseRef);
             if (docSnap.exists()) {
                 const data = docSnap.data();
+                // Security check: ensure the logged-in teacher is assigned to this course
+                if (data.teacherId !== user.uid) {
+                    toast({ variant: 'destructive', title: 'Access Denied', description: 'You are not assigned to this course.' });
+                    router.push('/teacher/courses');
+                    return;
+                }
                 form.reset({
                     title: data.title,
                     description: data.description,
                     tags: (data.tags || []).join(', '),
                     modules: data.modules || [],
-                    teacherId: data.teacherId || '',
                 });
                 setResources(data.resources || []);
             } else {
                 toast({ variant: 'destructive', title: 'Error', description: 'Course not found.' });
-                router.push('/admin/courses');
+                router.push('/teacher/courses');
             }
-
-            // Fetch Teachers
-            const teachersQuery = query(collection(db, 'teachers'));
-            const teachersSnap = await getDocs(teachersQuery);
-            const teachersData = teachersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-            setTeachers(teachersData);
-
         } catch (error) {
             console.error(error);
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch course data.' });
@@ -140,8 +120,8 @@ export default function EditCourseForm() {
             setPageLoading(false);
         }
     };
-    fetchCourseAndTeachers();
-  }, [courseId, form, router, toast]);
+    fetchCourseData();
+  }, [courseId, form, router, toast, user]);
 
   const handleResourceFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -205,12 +185,14 @@ export default function EditCourseForm() {
   }
 
   const onSubmit = async (data: CourseFormData) => {
+    if (!user) return;
     setIsSubmitting(true);
     try {
         await updateCourseAction({
             courseId,
             ...data,
             resources,
+            teacherId: user.uid, // Ensure teacherId is passed along
         });
       
       toast({
@@ -218,7 +200,7 @@ export default function EditCourseForm() {
         description: 'Course has been updated successfully.',
       });
       
-      router.push(`/admin/courses`);
+      router.push(`/teacher/courses`);
     } catch (error: any) {
       console.error(error);
       toast({
@@ -262,15 +244,15 @@ export default function EditCourseForm() {
     <div className="flex-1 space-y-4 p-8 pt-6">
         <div className="flex items-center gap-4">
             <Button asChild variant="outline" size="icon">
-                <Link href="/admin/courses">
+                <Link href="/teacher/courses">
                     <ArrowLeft className="h-4 w-4" />
                     <span className="sr-only">Back to Courses</span>
                 </Link>
             </Button>
             <div>
-                <h2 className="text-3xl font-bold tracking-tight">Edit Course</h2>
+                <h2 className="text-3xl font-bold tracking-tight">Manage Course</h2>
                 <p className="text-muted-foreground">
-                    Update the course details and manage its content.
+                    Update your course details and content.
                 </p>
             </div>
         </div>
@@ -292,64 +274,6 @@ export default function EditCourseForm() {
                         <Label>Tags</Label>
                         <Input {...form.register('tags')} placeholder="e.g., React, Next.js, TypeScript (comma-separated)" />
                         {form.formState.errors.tags && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags.message}</p>}
-                    </div>
-                     <div>
-                        <Label>Assign Teacher</Label>
-                         <FormField
-                            control={form.control}
-                            name="teacherId"
-                            render={({ field }) => (
-                                <FormItem className="flex flex-col">
-                                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                                    <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        className={cn(
-                                            "w-full justify-between",
-                                            !field.value && "text-muted-foreground"
-                                        )}
-                                        >
-                                        {field.value
-                                            ? teachers.find(
-                                                (teacher) => teacher.id === field.value
-                                            )?.displayName
-                                            : "Select teacher"}
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                    <Command>
-                                        <CommandInput placeholder="Search teachers..." />
-                                        <CommandEmpty>No teachers found.</CommandEmpty>
-                                        <CommandGroup>
-                                        {teachers.map((teacher) => (
-                                            <CommandItem
-                                            value={teacher.displayName}
-                                            key={teacher.id}
-                                            onSelect={() => {
-                                                form.setValue("teacherId", teacher.id)
-                                                setPopoverOpen(false)
-                                            }}
-                                            >
-                                            <Check
-                                                className={cn(
-                                                "mr-2 h-4 w-4",
-                                                teacher.id === field.value
-                                                    ? "opacity-100"
-                                                    : "opacity-0"
-                                                )}
-                                            />
-                                            {teacher.displayName}
-                                            </CommandItem>
-                                        ))}
-                                        </CommandGroup>
-                                    </Command>
-                                    </PopoverContent>
-                                </Popover>
-                                </FormItem>
-                            )}
-                            />
                     </div>
                 </CardContent>
             </Card>

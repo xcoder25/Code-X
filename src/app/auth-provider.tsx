@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
@@ -13,13 +14,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
 
-const PUBLIC_ROUTES = ['/login', '/signup', '/'];
+const PUBLIC_ROUTES = ['/login', '/signup', '/', '/admin/login', '/teacher/login'];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
-  const isPublicRoute = PUBLIC_ROUTES.includes(pathname) || pathname.startsWith('/admin');
+  const isPublicRoute = PUBLIC_ROUTES.includes(pathname) || pathname.startsWith('/admin') || pathname.startsWith('/teacher');
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {

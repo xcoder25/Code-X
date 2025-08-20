@@ -1,3 +1,4 @@
+
 'use client';
 
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
@@ -16,10 +17,11 @@ export default function AppProvider({
   const pathname = usePathname();
   const { user } = useAuth();
   
-  // Do not show the student sidebar on any admin pages.
+  // Do not show the student sidebar on any admin or teacher pages.
   const isAdminRoute = pathname.startsWith('/admin');
+  const isTeacherRoute = pathname.startsWith('/teacher');
 
-  const showSidebar = user && !NO_SIDEBAR_ROUTES.includes(pathname) && !isAdminRoute;
+  const showSidebar = user && !NO_SIDEBAR_ROUTES.includes(pathname) && !isAdminRoute && !isTeacherRoute;
 
   if (showSidebar) {
     return (

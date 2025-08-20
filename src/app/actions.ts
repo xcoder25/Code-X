@@ -125,7 +125,8 @@ const updateCourseSchema = z.object({
         type: z.string(),
         size: z.number(),
         url: z.string().url(),
-    }))
+    })),
+    teacherId: z.string().optional(),
 });
 
 
@@ -137,7 +138,7 @@ export async function updateCourseAction(data: z.infer<typeof updateCourseSchema
         throw new Error('Invalid course data submitted.');
     }
 
-    const { courseId, title, description, tags, modules, resources } = parsed.data;
+    const { courseId, title, description, tags, modules, resources, teacherId } = parsed.data;
     
     const courseRef = doc(db, 'courses', courseId);
     
@@ -169,6 +170,7 @@ export async function updateCourseAction(data: z.infer<typeof updateCourseSchema
         tags: tags.split(',').map(tag => tag.trim()),
         modules,
         resources,
+        teacherId: teacherId || null,
     });
 }
 
