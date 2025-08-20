@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -107,6 +108,11 @@ export default function LoginPage() {
             Don&apos;t have an account?{' '}
             <Link href="/signup" className="underline">
               Sign up
+            </Link>
+          </div>
+          <div className="mt-2 text-center text-sm">
+            <Link href="/teacher/login" className="underline">
+              Login as a Teacher
             </Link>
           </div>
         </CardContent>

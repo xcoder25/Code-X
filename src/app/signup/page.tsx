@@ -160,6 +160,11 @@ export default function SignupPage() {
               Login
             </Link>
           </div>
+          <div className="mt-2 text-center text-sm">
+            <Link href="/teacher/login" className="underline">
+              Login as a Teacher
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
