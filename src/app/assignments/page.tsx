@@ -17,12 +17,18 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/auth-provider';
-import { collection, onSnapshot, query } from 'firebase/firestore';
+import { collection, onSnapshot, query, Timestamp, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { assignments, Assignment } from '@/lib/assignment-data';
 import { Submission } from '@/types';
 import SubmissionDialog from '@/components/submission-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+
+export interface Assignment {
+  id: string;
+  title: string;
+  courseTitle: string;
+  dueDate: Timestamp;
+}
 
 interface AssignmentWithSubmission extends Assignment {
   submission?: Submission;
@@ -30,8 +36,20 @@ interface AssignmentWithSubmission extends Assignment {
 
 export default function AssignmentsPage() {
   const { user } = useAuth();
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [userSubmissions, setUserSubmissions] = useState<Map<string, Submission>>(new Map());
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const assignmentsQuery = query(collection(db, 'assignments'), orderBy('dueDate', 'desc'));
+    const unsubscribeAssignments = onSnapshot(assignmentsQuery, (snapshot) => {
+        const assignmentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Assignment);
+        setAssignments(assignmentsData);
+        if (!user) setLoading(false);
+    });
+    
+    return () => unsubscribeAssignments();
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -40,7 +58,7 @@ export default function AssignmentsPage() {
     }
 
     const submissionsQuery = query(collection(db, 'users', user.uid, 'submissions'));
-    const unsubscribe = onSnapshot(submissionsQuery, (snapshot) => {
+    const unsubscribeSubmissions = onSnapshot(submissionsQuery, (snapshot) => {
       const submissionsMap = new Map<string, Submission>();
       snapshot.forEach(doc => {
         submissionsMap.set(doc.id, { id: doc.id, ...doc.data() } as Submission);
@@ -52,7 +70,7 @@ export default function AssignmentsPage() {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeSubmissions();
   }, [user]);
 
   const assignmentsWithSubmissions: AssignmentWithSubmission[] = assignments.map(assignment => ({
@@ -122,8 +140,8 @@ export default function AssignmentsPage() {
                     <TableCell className="font-medium">
                       {assignment.title}
                     </TableCell>
-                    <TableCell>{assignment.course}</TableCell>
-                    <TableCell>{assignment.dueDate}</TableCell>
+                    <TableCell>{assignment.courseTitle}</TableCell>
+                    <TableCell>{new Date(assignment.dueDate.seconds * 1000).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusVariant(getStatus(assignment))}>
                         {getStatus(assignment)}

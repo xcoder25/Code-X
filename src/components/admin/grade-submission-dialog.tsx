@@ -35,7 +35,7 @@ interface Submission {
   userId: string;
   userName: string;
   assignmentTitle: string;
-  course: string;
+  courseTitle: string;
   colabLink: string;
   status: 'Pending' | 'Graded';
   grade: string | null;
@@ -101,7 +101,7 @@ export default function GradeSubmissionDialog({ children, submission }: GradeSub
         </DialogHeader>
          <div className="text-sm">
             <p><span className="font-semibold">Assignment:</span> {submission.assignmentTitle}</p>
-            <p><span className="font-semibold">Course:</span> {submission.course}</p>
+            <p><span className="font-semibold">Course:</span> {submission.courseTitle}</p>
             <p><span className="font-semibold">Submission Link:</span> <a href={submission.colabLink} target="_blank" rel="noopener noreferrer" className="text-primary underline">Open in new tab</a></p>
         </div>
         <Form {...form}>

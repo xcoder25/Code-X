@@ -12,6 +12,7 @@ import {
   MessageSquare,
   ClipboardCheck,
   MessageCircle,
+  Clipboard,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -86,6 +87,14 @@ export default function AppSidebar() {
               <LoadingLink href="/admin/courses">
                 <BookOpen />
                 <span>Courses</span>
+              </LoadingLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/assignments')}>
+              <LoadingLink href="/admin/assignments">
+                <Clipboard />
+                <span>Assignments</span>
               </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>

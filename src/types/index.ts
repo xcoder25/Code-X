@@ -11,9 +11,13 @@ export interface ChatMessage {
 }
 
 export interface Submission {
-    id: string;
+    id: string; // assignment ID
     assignmentId: string;
+    assignmentTitle: string;
+    courseId: string;
+    courseTitle: string;
     userId: string;
+    userName: string;
     colabLink: string;
     status: 'Pending' | 'Graded';
     grade: string | null;

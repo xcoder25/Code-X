@@ -26,7 +26,6 @@ import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/ana
 import { chatWithElara, ChatWithElaraOutput, ChatWithElaraInput } from '@/ai/flows/ai-coach-flow';
 import { sendMessageFormSchema } from './schema';
 import { exams } from '@/lib/exam-data';
-import { assignments as assignmentData } from '@/lib/assignment-data';
 import { getDownloadURL, ref, uploadString, deleteObject } from 'firebase/storage';
 
 
@@ -388,17 +387,20 @@ export async function submitAssignmentAction(
     
     const { assignmentId, userId, userName, colabLink } = parsed.data;
     
-    const assignment = assignmentData.find(a => a.id === assignmentId);
-    if (!assignment) {
+    const assignmentRef = doc(db, 'assignments', assignmentId);
+    const assignmentSnap = await getDoc(assignmentRef);
+    if (!assignmentSnap.exists()) {
       throw new Error("Assignment not found.");
     }
+    const assignment = assignmentSnap.data();
 
     const submissionRef = doc(db, 'users', userId, 'submissions', assignmentId);
     
     await setDoc(submissionRef, {
         assignmentId,
         assignmentTitle: assignment.title,
-        course: assignment.course,
+        courseId: assignment.courseId,
+        courseTitle: assignment.courseTitle,
         userId,
         userName,
         colabLink,
@@ -547,4 +549,86 @@ export async function declineFriendRequestAction(input: z.infer<typeof friendAct
   
   await batch.commit();
   return { success: true };
+}
+
+const assignmentFormSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters."),
+  courseId: z.string().min(1, "Please select a course."),
+  dueDate: z.date(),
+  description: z.string().optional(),
+});
+
+export async function createAssignmentAction(
+  data: z.infer<typeof assignmentFormSchema>
+) {
+  const parsed = assignmentFormSchema.safeParse(data);
+  if (!parsed.success) {
+    throw new Error('Invalid assignment data.');
+  }
+
+  const { title, courseId, dueDate, description } = parsed.data;
+
+  const courseDocRef = doc(db, 'courses', courseId);
+  const courseDoc = await getDoc(courseDocRef);
+
+  if (!courseDoc.exists()) {
+    throw new Error('Selected course not found.');
+  }
+  const courseTitle = courseDoc.data().title;
+
+
+  await addDoc(collection(db, 'assignments'), {
+    title,
+    courseId,
+    courseTitle,
+    dueDate: Timestamp.fromDate(dueDate),
+    description,
+    createdAt: serverTimestamp(),
+  });
+
+  return { success: true };
+}
+
+
+const updateAssignmentFormSchema = assignmentFormSchema.extend({
+    assignmentId: z.string(),
+});
+
+export async function updateAssignmentAction(
+  data: z.infer<typeof updateAssignmentFormSchema>
+) {
+  const parsed = updateAssignmentFormSchema.safeParse(data);
+  if (!parsed.success) {
+    throw new Error('Invalid assignment data.');
+  }
+
+  const { assignmentId, title, courseId, dueDate, description } = parsed.data;
+
+  const courseDocRef = doc(db, 'courses', courseId);
+  const courseDoc = await getDoc(courseDocRef);
+
+  if (!courseDoc.exists()) {
+    throw new Error('Selected course not found.');
+  }
+  const courseTitle = courseDoc.data().title;
+  
+  const assignmentRef = doc(db, 'assignments', assignmentId);
+
+  await updateDoc(assignmentRef, {
+    title,
+    courseId,
+    courseTitle,
+    dueDate: Timestamp.fromDate(dueDate),
+    description,
+  });
+
+  return { success: true };
+}
+
+export async function deleteAssignmentAction(assignmentId: string) {
+  if (!assignmentId) {
+    throw new Error('Assignment ID is required.');
+  }
+  const assignmentRef = doc(db, 'assignments', assignmentId);
+  await deleteDoc(assignmentRef);
 }
