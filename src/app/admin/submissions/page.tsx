@@ -30,7 +30,7 @@ interface Submission {
   userId: string;
   userName: string;
   assignmentTitle: string;
-  course: string;
+  courseTitle: string;
   colabLink: string;
   status: 'Pending' | 'Graded';
   grade: string | null;
@@ -43,7 +43,8 @@ export default function AdminSubmissionsPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const submissionsQuery = query(collectionGroup(db, 'submissions'), orderBy('submittedAt', 'desc'));
+        // Query without ordering to avoid index issues. We'll sort client-side.
+        const submissionsQuery = query(collectionGroup(db, 'submissions'));
         const unsubscribe = onSnapshot(submissionsQuery, (snapshot) => {
             const submissionsData = snapshot.docs.map(doc => {
                 const data = doc.data();
@@ -53,6 +54,8 @@ export default function AdminSubmissionsPage() {
                     userId: data.userId,
                 } as Submission;
             });
+            // Sort client-side
+            submissionsData.sort((a, b) => b.submittedAt.seconds - a.submittedAt.seconds);
             setSubmissions(submissionsData);
             setLoading(false);
         }, (error) => {
@@ -128,7 +131,7 @@ export default function AdminSubmissionsPage() {
                             <TableRow key={`${item.userId}-${item.id}`}>
                                 <TableCell className="font-medium">{item.userName}</TableCell>
                                 <TableCell>{item.assignmentTitle}</TableCell>
-                                <TableCell>{item.course}</TableCell>
+                                <TableCell>{item.courseTitle}</TableCell>
                                 <TableCell>{new Date(item.submittedAt.seconds * 1000).toLocaleDateString()}</TableCell>
                                 <TableCell>
                                     <Badge variant={getStatusVariant(item.status)}>{item.status}</Badge>
