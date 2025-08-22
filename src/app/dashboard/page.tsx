@@ -30,9 +30,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/app/auth-provider';
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, getDocs, doc, getDoc, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Assignment, Submission } from '@/types';
 
 interface Course {
   id: string;
@@ -45,6 +46,7 @@ interface Course {
 export default function DashboardPage() {
   const { user } = useAuth();
   const [activeCourses, setActiveCourses] = useState<Course[]>([]);
+  const [pendingAssignmentsCount, setPendingAssignmentsCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,8 +55,9 @@ export default function DashboardPage() {
         return;
     };
 
+    // Fetch enrolled courses
     const enrollmentsQuery = query(collection(db, 'users', user.uid, 'enrollments'));
-    const unsubscribe = onSnapshot(enrollmentsQuery, async (snapshot) => {
+    const unsubscribeCourses = onSnapshot(enrollmentsQuery, async (snapshot) => {
         const enrolledCoursesPromises = snapshot.docs.map(async (enrollmentDoc) => {
             const courseId = enrollmentDoc.id;
             const enrollmentData = enrollmentDoc.data();
@@ -75,32 +78,46 @@ export default function DashboardPage() {
 
         const enrolledCourses = (await Promise.all(enrolledCoursesPromises)).filter(Boolean) as Course[];
         setActiveCourses(enrolledCourses);
-        setLoading(false);
+        if (loading) setLoading(false);
     }, (error) => {
         console.error("Error fetching active courses:", error);
-        setLoading(false);
+        if (loading) setLoading(false);
     });
 
-    return () => unsubscribe();
+    // Fetch assignments and submissions to calculate pending count
+    const assignmentsQuery = query(collection(db, 'assignments'), orderBy('dueDate', 'desc'));
+    const submissionsQuery = query(collection(db, 'users', user.uid, 'submissions'));
+
+    const unsubscribeAssignments = onSnapshot(assignmentsQuery, (assignmentsSnapshot) => {
+        const allAssignments = assignmentsSnapshot.docs.map(doc => doc.id);
+        
+        // Nest the submission listener to ensure we have assignments first
+        const unsubscribeSubmissions = onSnapshot(submissionsQuery, (submissionsSnapshot) => {
+            const submittedIds = new Set(submissionsSnapshot.docs.map(doc => doc.id));
+            const pendingCount = allAssignments.filter(id => !submittedIds.has(id)).length;
+            setPendingAssignmentsCount(pendingCount);
+        });
+
+        return () => unsubscribeSubmissions();
+    });
+
+
+    return () => {
+        unsubscribeCourses();
+        unsubscribeAssignments();
+    };
   }, [user]);
 
   // Mock data for now, will be replaced with Firestore data
-  const assignments: any[] = [];
   const exams: any[] = [];
   const liveClasses: any[] = [];
 
-  const pendingAssignments = assignments.filter((a) => a.status === 'Pending');
   const upcomingEvents = [
-    ...assignments
-      .filter((a) => a.status === 'Pending')
-      .map((a) => ({ ...a, type: 'Assignment', date: a.dueDate })),
     ...exams.map((e) => ({ ...e, type: 'Exam' })),
     ...liveClasses.map((l) => ({ ...l, type: 'Live Session' })),
   ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  const recentActivity = assignments
-    .filter((a) => a.status === 'Graded')
-    .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())
-    .slice(0, 3);
+  
+  const recentActivity: any[] = [];
   
    const getStatusVariant = (status: string) => {
     switch (status) {
@@ -130,7 +147,7 @@ export default function DashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">{upcomingEvents.length}</div>
             <p className="text-xs text-muted-foreground">
-              assignments, exams, and classes
+              exams and classes
             </p>
           </CardContent>
         </Card>
@@ -142,9 +159,9 @@ export default function DashboardPage() {
             <ClipboardList className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingAssignments.length}</div>
+            {loading ? <Skeleton className="h-8 w-8" /> : <div className="text-2xl font-bold">{pendingAssignmentsCount}</div>}
             <p className="text-xs text-muted-foreground">
-              due by the end of the month
+              assignments to be completed
             </p>
           </CardContent>
         </Card>
@@ -219,7 +236,7 @@ export default function DashboardPage() {
               </Table>
             ) : (
               <div className="text-center text-muted-foreground py-8">
-                No upcoming events.
+                No upcoming events. Check the schedule page for details.
               </div>
             )}
           </CardContent>

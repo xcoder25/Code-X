@@ -24,6 +24,15 @@ export interface Submission {
     submittedAt: Timestamp;
 }
 
+export interface Assignment {
+  id: string;
+  title: string;
+  courseTitle: string;
+  dueDate: Timestamp;
+  description?: string;
+  courseId: string;
+}
+
 export interface User {
     id: string;
     uid: string;
