@@ -28,6 +28,7 @@ import { getSkillCourseById } from '@/lib/skills-course-data';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 interface Lesson {
     id: string;
@@ -70,6 +71,7 @@ export default function CourseDetailPage() {
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [enrollmentData, setEnrollmentData] = useState<EnrollmentData>({});
   const [loading, setLoading] = useState(true);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
 
   // Effect to fetch course data
   useEffect(() => {
@@ -79,19 +81,26 @@ export default function CourseDetailPage() {
     }
 
     setLoading(true);
+    setSelectedLesson(null);
 
     const hardcodedPythonCourse = courseId === 'intro-to-python' ? pythonCourseData : null;
     const hardcodedSkillCourse = getSkillCourseById(courseId);
 
     if (hardcodedPythonCourse) {
         setCourse(hardcodedPythonCourse);
-        setIsEnrolled(false); // Can't enroll in hardcoded courses for now
+        if (hardcodedPythonCourse.modules[0]?.lessons[0]) {
+            setSelectedLesson(hardcodedPythonCourse.modules[0].lessons[0]);
+        }
+        setIsEnrolled(false);
         setLoading(false);
         return;
     }
 
     if (hardcodedSkillCourse) {
         setCourse(hardcodedSkillCourse);
+        if (hardcodedSkillCourse.modules[0]?.lessons[0]) {
+            setSelectedLesson(hardcodedSkillCourse.modules[0].lessons[0]);
+        }
         setIsEnrolled(false);
         setLoading(false);
         return;
@@ -103,14 +112,18 @@ export default function CourseDetailPage() {
     const unsubscribeCourse = onSnapshot(courseDocRef, (docSnapshot) => {
       if (docSnapshot.exists()) {
         const data = docSnapshot.data();
-        setCourse({
+        const newCourse = {
           id: docSnapshot.id,
           title: data.title,
           description: data.description,
           tags: data.tags || [],
           modules: data.modules || [],
           resources: data.resources || [],
-        });
+        };
+        setCourse(newCourse);
+         if (newCourse.modules[0]?.lessons[0]) {
+            setSelectedLesson(newCourse.modules[0].lessons[0]);
+        }
       } else {
         setCourse(null);
       }
@@ -244,67 +257,79 @@ export default function CourseDetailPage() {
       </div>
       
       {isEnrolled ? (
-        <div className="grid md:grid-cols-3 gap-6 mt-6">
-          <div className="md:col-span-2">
+        <div className="mt-6">
              <Tabs defaultValue="curriculum">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-2 max-w-lg">
                     <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
                     <TabsTrigger value="resources">Resource Library</TabsTrigger>
                 </TabsList>
                 <TabsContent value="curriculum">
-                    <Card>
-                    <CardHeader>
-                        <CardTitle>Course Curriculum</CardTitle>
-                        <CardDescription>Follow the curriculum to complete the course.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {course.modules.length > 0 ? (
-                        <Accordion type="single" collapsible defaultValue="item-0" className="w-full">
-                            {course.modules.map((module, index) => (
-                            <AccordionItem value={`item-${index}`} key={module.id}>
-                                <AccordionTrigger className="text-lg font-semibold hover:no-underline">
-                                    {module.title}
-                                </AccordionTrigger>
-                                <AccordionContent>
-                                <ul className="space-y-2">
-                                    {module.lessons.map(lesson => (
-                                    <li key={lesson.id}>
-                                        <Collapsible>
-                                            <div className="flex items-center justify-between p-3 rounded-md transition-colors hover:bg-muted/50">
-                                                <CollapsibleTrigger className="flex items-center flex-1 text-left">
-                                                    <BookOpen className="h-5 w-5 mr-3 text-muted-foreground" />
-                                                    <span className="flex-1">{lesson.title}</span>
-                                                </CollapsibleTrigger>
-                                                 {isLessonCompleted(lesson.id) && <CheckCircle className="h-5 w-5 text-green-500" />}
-                                            </div>
-                                            <CollapsibleContent className="p-4 pt-0 pl-11">
-                                                <p className="text-muted-foreground whitespace-pre-wrap text-sm mb-4">{lesson.content}</p>
-                                                 <div className="flex items-center space-x-2">
-                                                    <Checkbox 
-                                                        id={`complete-${lesson.id}`} 
-                                                        checked={isLessonCompleted(lesson.id)}
-                                                        onCheckedChange={(checked) => handleLesssonToggle(lesson.id, !!checked)}
-                                                    />
-                                                    <Label htmlFor={`complete-${lesson.id}`}>Mark as complete</Label>
-                                                </div>
-                                            </CollapsibleContent>
-                                        </Collapsible>
-                                    </li>
-                                    ))}
-                                    {module.lessons.length === 0 && (
-                                        <li className="p-3 text-sm text-muted-foreground">No lessons in this module yet.</li>
-                                    )}
-                                </ul>
-                                </AccordionContent>
-                            </AccordionItem>
-                            ))}
-                        </Accordion>
-                        ) : (
-                        <div className="text-center text-muted-foreground py-8">
-                            <p>Course content is not yet available. Check back soon!</p>
+                     <Card>
+                        <div className="grid md:grid-cols-[300px_1fr] min-h-[600px]">
+                            <div className="border-r overflow-y-auto">
+                                <CardHeader>
+                                    <CardTitle>Course Content</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-2">
+                                     {course.modules.length > 0 ? (
+                                        <Accordion type="multiple" defaultValue={course.modules.map(m => m.id)} className="w-full">
+                                            {course.modules.map((module, index) => (
+                                            <AccordionItem value={module.id} key={module.id}>
+                                                <AccordionTrigger className="text-base font-semibold hover:no-underline px-2">
+                                                    {module.title}
+                                                </AccordionTrigger>
+                                                <AccordionContent className="pb-0">
+                                                <ul className="space-y-1">
+                                                    {module.lessons.map(lesson => (
+                                                        <li key={lesson.id}>
+                                                             <button 
+                                                                onClick={() => setSelectedLesson(lesson)}
+                                                                className={cn("w-full flex items-center gap-3 p-2 rounded-md text-left transition-colors text-sm",
+                                                                    selectedLesson?.id === lesson.id ? "bg-muted font-semibold" : "hover:bg-muted/50"
+                                                                )}
+                                                             >
+                                                                <BookOpen className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                                                <span className="flex-1">{lesson.title}</span>
+                                                                {isLessonCompleted(lesson.id) && <CheckCircle className="h-4 w-4 text-green-500" />}
+                                                             </button>
+                                                        </li>
+                                                    ))}
+                                                    {module.lessons.length === 0 && (
+                                                        <li className="p-2 text-xs text-muted-foreground">No lessons in this module yet.</li>
+                                                    )}
+                                                </ul>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                            ))}
+                                        </Accordion>
+                                        ) : (
+                                        <div className="text-center text-muted-foreground py-8">
+                                            <p>Course content is not yet available.</p>
+                                        </div>
+                                        )}
+                                </CardContent>
+                            </div>
+                            <div className="overflow-y-auto">
+                                 {selectedLesson ? (
+                                    <div className="p-6">
+                                        <h2 className="text-2xl font-bold mb-4">{selectedLesson.title}</h2>
+                                        <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{selectedLesson.content}</p>
+                                        <div className="flex items-center space-x-2 mt-8 border-t pt-4">
+                                            <Checkbox 
+                                                id={`complete-${selectedLesson.id}`} 
+                                                checked={isLessonCompleted(selectedLesson.id)}
+                                                onCheckedChange={(checked) => handleLesssonToggle(selectedLesson.id, !!checked)}
+                                            />
+                                            <Label htmlFor={`complete-${selectedLesson.id}`}>Mark as complete</Label>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                                        <p>Select a lesson to begin.</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                        )}
-                    </CardContent>
                     </Card>
                 </TabsContent>
                  <TabsContent value="resources">
@@ -342,18 +367,6 @@ export default function CourseDetailPage() {
                     </Card>
                  </TabsContent>
             </Tabs>
-          </div>
-          <div>
-            <Card className="sticky top-20">
-              <CardHeader>
-                <CardTitle>Personalized Learning Path</CardTitle>
-                <CardDescription>Use our AI Coach to generate a custom learning path tailored to your goals.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <LearningPathGenerator />
-              </CardContent>
-            </Card>
-          </div>
         </div>
       ) : (
         <Card className="mt-6">
