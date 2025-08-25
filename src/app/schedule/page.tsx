@@ -53,7 +53,8 @@ export default function SchedulePage() {
             // This is a bit inefficient, but ensures we merge data from all sources
             setSchedule(currentSchedule => {
                 const otherEvents = currentSchedule.filter(e => e.type !== 'Assignment');
-                return [...otherEvents, ...assignmentEvents].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                const newSchedule = [...otherEvents, ...assignmentEvents].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                return newSchedule;
             });
              if (loading) setLoading(false);
         });
@@ -72,11 +73,18 @@ export default function SchedulePage() {
             });
             setSchedule(currentSchedule => {
                 const otherEvents = currentSchedule.filter(e => e.type !== 'Exam');
-                return [...otherEvents, ...examEvents].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                const newSchedule = [...otherEvents, ...examEvents].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                return newSchedule;
             });
              if (loading) setLoading(false);
         });
         
+        // Initial load complete after first data comes in
+        const initialLoad = onSnapshot(assignmentsQuery, () => {
+          if (loading) setLoading(false);
+          initialLoad(); // Unsubscribe after first run
+        })
+
         return () => {
             unsubAssignments();
             unsubExams();
