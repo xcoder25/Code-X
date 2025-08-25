@@ -10,6 +10,7 @@
  * - AnalyzeCodeOutput - The return type for the analyzeCode function.
  */
 import type { AnalyzeCodeInput, AnalyzeCodeOutput } from '@/app/schema';
+export type { AnalyzeCodeInput, AnalyzeCodeOutput };
 
 
 export async function analyzeCode(input: AnalyzeCodeInput): Promise<AnalyzeCodeOutput> {
