@@ -143,12 +143,11 @@ const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSe
     const pythonCourseId = 'intro-to-python';
 
     useEffect(() => {
-        if (!user) {
-            setLoading(false);
-            return;
-        }
-
         async function fetchClassmates() {
+            if (!user) {
+              setLoading(false);
+              return;
+            }
             setLoading(true);
             try {
                 // Fetch all enrollments for the "Intro to Python" course
