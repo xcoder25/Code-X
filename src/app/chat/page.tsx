@@ -143,11 +143,7 @@ const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSe
     const pythonCourseId = 'intro-to-python';
 
     useEffect(() => {
-        async function fetchClassmates() {
-            if (!user) {
-              setLoading(false);
-              return;
-            }
+        async function fetchClassmates(currentUser: import('firebase/auth').User) {
             setLoading(true);
             try {
                 // Fetch all enrollments for the "Intro to Python" course
@@ -169,7 +165,7 @@ const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSe
                 // Map to User objects and filter out the current user
                 const usersData = userDocsSnap.docs
                     .map(doc => ({ id: doc.id, ...doc.data() } as User))
-                    .filter(u => u.id !== user.uid);
+                    .filter(u => u.id !== currentUser.uid);
                 
                 setClassmates(usersData);
             } catch (error) {
@@ -178,7 +174,12 @@ const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSe
                 setLoading(false);
             }
         }
-        fetchClassmates();
+        
+        if (user) {
+            fetchClassmates(user);
+        } else {
+            setLoading(false);
+        }
     }, [user]);
 
     if (loading) {
