@@ -17,25 +17,84 @@ import { Progress } from '@/components/ui/progress';
 import { AlertCircle, CheckCircle, Timer, Loader2 } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { getExamQuestions, getExamDetails } from '@/lib/exam-data';
 import { submitExamAction } from '@/app/actions';
+import { doc, getDoc, getDocs, collection, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface ExamDetails {
+    id: string;
+    title: string;
+    course: string;
+    duration: number; // in seconds
+}
+
+interface Question {
+    id: string;
+    text: string;
+    options: string[];
+}
 
 export default function ExamTakingPage() {
   const router = useRouter();
   const params = useParams();
   const examId = params.id as string;
   const { toast } = useToast();
-  const examDetails = getExamDetails(examId);
-  const examQuestions = getExamQuestions(examId);
+  
+  const [examDetails, setExamDetails] = useState<ExamDetails | null>(null);
+  const [examQuestions, setExamQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [timeLeft, setTimeLeft] = useState(examDetails?.duration || 0);
+  const [timeLeft, setTimeLeft] = useState(0);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState(0);
 
   useEffect(() => {
-    if (!examDetails) return;
+    if (!examId) return;
+
+    const examRef = doc(db, 'exams', examId);
+    const unsubscribeExam = onSnapshot(examRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            const details = {
+                id: docSnap.id,
+                title: data.title,
+                course: data.courseTitle,
+                duration: data.duration,
+            };
+            setExamDetails(details);
+            setTimeLeft(details.duration);
+        } else {
+            setExamDetails(null);
+        }
+        setLoading(false);
+    });
+
+    const questionsRef = collection(db, 'exams', examId, 'questions');
+    const unsubscribeQuestions = onSnapshot(questionsRef, (querySnapshot) => {
+        const questionsData = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            // We don't fetch correctAnswer here for security.
+            return {
+                id: doc.id,
+                text: data.text,
+                options: data.options,
+            } as Question;
+        });
+        setExamQuestions(questionsData);
+    });
+
+    return () => {
+        unsubscribeExam();
+        unsubscribeQuestions();
+    };
+
+  }, [examId]);
+
+  useEffect(() => {
+    if (!examDetails || isSubmitted) return;
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -47,7 +106,7 @@ export default function ExamTakingPage() {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [examDetails]);
+  }, [examDetails, isSubmitted]);
 
   const handleAnswerChange = (questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -75,6 +134,28 @@ export default function ExamTakingPage() {
         setIsSubmitting(false);
     }
   };
+
+  if (loading) {
+     return (
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+            <Card>
+                <CardHeader><Skeleton className="h-10 w-3/4" /></CardHeader>
+                <CardContent className="space-y-8">
+                     {[...Array(3)].map((_, i) => (
+                        <div key={i} className="space-y-4">
+                            <Skeleton className="h-6 w-full" />
+                            <div className="space-y-2">
+                                <Skeleton className="h-5 w-1/2" />
+                                <Skeleton className="h-5 w-1/3" />
+                                <Skeleton className="h-5 w-1/4" />
+                            </div>
+                        </div>
+                     ))}
+                </CardContent>
+            </Card>
+        </main>
+     )
+  }
 
   if (!examDetails) {
     return (

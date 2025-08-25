@@ -1,9 +1,9 @@
+
+'use client';
+
 import Link from 'next/link';
 import {
   Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
   CardContent,
 } from '@/components/ui/card';
 import {
@@ -16,10 +16,34 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getAllExamDetails } from '@/lib/exam-data';
+import { useState, useEffect } from 'react';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface Exam {
+    id: string;
+    title: string;
+    courseTitle: string;
+}
 
 export default function ExamsPage() {
-  const exams = getAllExamDetails();
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const examsQuery = query(collection(db, 'exams'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(examsQuery, (snapshot) => {
+        const examsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Exam);
+        setExams(examsData);
+        setLoading(false);
+    }, (error) => {
+        console.error("Error fetching exams:", error);
+        setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -42,11 +66,20 @@ export default function ExamsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {exams.length > 0 ? (
+              {loading ? (
+                 [...Array(3)].map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-8 w-28 rounded-md" /></TableCell>
+                    </TableRow>
+                 ))
+              ) : exams.length > 0 ? (
                 exams.map((exam) => (
                   <TableRow key={exam.id}>
                     <TableCell className="font-medium">{exam.title}</TableCell>
-                    <TableCell>{exam.course}</TableCell>
+                    <TableCell>{exam.courseTitle}</TableCell>
                     <TableCell>
                       <Badge>Upcoming</Badge>
                     </TableCell>
@@ -59,7 +92,7 @@ export default function ExamsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={4} className="h-24 text-center">
                     No exams found.
                   </TableCell>
                 </TableRow>

@@ -25,7 +25,6 @@ import { z } from 'zod';
 import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/analyze-code';
 import { chatWithElara, ChatWithElaraOutput, ChatWithElaraInput } from '@/ai/flows/ai-coach-flow';
 import { sendMessageFormSchema } from './schema';
-import { exams } from '@/lib/exam-data';
 import { getDownloadURL, ref, uploadString, deleteObject } from 'firebase/storage';
 
 
@@ -334,28 +333,37 @@ const submitExamSchema = z.object({
 export async function submitExamAction(
   input: z.infer<typeof submitExamSchema>
 ) {
-  const parsed = submitExamSchema.safeParse(input);
-  if (!parsed.success) {
-    throw new Error('Invalid exam submission data.');
-  }
-  
-  const { examId, answers } = parsed.data;
-  const exam = exams[examId as keyof typeof exams];
-
-  if (!exam) {
-    throw new Error('Exam not found.');
-  }
-
-  let correctAnswers = 0;
-  exam.questions.forEach((question: any) => {
-    if (answers[question.id] === question.correctAnswer) {
-      correctAnswers++;
+    const parsed = submitExamSchema.safeParse(input);
+    if (!parsed.success) {
+        throw new Error('Invalid exam submission data.');
     }
-  });
+    
+    const { examId, answers } = parsed.data;
+    
+    const examDocRef = doc(db, 'exams', examId);
+    const examDoc = await getDoc(examDocRef);
+    if (!examDoc.exists()) {
+        throw new Error('Exam not found.');
+    }
 
-  const score = (correctAnswers / exam.questions.length) * 100;
+    const questionsRef = collection(db, 'exams', examId, 'questions');
+    const questionsSnapshot = await getDocs(questionsRef);
+    const questions = questionsSnapshot.docs.map(doc => doc.data());
 
-  return { score };
+    if (questions.length === 0) {
+        return { score: 100 }; // No questions, perfect score.
+    }
+
+    let correctAnswers = 0;
+    questions.forEach((question) => {
+        if (answers[question.id] === question.correctAnswer) {
+            correctAnswers++;
+        }
+    });
+
+    const score = (correctAnswers / questions.length) * 100;
+
+    return { score };
 }
 
 export async function chatWithElaraAction(
@@ -631,4 +639,122 @@ export async function deleteAssignmentAction(assignmentId: string) {
   }
   const assignmentRef = doc(db, 'assignments', assignmentId);
   await deleteDoc(assignmentRef);
+}
+
+
+// --- Exam Actions ---
+
+const questionSchema = z.object({
+  id: z.string(),
+  text: z.string().min(1, "Question text cannot be empty."),
+  options: z.array(z.string().min(1, "Option text cannot be empty.")).min(2, "Must have at least two options."),
+  correctAnswer: z.string().min(1, "A correct answer must be selected."),
+});
+
+const examFormSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters."),
+  courseId: z.string().min(1, "Please select a course."),
+  duration: z.number().min(1, "Duration must be at least 1 minute."),
+  questions: z.array(questionSchema).min(1, "An exam must have at least one question."),
+});
+
+
+export async function createExamAction(data: z.infer<typeof examFormSchema>) {
+  const parsed = examFormSchema.safeParse(data);
+  if (!parsed.success) {
+    console.error("Exam creation validation failed:", parsed.error.issues);
+    throw new Error('Invalid exam data.');
+  }
+
+  const { title, courseId, duration, questions } = parsed.data;
+
+  const courseDocRef = doc(db, 'courses', courseId);
+  const courseDoc = await getDoc(courseDocRef);
+  if (!courseDoc.exists()) {
+    throw new Error('Selected course not found.');
+  }
+  const courseTitle = courseDoc.data().title;
+
+  const examRef = await addDoc(collection(db, 'exams'), {
+    title,
+    courseId,
+    courseTitle,
+    duration: duration * 60, // convert minutes to seconds
+    createdAt: serverTimestamp(),
+  });
+
+  const batch = writeBatch(db);
+  const questionsRef = collection(db, 'exams', examRef.id, 'questions');
+  questions.forEach(question => {
+    const questionRef = doc(questionsRef, question.id);
+    batch.set(questionRef, question);
+  });
+
+  await batch.commit();
+
+  return { id: examRef.id };
+}
+
+const updateExamFormSchema = examFormSchema.extend({
+  examId: z.string(),
+});
+
+
+export async function updateExamAction(data: z.infer<typeof updateExamFormSchema>) {
+    const parsed = updateExamFormSchema.safeParse(data);
+    if (!parsed.success) {
+        console.error("Exam update validation failed:", parsed.error.issues);
+        throw new Error('Invalid exam data.');
+    }
+
+    const { examId, title, courseId, duration, questions } = parsed.data;
+    
+    const courseDocRef = doc(db, 'courses', courseId);
+    const courseDoc = await getDoc(courseDocRef);
+    if (!courseDoc.exists()) {
+        throw new Error('Selected course not found.');
+    }
+    const courseTitle = courseDoc.data().title;
+
+    const examRef = doc(db, 'exams', examId);
+    await updateDoc(examRef, {
+        title,
+        courseId,
+        courseTitle,
+        duration: duration * 60, // convert minutes to seconds
+    });
+
+    const batch = writeBatch(db);
+    const questionsRef = collection(db, 'exams', examId, 'questions');
+
+    // Simple approach: delete old questions and add new ones.
+    // A more complex diffing logic could be used for performance if needed.
+    const oldQuestionsSnap = await getDocs(questionsRef);
+    oldQuestionsSnap.forEach(doc => batch.delete(doc.ref));
+
+    questions.forEach(question => {
+        const questionRef = doc(questionsRef, question.id);
+        batch.set(questionRef, question);
+    });
+
+    await batch.commit();
+}
+
+
+export async function deleteExamAction(examId: string) {
+    if (!examId) {
+        throw new Error('Exam ID is required.');
+    }
+    const examRef = doc(db, 'exams', examId);
+    
+    // Also delete subcollection
+    const questionsRef = collection(db, 'exams', examId, 'questions');
+    const questionsSnap = await getDocs(questionsRef);
+    const batch = writeBatch(db);
+    questionsSnap.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    await deleteDoc(examRef);
 }

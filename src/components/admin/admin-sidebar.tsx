@@ -13,6 +13,7 @@ import {
   ClipboardCheck,
   MessageCircle,
   Clipboard,
+  FileQuestion,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -95,6 +96,14 @@ export default function AppSidebar() {
               <LoadingLink href="/admin/assignments">
                 <Clipboard />
                 <span>Assignments</span>
+              </LoadingLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/exams')}>
+              <LoadingLink href="/admin/exams">
+                <FileQuestion />
+                <span>Exams</span>
               </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
