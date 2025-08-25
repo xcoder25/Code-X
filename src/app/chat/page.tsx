@@ -143,8 +143,11 @@ const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSe
     const pythonCourseId = 'intro-to-python';
 
     useEffect(() => {
-        async function fetchClassmates(currentUser: import('firebase/auth').User) {
-            setLoading(true);
+        const fetchClassmates = async () => {
+            if (!user) {
+                setLoading(false);
+                return;
+            }
             try {
                 // Fetch all enrollments for the "Intro to Python" course
                 const enrollmentsQuery = query(collectionGroup(db, 'enrollments'), where('courseId', '==', pythonCourseId));
@@ -165,7 +168,7 @@ const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSe
                 // Map to User objects and filter out the current user
                 const usersData = userDocsSnap.docs
                     .map(doc => ({ id: doc.id, ...doc.data() } as User))
-                    .filter(u => u.id !== currentUser.uid);
+                    .filter(u => u.id !== user.uid);
                 
                 setClassmates(usersData);
             } catch (error) {
@@ -173,13 +176,10 @@ const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSe
             } finally {
                 setLoading(false);
             }
-        }
-        
-        if (user) {
-            fetchClassmates(user);
-        } else {
-            setLoading(false);
-        }
+        };
+
+        setLoading(true);
+        fetchClassmates();
     }, [user]);
 
     if (loading) {
@@ -225,11 +225,10 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ chat, onBack }) => {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [formValue, setFormValue] = useState<string>('');
 
-  const collectionPath = chat.type === 'group' 
-    ? ['groups', chat.id, 'messages'] 
-    : ['direct-messages', chat.id, 'messages'];
+  const messagesRef = chat.type === 'group'
+    ? collection(db, 'groups', chat.id, 'messages')
+    : collection(db, 'direct-messages', chat.id, 'messages');
   
-  const messagesRef = collection(db, ...collectionPath);
   const q = query(messagesRef, orderBy('createdAt', 'asc'), limit(50));
 
   useEffect(() => {
@@ -244,7 +243,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ chat, onBack }) => {
     });
     setMessages([]);
     return unsubscribe;
-  }, [chat.id]);
+  }, [chat.id, q]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -337,3 +336,5 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
 };
 
 export default ChatPage;
+
+    
