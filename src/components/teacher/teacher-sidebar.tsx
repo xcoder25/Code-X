@@ -85,14 +85,6 @@ export default function TeacherAppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
            <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.startsWith('/teacher/submissions')}>
-              <LoadingLink href="/teacher/submissions">
-                <ClipboardCheck />
-                <span>Submissions</span>
-              </LoadingLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/teacher/chat')}>
               <LoadingLink href="/teacher/chat">
                 <MessageSquare />
