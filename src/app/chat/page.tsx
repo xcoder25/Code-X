@@ -137,7 +137,7 @@ const ChatList: React.FC<ChatListProps> = ({ onSelectChat }) => {
 }
 
 const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSelectUser }) => {
-    const { user } = useAuthState(auth);
+    const [user] = useAuthState(auth);
     const [classmates, setClassmates] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const pythonCourseId = 'intro-to-python';
