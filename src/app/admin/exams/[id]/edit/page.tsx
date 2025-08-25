@@ -92,7 +92,6 @@ export default function EditExamPage() {
                  router.push('/admin/exams');
             }
         } catch (error) {
-             console.error(error);
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch data.' });
         } finally {
             setPageLoading(false);
@@ -136,7 +135,6 @@ export default function EditExamPage() {
       toast({ title: 'Success!', description: 'Exam has been updated.' });
       router.push('/admin/exams');
     } catch (error: any) {
-      console.error(error);
       toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to update exam.' });
     } finally {
       setIsSubmitting(false);

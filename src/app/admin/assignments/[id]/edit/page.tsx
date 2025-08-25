@@ -85,7 +85,6 @@ export default function EditAssignmentPage() {
                  router.push('/admin/assignments');
             }
         } catch (error) {
-             console.error(error);
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch data.' });
         } finally {
             setPageLoading(false);
@@ -102,7 +101,6 @@ export default function EditAssignmentPage() {
       toast({ title: 'Success!', description: 'Assignment has been updated.' });
       router.push('/admin/assignments');
     } catch (error: any) {
-      console.error(error);
       toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to update assignment.' });
     } finally {
       setIsSubmitting(false);

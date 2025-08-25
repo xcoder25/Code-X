@@ -16,7 +16,6 @@ import type { ChatWithElaraInput, ChatWithElaraOutput } from '@/app/schema';
 export async function chatWithElara(
   input: ChatWithElaraInput,
 ): Promise<ChatWithElaraOutput> {
-  console.log("chatWithElara called with:", input);
   // This is a mock implementation.
   // In a real scenario, you would call your chosen AI model here.
   

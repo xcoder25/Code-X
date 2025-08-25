@@ -13,7 +13,6 @@ import type { AnalyzeCodeInput, AnalyzeCodeOutput } from '@/app/schema';
 
 
 export async function analyzeCode(input: AnalyzeCodeInput): Promise<AnalyzeCodeOutput> {
-    console.log("analyzeCode called with:", input.code);
     // This is a mock implementation.
     return {
         explanation: "This is a mock explanation. The code appears to be a placeholder.",

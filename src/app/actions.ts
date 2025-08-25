@@ -93,7 +93,6 @@ export async function createCourseAction(
 ) {
   const parsed = createCourseFormSchema.safeParse(data);
   if (!parsed.success) {
-    console.error("Course creation validation failed:", parsed.error.issues);
     throw new Error('Invalid course data.');
   }
 
@@ -133,8 +132,6 @@ const updateCourseSchema = z.object({
 export async function updateCourseAction(data: z.infer<typeof updateCourseSchema>) {
     const parsed = updateCourseSchema.safeParse(data);
     if (!parsed.success) {
-        // Log detailed error for debugging
-        console.error("Course update validation failed:", parsed.error.issues);
         throw new Error('Invalid course data submitted.');
     }
 
@@ -664,7 +661,6 @@ const examFormSchema = z.object({
 export async function createExamAction(data: z.infer<typeof examFormSchema>) {
   const parsed = examFormSchema.safeParse(data);
   if (!parsed.success) {
-    console.error("Exam creation validation failed:", parsed.error.issues);
     throw new Error('Invalid exam data.');
   }
 
@@ -705,7 +701,6 @@ const updateExamFormSchema = examFormSchema.extend({
 export async function updateExamAction(data: z.infer<typeof updateExamFormSchema>) {
     const parsed = updateExamFormSchema.safeParse(data);
     if (!parsed.success) {
-        console.error("Exam update validation failed:", parsed.error.issues);
         throw new Error('Invalid exam data.');
     }
 

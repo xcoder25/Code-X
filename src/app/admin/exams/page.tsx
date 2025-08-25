@@ -65,7 +65,6 @@ export default function AdminExamsPage() {
         setExams(examsData);
         setLoading(false);
     }, (error) => {
-        console.error("Error fetching exams:", error);
         setLoading(false);
     });
 
