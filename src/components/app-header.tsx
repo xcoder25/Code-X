@@ -12,7 +12,6 @@ import {
   SidebarMenuBadge,
 } from './ui/sidebar';
 import { ThemeToggle } from './theme-toggle';
-import { Button } from './ui/button';
 import { useUnreadCount } from '@/hooks/use-unread-count';
 
 export default function AppHeader() {
@@ -29,8 +28,7 @@ export default function AppHeader() {
             <SidebarMenuButton
               asChild
               variant="outline"
-              size="icon"
-              className="relative"
+              className="relative h-10 w-10"
               isActive={pathname === '/inbox'}
             >
               <LoadingLink href="/inbox">
