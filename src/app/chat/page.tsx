@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef, FormEvent } from 'react';
+import React, { useState, useEffect, useRef, FormEvent, useMemo } from 'react';
 import { db, auth } from '@/lib/firebase';
 import { 
   collection, 
@@ -145,8 +145,8 @@ const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSe
     useEffect(() => {
         const fetchClassmates = async () => {
             if (!user) {
-                setLoading(false);
-                return;
+                 setLoading(false);
+                 return;
             }
             try {
                 // Fetch all enrollments for the "Intro to Python" course
@@ -178,7 +178,6 @@ const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSe
             }
         };
 
-        setLoading(true);
         fetchClassmates();
     }, [user]);
 
@@ -225,11 +224,12 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ chat, onBack }) => {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [formValue, setFormValue] = useState<string>('');
 
-  const messagesRef = chat.type === 'group'
-    ? collection(db, 'groups', chat.id, 'messages')
-    : collection(db, 'direct-messages', chat.id, 'messages');
-  
-  const q = query(messagesRef, orderBy('createdAt', 'asc'), limit(50));
+  const q = useMemo(() => {
+    const messagesRef = chat.type === 'group'
+      ? collection(db, 'groups', chat.id, 'messages')
+      : collection(db, 'direct-messages', chat.id, 'messages');
+    return query(messagesRef, orderBy('createdAt', 'asc'), limit(50));
+  }, [chat.id, chat.type]);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -241,9 +241,11 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ chat, onBack }) => {
     }, (error) => {
       console.error(`Error fetching messages for ${chat.name}:`, error);
     });
+    
+    // Reset messages when chat changes
     setMessages([]);
     return unsubscribe;
-  }, [chat.id, q]);
+  }, [q, chat.name]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -254,6 +256,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ chat, onBack }) => {
     if (!auth.currentUser || formValue.trim() === '') return;
 
     const { uid, photoURL, displayName } = auth.currentUser;
+    const messagesRef = q.firestore.collection(q.path.segments.join('/'));
 
     await addDoc(messagesRef, {
       text: formValue,
