@@ -15,6 +15,7 @@ import {
   FlaskConical,
   MessageCircle,
   Users,
+  Lightbulb,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/app/auth-provider';
@@ -146,6 +147,14 @@ export default function AppSidebar() {
               <LoadingLink href="/assignments">
                 <ClipboardList />
                 <span>Assignments</span>
+              </LoadingLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/projects')}>
+              <LoadingLink href="/projects">
+                <Lightbulb />
+                <span>Projects</span>
               </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>

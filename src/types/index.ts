@@ -33,6 +33,29 @@ export interface Assignment {
   courseId: string;
 }
 
+export interface Project {
+  id: string;
+  title: string;
+  courseTitle: string;
+  dueDate: Timestamp;
+  description?: string;
+  courseId: string;
+}
+
+export interface ProjectSubmission {
+    id: string; // project ID
+    projectId: string;
+    projectTitle: string;
+    courseId: string;
+    courseTitle: string;
+    userId: string;
+    userName: string;
+    colabLink: string;
+    status: 'Pending' | 'Graded';
+    grade: number | null;
+    submittedAt: Timestamp;
+}
+
 export interface User {
     id: string;
     uid: string;

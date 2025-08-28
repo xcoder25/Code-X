@@ -758,3 +758,181 @@ export async function deleteExamAction(examId: string) {
 
     await deleteDoc(examRef);
 }
+
+
+export async function claimAdminAction(userId: string) {
+    if (!userId) {
+        throw new Error("User not found to claim admin role.");
+    }
+
+    const adminsCollectionRef = collection(db, 'admins');
+    const adminsSnapshot = await getDocs(adminsCollectionRef);
+
+    // Only allow the first user to claim the admin role for initial setup
+    if (!adminsSnapshot.empty && adminsSnapshot.docs.length > 0) {
+        throw new Error("An admin already exists.");
+    }
+    
+    // Add the user to the 'admins' collection
+    await setDoc(doc(db, 'admins', userId), {
+        createdAt: serverTimestamp(),
+    });
+    
+    return { success: true, message: "Admin role claimed successfully." };
+}
+
+// --- Project Actions ---
+
+const projectFormSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters."),
+  courseId: z.string().min(1, "Please select a course."),
+  dueDate: z.date(),
+  description: z.string().optional(),
+});
+
+export async function createProjectAction(
+  data: z.infer<typeof projectFormSchema>
+) {
+  const parsed = projectFormSchema.safeParse(data);
+  if (!parsed.success) {
+    throw new Error('Invalid project data.');
+  }
+
+  const { title, courseId, dueDate, description } = parsed.data;
+
+  const courseDocRef = doc(db, 'courses', courseId);
+  const courseDoc = await getDoc(courseDocRef);
+
+  if (!courseDoc.exists()) {
+    throw new Error('Selected course not found.');
+  }
+  const courseTitle = courseDoc.data().title;
+
+
+  await addDoc(collection(db, 'projects'), {
+    title,
+    courseId,
+    courseTitle,
+    dueDate: Timestamp.fromDate(dueDate),
+    description,
+    createdAt: serverTimestamp(),
+  });
+
+  return { success: true };
+}
+
+
+const updateProjectFormSchema = projectFormSchema.extend({
+    projectId: z.string(),
+});
+
+export async function updateProjectAction(
+  data: z.infer<typeof updateProjectFormSchema>
+) {
+  const parsed = updateProjectFormSchema.safeParse(data);
+  if (!parsed.success) {
+    throw new Error('Invalid project data.');
+  }
+
+  const { projectId, title, courseId, dueDate, description } = parsed.data;
+
+  const courseDocRef = doc(db, 'courses', courseId);
+  const courseDoc = await getDoc(courseDocRef);
+
+  if (!courseDoc.exists()) {
+    throw new Error('Selected course not found.');
+  }
+  const courseTitle = courseDoc.data().title;
+  
+  const projectRef = doc(db, 'projects', projectId);
+
+  await updateDoc(projectRef, {
+    title,
+    courseId,
+    courseTitle,
+    dueDate: Timestamp.fromDate(dueDate),
+    description,
+  });
+
+  return { success: true };
+}
+
+export async function deleteProjectAction(projectId: string) {
+  if (!projectId) {
+    throw new Error('Project ID is required.');
+  }
+  const projectRef = doc(db, 'projects', projectId);
+  await deleteDoc(projectRef);
+}
+
+
+const submitProjectSchema = z.object({
+  projectId: z.string(),
+  userId: z.string(),
+  userName: z.string(),
+  colabLink: z.string().url({ message: "Please enter a valid URL." }),
+});
+
+export async function submitProjectAction(
+    input: z.infer<typeof submitProjectSchema>
+) {
+    const parsed = submitProjectSchema.safeParse(input);
+    if (!parsed.success) {
+        const errorMessage = parsed.error.issues.map(issue => issue.message).join(', ');
+        throw new Error(`Invalid input: ${errorMessage}`);
+    }
+    
+    const { projectId, userId, userName, colabLink } = parsed.data;
+    
+    const projectRef = doc(db, 'projects', projectId);
+    const projectSnap = await getDoc(projectRef);
+    if (!projectSnap.exists()) {
+      throw new Error("Project not found.");
+    }
+    const project = projectSnap.data();
+
+    // The subcollection will be 'projectSubmissions' to distinguish from assignment submissions
+    const submissionRef = doc(db, 'users', userId, 'projectSubmissions', projectId);
+    
+    await setDoc(submissionRef, {
+        projectId,
+        projectTitle: project.title,
+        courseId: project.courseId,
+        courseTitle: project.courseTitle,
+        userId,
+        userName,
+        colabLink,
+        status: 'Pending',
+        grade: 10, // Early submission grade
+        submittedAt: serverTimestamp(),
+    });
+    
+    return { success: true };
+}
+
+const gradeProjectSchema = z.object({
+  userId: z.string(),
+  submissionId: z.string(), // This is the projectId
+  grade: z.coerce.number().min(0, "Grade must be a positive number."),
+});
+
+export async function gradeProjectAction(
+  input: z.infer<typeof gradeProjectSchema>
+) {
+  const parsed = gradeProjectSchema.safeParse(input);
+  if (!parsed.success) {
+    const errorMessage = parsed.error.issues.map(issue => issue.message).join(', ');
+    throw new Error(`Invalid input: ${errorMessage}`);
+  }
+  
+  const { userId, submissionId, grade } = parsed.data;
+  
+  const submissionRef = doc(db, 'users', userId, 'projectSubmissions', submissionId);
+  
+  await updateDoc(submissionRef, {
+    grade: grade,
+    status: 'Graded',
+  });
+  
+  return { success: true };
+}
