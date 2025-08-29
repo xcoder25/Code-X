@@ -328,6 +328,7 @@ export async function redeemAccessCodeAction(
 const submitExamSchema = z.object({
   examId: z.string(),
   answers: z.record(z.string()),
+  userId: z.string(),
 });
 
 export async function submitExamAction(
@@ -338,7 +339,7 @@ export async function submitExamAction(
         throw new Error('Invalid exam submission data.');
     }
     
-    const { examId, answers } = parsed.data;
+    const { examId, answers, userId } = parsed.data;
     
     const examDocRef = doc(db, 'exams', examId);
     const examDoc = await getDoc(examDocRef);
@@ -346,25 +347,20 @@ export async function submitExamAction(
         throw new Error('Exam not found.');
     }
 
-    const questionsRef = collection(db, 'exams', examId, 'questions');
-    const questionsSnapshot = await getDocs(questionsRef);
-    const questions = questionsSnapshot.docs.map(doc => doc.data());
-
-    if (questions.length === 0) {
-        return { score: 100 }; // No questions, perfect score.
-    }
-
-    let correctAnswers = 0;
-    questions.forEach((question) => {
-        if (answers[question.id] === question.correctAnswer) {
-            correctAnswers++;
-        }
+    // Save the submission to a subcollection for the user
+    const submissionRef = doc(db, 'users', userId, 'examSubmissions', examId);
+    await setDoc(submissionRef, {
+        examId,
+        examTitle: examDoc.data().title,
+        answers,
+        submittedAt: serverTimestamp(),
+        status: 'Pending Review',
+        grade: null
     });
 
-    const score = (correctAnswers / questions.length) * 100;
-
-    return { score };
+    return { success: true };
 }
+
 
 export async function chatWithElaraAction(
   input: ChatWithElaraInput,
@@ -647,8 +643,6 @@ export async function deleteAssignmentAction(assignmentId: string) {
 const questionSchema = z.object({
   id: z.string(),
   text: z.string().min(1, "Question text cannot be empty."),
-  options: z.array(z.string().min(1, "Option text cannot be empty.")).min(2, "Must have at least two options."),
-  correctAnswer: z.string().min(1, "A correct answer must be selected."),
 });
 
 const examFormSchema = z.object({

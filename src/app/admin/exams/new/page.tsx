@@ -5,7 +5,7 @@ import { useState, useEffect, useId } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Plus, Trash2, GripVertical, Check } from 'lucide-react';
+import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,6 @@ import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -28,8 +27,6 @@ interface Course {
 const questionSchema = z.object({
   id: z.string(),
   text: z.string().min(1, "Question text cannot be empty."),
-  options: z.array(z.string().min(1, "Option text cannot be empty.")).min(2, "Must have at least two options."),
-  correctAnswer: z.string().min(1, "A correct answer must be selected."),
 });
 
 const examFormSchema = z.object({
@@ -58,7 +55,7 @@ export default function CreateExamPage() {
     },
   });
 
-  const { fields, append, remove, update } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "questions",
   });
@@ -77,28 +74,7 @@ export default function CreateExamPage() {
     append({
         id: `${uniqueId}-q-${fields.length}`,
         text: '',
-        options: ['', ''],
-        correctAnswer: '',
     });
-  };
-
-  const addOption = (questionIndex: number) => {
-    const question = form.getValues(`questions.${questionIndex}`);
-    update(questionIndex, {
-      ...question,
-      options: [...question.options, ''],
-    });
-  };
-
-  const removeOption = (questionIndex: number, optionIndex: number) => {
-    const question = form.getValues(`questions.${questionIndex}`);
-    const newOptions = question.options.filter((_, i) => i !== optionIndex);
-    // If the removed option was the correct one, reset correctAnswer
-    if (question.correctAnswer === question.options[optionIndex]) {
-        update(questionIndex, { ...question, options: newOptions, correctAnswer: '' });
-    } else {
-        update(questionIndex, { ...question, options: newOptions });
-    }
   };
 
   const onSubmit = async (data: ExamFormData) => {
@@ -205,45 +181,6 @@ export default function CreateExamPage() {
                                             </FormItem>
                                         )}
                                     />
-                                    <FormField
-                                        control={form.control}
-                                        name={`questions.${qIndex}.correctAnswer`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Options (select the correct answer)</FormLabel>
-                                                <FormControl>
-                                                    <RadioGroup
-                                                        onValueChange={field.onChange}
-                                                        value={field.value}
-                                                        className="space-y-2"
-                                                    >
-                                                        {question.options.map((_, oIndex) => (
-                                                             <FormField
-                                                                key={`${question.id}-opt-${oIndex}`}
-                                                                control={form.control}
-                                                                name={`questions.${qIndex}.options.${oIndex}`}
-                                                                render={({ field: optionField }) => (
-                                                                     <FormItem className="flex items-center gap-2">
-                                                                        <RadioGroupItem value={optionField.value} id={`${question.id}-opt-${oIndex}`} />
-                                                                        <FormControl>
-                                                                            <Input {...optionField} placeholder={`Option ${oIndex + 1}`} />
-                                                                        </FormControl>
-                                                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(qIndex, oIndex)}>
-                                                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                                                        </Button>
-                                                                     </FormItem>
-                                                                )}
-                                                            />
-                                                        ))}
-                                                    </RadioGroup>
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <Button type="button" variant="outline" size="sm" onClick={() => addOption(qIndex)}>
-                                        <Plus className="mr-2 h-4 w-4" /> Add Option
-                                    </Button>
                                 </div>
                             </Card>
                         ))}

@@ -11,7 +11,6 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { AlertCircle, CheckCircle, Timer, Loader2 } from 'lucide-react';
@@ -21,6 +20,8 @@ import { submitExamAction } from '@/app/actions';
 import { doc, getDoc, getDocs, collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/app/auth-provider';
 
 interface ExamDetails {
     id: string;
@@ -32,7 +33,6 @@ interface ExamDetails {
 interface Question {
     id: string;
     text: string;
-    options: string[];
 }
 
 export default function ExamTakingPage() {
@@ -40,6 +40,7 @@ export default function ExamTakingPage() {
   const params = useParams();
   const examId = params.id as string;
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const [examDetails, setExamDetails] = useState<ExamDetails | null>(null);
   const [examQuestions, setExamQuestions] = useState<Question[]>([]);
@@ -49,7 +50,6 @@ export default function ExamTakingPage() {
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [score, setScore] = useState(0);
 
   useEffect(() => {
     if (!examId) return;
@@ -76,11 +76,9 @@ export default function ExamTakingPage() {
     const unsubscribeQuestions = onSnapshot(questionsRef, (querySnapshot) => {
         const questionsData = querySnapshot.docs.map(doc => {
             const data = doc.data();
-            // We don't fetch correctAnswer here for security.
             return {
                 id: doc.id,
                 text: data.text,
-                options: data.options,
             } as Question;
         });
         setExamQuestions(questionsData);
@@ -106,6 +104,7 @@ export default function ExamTakingPage() {
       });
     }, 1000);
     return () => clearInterval(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [examDetails, isSubmitted]);
 
   const handleAnswerChange = (questionId: string, value: string) => {
@@ -113,16 +112,15 @@ export default function ExamTakingPage() {
   };
 
   const handleSubmit = async () => {
-    if (isSubmitted || isSubmitting) return;
+    if (isSubmitted || isSubmitting || !user) return;
 
     setIsSubmitting(true);
     try {
-      const result = await submitExamAction({ examId, answers });
-      setScore(result.score);
+      await submitExamAction({ examId, answers, userId: user.uid });
       setIsSubmitted(true);
       toast({
         title: 'Exam Submitted!',
-        description: `You scored ${result.score.toFixed(2)}%.`,
+        description: 'Your answers have been saved for review.',
       });
     } catch (error) {
        toast({
@@ -144,11 +142,7 @@ export default function ExamTakingPage() {
                      {[...Array(3)].map((_, i) => (
                         <div key={i} className="space-y-4">
                             <Skeleton className="h-6 w-full" />
-                            <div className="space-y-2">
-                                <Skeleton className="h-5 w-1/2" />
-                                <Skeleton className="h-5 w-1/3" />
-                                <Skeleton className="h-5 w-1/4" />
-                            </div>
+                            <Skeleton className="h-20 w-full" />
                         </div>
                      ))}
                 </CardContent>
@@ -195,31 +189,25 @@ export default function ExamTakingPage() {
                 <div className="flex flex-col items-center justify-center py-12">
                     <CheckCircle className="w-24 h-24 text-green-500" />
                     <h2 className="mt-6 text-3xl font-bold">Submission Successful!</h2>
-                    <p className="mt-2 text-muted-foreground">Your exam has been graded.</p>
-                    <div className="mt-8 text-5xl font-extrabold text-primary">
-                        {score.toFixed(2)}%
-                    </div>
+                    <p className="mt-2 text-muted-foreground">Your answers have been submitted for review.</p>
                     <Button onClick={() => router.push('/exams')} className="mt-8">
                        Return to Exams List
                     </Button>
                 </div>
             ) : (
                 <form className="space-y-8">
-                {examQuestions.map((question: any, index: number) => (
+                {examQuestions.map((question, index) => (
                     <div key={question.id}>
-                    <p className="font-semibold text-lg">{index + 1}. {question.text}</p>
-                    <RadioGroup
-                        onValueChange={(value) => handleAnswerChange(question.id, value)}
-                        className="mt-4 space-y-2"
+                      <Label htmlFor={`q-${question.id}`} className="font-semibold text-lg">{index + 1}. {question.text}</Label>
+                      <Textarea
+                        id={`q-${question.id}`}
+                        value={answers[question.id] || ''}
+                        onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                        className="mt-2"
+                        placeholder="Type your answer here..."
+                        rows={5}
                         disabled={isSubmitting || isSubmitted}
-                    >
-                        {question.options.map((option: string) => (
-                        <div key={option} className="flex items-center space-x-2">
-                            <RadioGroupItem value={option} id={`${question.id}-${option}`} />
-                            <Label htmlFor={`${question.id}-${option}`}>{option}</Label>
-                        </div>
-                        ))}
-                    </RadioGroup>
+                      />
                     </div>
                 ))}
                 </form>
