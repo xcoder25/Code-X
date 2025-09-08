@@ -256,7 +256,11 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ chat, onBack }) => {
     if (!auth.currentUser || formValue.trim() === '') return;
 
     const { uid, photoURL, displayName } = auth.currentUser;
-    const messagesRef = collection(db, q.path.segments.join('/'));
+    const collectionPath = chat.type === 'group'
+        ? `groups/${chat.id}/messages`
+        : `direct-messages/${chat.id}/messages`;
+    
+    const messagesRef = collection(db, collectionPath);
 
     await addDoc(messagesRef, {
       text: formValue,
