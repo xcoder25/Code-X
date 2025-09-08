@@ -256,7 +256,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ chat, onBack }) => {
     if (!auth.currentUser || formValue.trim() === '') return;
 
     const { uid, photoURL, displayName } = auth.currentUser;
-    const messagesRef = q.firestore.collection(q.path.segments.join('/'));
+    const messagesRef = collection(db, q.path.segments.join('/'));
 
     await addDoc(messagesRef, {
       text: formValue,
