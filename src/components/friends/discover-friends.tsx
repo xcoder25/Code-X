@@ -43,7 +43,7 @@ export default function DiscoverFriends() {
       const userDocsSnap = await getDocs(userDocsQuery);
 
       userDocsSnap.forEach(doc => {
-          if (doc.id !== user.uid) {
+          if (user && doc.id !== user.uid) {
               usersData.push({ id: doc.id, ...doc.data() } as User);
           }
       });
