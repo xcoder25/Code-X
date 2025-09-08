@@ -10,6 +10,9 @@
     "typecheck": "tsc --noEmit",
     "postinstall": "patch-package"
   },
+  "engines": {
+    "node": "20.x"
+  },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",
     "@paystack/inline-js": "^2.22.2",
