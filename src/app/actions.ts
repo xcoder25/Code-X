@@ -26,6 +26,8 @@ import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/ana
 import { chatWithElara, ChatWithElaraOutput, ChatWithElaraInput } from '@/ai/flows/ai-coach-flow';
 import { sendMessageFormSchema } from './schema';
 import { getDownloadURL, ref, uploadString, deleteObject } from 'firebase/storage';
+import { auth } from '@/lib/firebase';
+import { updateProfile } from 'firebase/auth';
 
 
 export async function sendMessageAction(
@@ -91,7 +93,6 @@ export async function createCourseAction(
 ) {
   const parsed = createCourseFormSchema.safeParse(data);
   if (!parsed.success) {
-    console.error("Course creation validation failed:", parsed.error.issues);
     throw new Error('Invalid course data.');
   }
 
@@ -131,8 +132,6 @@ const updateCourseSchema = z.object({
 export async function updateCourseAction(data: z.infer<typeof updateCourseSchema>) {
     const parsed = updateCourseSchema.safeParse(data);
     if (!parsed.success) {
-        // Log detailed error for debugging
-        console.error("Course update validation failed:", parsed.error.issues);
         throw new Error('Invalid course data submitted.');
     }
 
@@ -656,7 +655,6 @@ const examFormSchema = z.object({
 export async function createExamAction(data: z.infer<typeof examFormSchema>) {
   const parsed = examFormSchema.safeParse(data);
   if (!parsed.success) {
-    console.error("Exam creation validation failed:", parsed.error.issues);
     throw new Error('Invalid exam data.');
   }
 
@@ -697,7 +695,6 @@ const updateExamFormSchema = examFormSchema.extend({
 export async function updateExamAction(data: z.infer<typeof updateExamFormSchema>) {
     const parsed = updateExamFormSchema.safeParse(data);
     if (!parsed.success) {
-        console.error("Exam update validation failed:", parsed.error.issues);
         throw new Error('Invalid exam data.');
     }
 
@@ -929,4 +926,76 @@ export async function gradeProjectAction(
   });
   
   return { success: true };
+}
+// --- User Settings Actions ---
+
+const userProfileSchema = z.object({
+  userId: z.string(),
+  firstName: z.string().min(1, "First name is required."),
+  lastName: z.string().min(1, "Last name is required."),
+  email: z.string().email("Invalid email address."),
+  photoDataUrl: z.string().url().optional(),
+});
+
+export async function updateUserProfileAction(data: z.infer<typeof userProfileSchema>) {
+  const parsed = userProfileSchema.safeParse(data);
+  if (!parsed.success) {
+    throw new Error('Invalid profile data.');
+  }
+
+  const { userId, firstName, lastName, email, photoDataUrl } = parsed.data;
+
+  const userDocRef = doc(db, 'users', userId);
+  const currentUser = auth.currentUser;
+  
+  if (!currentUser || currentUser.uid !== userId) {
+      throw new Error("You are not authorized to perform this action.");
+  }
+  
+  let photoURL = currentUser.photoURL;
+
+  // If a new photo is provided, upload it
+  if (photoDataUrl) {
+    const storageRef = ref(storage, `profile-pictures/${userId}`);
+    await uploadString(storageRef, photoDataUrl, 'data_url');
+    photoURL = await getDownloadURL(storageRef);
+  }
+
+  // Update Auth profile
+  await updateProfile(currentUser, {
+    displayName: `${firstName} ${lastName}`,
+    photoURL: photoURL,
+  });
+
+  // Update Firestore document
+  await updateDoc(userDocRef, {
+    firstName,
+    lastName,
+    displayName: `${firstName} ${lastName}`,
+    photoURL: photoURL,
+  });
+
+  return { success: true, photoURL };
+}
+
+
+const notificationSettingsSchema = z.object({
+    userId: z.string(),
+    emailNotifications: z.boolean(),
+    pushNotifications: z.boolean(),
+});
+
+export async function updateNotificationSettingsAction(data: z.infer<typeof notificationSettingsSchema>) {
+    const parsed = notificationSettingsSchema.safeParse(data);
+    if (!parsed.success) {
+        throw new Error("Invalid notification settings data.");
+    }
+    const { userId, emailNotifications, pushNotifications } = parsed.data;
+
+    const userDocRef = doc(db, 'users', userId);
+    await updateDoc(userDocRef, {
+        'settings.notifications.email': emailNotifications,
+        'settings.notifications.push': pushNotifications,
+    });
+    return { success: true };
 }

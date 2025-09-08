@@ -84,7 +84,6 @@ export default function AdminCoursesPage() {
         setCourses(coursesData);
         setLoading(false);
     }, (error) => {
-        console.error("Error fetching courses:", error);
         setLoading(false);
     });
 

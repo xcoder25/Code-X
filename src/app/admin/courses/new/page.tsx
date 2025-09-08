@@ -95,7 +95,6 @@ export default function CreateCourseForm() {
       router.push(`/admin/courses`);
 
     } catch (error: any) {
-      console.error(error);
       toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to create course.' });
       setIsSubmitting(false); // Only stop loading on error
     }
@@ -193,5 +192,3 @@ export default function CreateCourseForm() {
     </div>
   );
 }
-
-    

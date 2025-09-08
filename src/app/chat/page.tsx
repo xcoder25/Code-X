@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef, FormEvent } from 'react';
+import React, { useState, useEffect, useRef, FormEvent, useMemo } from 'react';
 import { db, auth } from '@/lib/firebase';
 import { 
   collection, 
@@ -137,19 +137,17 @@ const ChatList: React.FC<ChatListProps> = ({ onSelectChat }) => {
 }
 
 const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSelectUser }) => {
-    const { user } = useAuthState(auth);
+    const [user] = useAuthState(auth);
     const [classmates, setClassmates] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const pythonCourseId = 'intro-to-python';
 
     useEffect(() => {
-        if (!user) {
-            setLoading(false);
-            return;
-        }
-
-        async function fetchClassmates() {
-            setLoading(true);
+        const fetchClassmates = async () => {
+            if (!user) {
+                 setLoading(false);
+                 return;
+            }
             try {
                 // Fetch all enrollments for the "Intro to Python" course
                 const enrollmentsQuery = query(collectionGroup(db, 'enrollments'), where('courseId', '==', pythonCourseId));
@@ -178,7 +176,8 @@ const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSe
             } finally {
                 setLoading(false);
             }
-        }
+        };
+
         fetchClassmates();
     }, [user]);
 
@@ -225,12 +224,12 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ chat, onBack }) => {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [formValue, setFormValue] = useState<string>('');
 
-  const collectionPath = chat.type === 'group' 
-    ? ['groups', chat.id, 'messages'] 
-    : ['direct-messages', chat.id, 'messages'];
-  
-  const messagesRef = collection(db, ...collectionPath);
-  const q = query(messagesRef, orderBy('createdAt', 'asc'), limit(50));
+  const q = useMemo(() => {
+    const messagesRef = chat.type === 'group'
+      ? collection(db, 'groups', chat.id, 'messages')
+      : collection(db, 'direct-messages', chat.id, 'messages');
+    return query(messagesRef, orderBy('createdAt', 'asc'), limit(50));
+  }, [chat.id, chat.type]);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -242,9 +241,11 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ chat, onBack }) => {
     }, (error) => {
       console.error(`Error fetching messages for ${chat.name}:`, error);
     });
+    
+    // Reset messages when chat changes
     setMessages([]);
     return unsubscribe;
-  }, [chat.id]);
+  }, [q, chat.name]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -255,6 +256,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ chat, onBack }) => {
     if (!auth.currentUser || formValue.trim() === '') return;
 
     const { uid, photoURL, displayName } = auth.currentUser;
+    const messagesRef = q.firestore.collection(q.path.segments.join('/'));
 
     await addDoc(messagesRef, {
       text: formValue,
@@ -337,3 +339,5 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
 };
 
 export default ChatPage;
+
+    

@@ -2,79 +2,49 @@
 {
   "indexes": [
     {
-      "collectionGroup": "notifications",
+      "collectionGroup": "courses",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "targetType",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "notifications",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "userIds",
-          "arrayConfig": "CONTAINS"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "submissions",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "submittedAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "friends",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "status",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "since",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "teacherId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "enrollments",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
-        {
-          "fieldPath": "courseId",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "courseId", "order": "ASCENDING" }
       ]
     },
     {
-      "collectionGroup": "courses",
+      "collectionGroup": "friends",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
-        {
-          "fieldPath": "teacherId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "since", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "targetType", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userIds", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "submissions",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "submittedAt", "order": "DESCENDING" }
       ]
     }
   ],

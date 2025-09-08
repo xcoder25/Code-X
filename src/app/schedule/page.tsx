@@ -1,3 +1,6 @@
+
+'use client';
+
 import {
   Card,
   CardContent,
@@ -13,24 +16,80 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { assignments } from '@/lib/assignment-data';
-import { getAllExamDetails } from '@/lib/exam-data';
+import { useState, useEffect } from 'react';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface ScheduleEvent {
+    id: string;
+    title: string;
+    courseTitle: string;
+    date: string | Date;
+    time: string;
+    type: 'Assignment' | 'Exam' | 'Live Session';
+}
 
 export default function SchedulePage() {
+    const [schedule, setSchedule] = useState<ScheduleEvent[]>([]);
+    const [loading, setLoading] = useState(true);
 
-  const exams = getAllExamDetails().map(e => ({...e, type: "Exam", date: "TBD", time: "N/A"}));
-  const assignmentEvents = assignments.map(a => ({...a, type: "Assignment", date: a.dueDate, time: "11:59 PM"}));
-  
-  // In a real app, live classes would come from a database
-  const liveClasses: any[] = [];
-  
-  const schedule = [...assignmentEvents, ...exams, ...liveClasses].sort((a,b) => {
-    // This sorting is basic, a real implementation would need more robust date handling
-    if(a.date === "TBD") return 1;
-    if(b.date === "TBD") return -1;
-    return new Date(a.date).getTime() - new Date(b.date).getTime();
-  });
+    useEffect(() => {
+        const assignmentsQuery = query(collection(db, 'assignments'), orderBy('dueDate', 'asc'));
+        const examsQuery = query(collection(db, 'exams'), orderBy('createdAt', 'desc'));
 
+        const unsubAssignments = onSnapshot(assignmentsQuery, (snapshot) => {
+            const assignmentEvents = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    title: data.title,
+                    courseTitle: data.courseTitle,
+                    date: data.dueDate.toDate().toLocaleDateString(),
+                    time: "11:59 PM",
+                    type: 'Assignment'
+                } as ScheduleEvent;
+            });
+            // This is a bit inefficient, but ensures we merge data from all sources
+            setSchedule(currentSchedule => {
+                const otherEvents = currentSchedule.filter(e => e.type !== 'Assignment');
+                const newSchedule = [...otherEvents, ...assignmentEvents].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                return newSchedule;
+            });
+             if (loading) setLoading(false);
+        });
+
+        const unsubExams = onSnapshot(examsQuery, (snapshot) => {
+            const examEvents = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    title: data.title,
+                    courseTitle: data.courseTitle,
+                    date: 'TBD',
+                    time: 'N/A',
+                    type: 'Exam'
+                } as ScheduleEvent;
+            });
+            setSchedule(currentSchedule => {
+                const otherEvents = currentSchedule.filter(e => e.type !== 'Exam');
+                const newSchedule = [...otherEvents, ...examEvents].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                return newSchedule;
+            });
+             if (loading) setLoading(false);
+        });
+        
+        // Initial load complete after first data comes in
+        const initialLoad = onSnapshot(assignmentsQuery, () => {
+          if (loading) setLoading(false);
+          initialLoad(); // Unsubscribe after first run
+        })
+
+        return () => {
+            unsubAssignments();
+            unsubExams();
+        }
+    }, [loading]);
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -55,12 +114,23 @@ export default function SchedulePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {schedule.length > 0 ? (
+              {loading ? (
+                [...Array(5)].map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-8 w-28" /></TableCell>
+                    </TableRow>
+                ))
+              ) : schedule.length > 0 ? (
                 schedule.map((event) => (
                     <TableRow key={`${event.type}-${event.id}`}>
                     <TableCell className="font-medium">{event.title}</TableCell>
-                    <TableCell>{event.course}</TableCell>
-                    <TableCell>{event.date}</TableCell>
+                    <TableCell>{event.courseTitle}</TableCell>
+                    <TableCell>{event.date.toString()}</TableCell>
                     <TableCell>{event.time}</TableCell>
                     <TableCell>
                         <Badge

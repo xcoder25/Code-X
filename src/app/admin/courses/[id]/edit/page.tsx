@@ -135,7 +135,6 @@ export default function EditCourseForm() {
             setTeachers(teachersData);
 
         } catch (error) {
-            console.error(error);
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch course data.' });
         } finally {
             setPageLoading(false);
@@ -167,7 +166,6 @@ export default function EditCourseForm() {
             setResources(prev => [...prev, ...uploadedResources]);
             toast({ title: 'Upload successful', description: `${files.length} resource(s) added.` });
         } catch (error) {
-            console.error(error);
             toast({ variant: 'destructive', title: 'Upload failed', description: 'Could not upload resources.' });
         } finally {
             setIsSubmitting(false);
@@ -221,7 +219,6 @@ export default function EditCourseForm() {
       
       router.push(`/admin/courses`);
     } catch (error: any) {
-      console.error(error);
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -483,5 +480,3 @@ export default function EditCourseForm() {
     </div>
   );
 }
-
-    
