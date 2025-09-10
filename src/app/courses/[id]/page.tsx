@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, updateDoc, arrayUnion, arrayRemove, collection, getDocs } from 'firebase/firestore';
 import Link from 'next/link';
 import { PlayCircle, FileText, BookOpen, Library, Download, CheckCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 
@@ -22,8 +22,8 @@ import EnrollmentCard from '@/components/enrollment-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
 import { db } from '@/lib/firebase';
-import { pythonCourseData } from '@/lib/python-course-data';
-import { getSkillCourseById } from '@/lib/skills-course-data';
+import { pythonCourseData, pythonCourse } from '@/lib/python-course-data';
+import { getSkillCourseById, skillsCourses } from '@/lib/skills-course-data';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -59,6 +59,28 @@ interface Course {
 interface EnrollmentData {
     completedLessons?: string[];
     progress?: number;
+}
+
+export async function generateStaticParams() {
+  // Fetch dynamic courses from Firestore
+  const coursesSnapshot = await getDocs(collection(db, 'courses'));
+  const firestoreCourses = coursesSnapshot.docs.map(doc => ({
+    id: doc.id,
+  }));
+
+  // Get hardcoded course IDs
+  const hardcodedCourseIds = [
+    pythonCourse.id,
+    ...skillsCourses.map(c => c.id)
+  ].map(id => ({ id }));
+
+  // Combine and return unique IDs
+  const allIds = [...firestoreCourses, ...hardcodedCourseIds];
+  const uniqueIds = allIds.filter((item, index, self) => 
+    index === self.findIndex((t) => t.id === item.id)
+  );
+
+  return uniqueIds;
 }
 
 export default function CourseDetailPage() {
@@ -373,3 +395,5 @@ export default function CourseDetailPage() {
     </main>
   );
 }
+
+    
