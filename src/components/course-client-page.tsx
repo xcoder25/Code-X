@@ -89,14 +89,6 @@ export default function CourseClientPage({ initialCourse, courseId }: CourseClie
         return;
     };
     
-    // A course is considered a preview/hardcoded if it has no modules.
-    const isHardcodedCourse = course?.modules.length === 0;
-    if (isHardcodedCourse) {
-        setIsEnrolled(false);
-        setEnrollmentData({});
-        return;
-    }
-    
     const enrollmentDocRef = doc(db, 'users', user.uid, 'enrollments', courseId);
     const unsubscribeEnrollment = onSnapshot(enrollmentDocRef, (doc) => {
       if (doc.exists()) {
@@ -109,7 +101,7 @@ export default function CourseClientPage({ initialCourse, courseId }: CourseClie
     });
     
     return () => unsubscribeEnrollment();
-  }, [user, courseId, course]);
+  }, [user, courseId]);
 
   const handleEnrollmentSuccess = () => {
     setIsEnrolled(true);
@@ -198,7 +190,7 @@ export default function CourseClientPage({ initialCourse, courseId }: CourseClie
     );
   }
 
-  const isHardcodedCourse = course.modules.length === 0;
+  const isHardcodedCourse = course?.modules?.length === 0 && course?.resources?.length === 0;
   const canEnroll = user && !isEnrolled && !isHardcodedCourse;
 
   return (
@@ -223,12 +215,12 @@ export default function CourseClientPage({ initialCourse, courseId }: CourseClie
       {isEnrolled ? (
         <div className="container mx-auto px-4 md:px-6 flex-1 grid md:grid-cols-[300px_1fr] gap-8 py-8">
             {/* Left Sidebar - Course Content */}
-            <aside className="hidden md:block h-full border rounded-lg overflow-y-auto">
+            <aside className="hidden md:block h-full border rounded-lg">
                 <div className="p-4">
                     <h2 className="text-lg font-semibold">Course Content</h2>
                 </div>
                 <Separator />
-                <div className="p-2">
+                <div className="p-2 overflow-y-auto">
                     {course.modules.length > 0 ? (
                         <div className="space-y-4">
                             {course.modules.map((module) => (
@@ -262,6 +254,23 @@ export default function CourseClientPage({ initialCourse, courseId }: CourseClie
                         </div>
                         )}
                 </div>
+                 {course.resources && course.resources.length > 0 && (
+                    <>
+                        <Separator />
+                        <div className="p-4">
+                            <h2 className="text-lg font-semibold">Resource Library</h2>
+                        </div>
+                        <Separator />
+                        <div className="p-2 space-y-2">
+                             {course.resources.map(resource => (
+                                <a key={resource.id} href={resource.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors text-sm">
+                                    <Download className="h-4 w-4 text-muted-foreground" />
+                                    <span>{resource.name}</span>
+                                </a>
+                            ))}
+                        </div>
+                    </>
+                )}
             </aside>
             {/* Main Content - Lesson View */}
             <div className="flex flex-col">
