@@ -56,9 +56,8 @@ export async function generateStaticParams() {
 }
 
 async function getCourse(id: string): Promise<Course | null> {
-    const hardcodedPythonCourse = id === 'intro-to-python' ? pythonCourseData : null;
-    if (hardcodedPythonCourse) {
-        return hardcodedPythonCourse;
+    if (id === 'intro-to-python') {
+        return pythonCourseData;
     }
 
     const hardcodedSkillCourse = getSkillCourseById(id);
