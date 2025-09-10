@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -88,8 +89,9 @@ export default function CourseClientPage({ initialCourse, courseId }: CourseClie
         return;
     };
     
-    // Hardcoded courses don't have enrollment
-    if (courseId === 'intro-to-python' || course?.tags.length === 1) {
+    // A course is considered a preview/hardcoded if it has no modules.
+    const isHardcodedCourse = course?.modules.length === 0;
+    if (isHardcodedCourse) {
         setIsEnrolled(false);
         setEnrollmentData({});
         return;
@@ -196,7 +198,7 @@ export default function CourseClientPage({ initialCourse, courseId }: CourseClie
     );
   }
 
-  const isHardcodedCourse = course.id === 'intro-to-python' || course.tags.length === 1 && course.tags.includes(course.title);
+  const isHardcodedCourse = course.modules.length === 0;
   const canEnroll = user && !isEnrolled && !isHardcodedCourse;
 
   return (
