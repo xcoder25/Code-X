@@ -18,6 +18,9 @@ import {
   Calendar,
   ClipboardList,
   Target,
+  Trophy,
+  ClipboardCheck,
+  Lightbulb,
 } from 'lucide-react';
 import {
   Table,
@@ -34,6 +37,7 @@ import { collection, onSnapshot, query, getDocs, doc, getDoc, orderBy } from 'fi
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Assignment, Submission } from '@/types';
+import { Progress } from '@/components/ui/progress';
 
 interface Course {
   id: string;
@@ -48,6 +52,7 @@ export default function DashboardPage() {
   const [activeCourses, setActiveCourses] = useState<Course[]>([]);
   const [pendingAssignmentsCount, setPendingAssignmentsCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ courses: 0, assignments: 0, projects: 0 });
 
   useEffect(() => {
     if (!user) {
@@ -78,35 +83,42 @@ export default function DashboardPage() {
 
         const enrolledCourses = (await Promise.all(enrolledCoursesPromises)).filter(Boolean) as Course[];
         setActiveCourses(enrolledCourses);
+        setStats(prev => ({...prev, courses: enrolledCourses.filter(c => c.progress === 100).length}));
         if (loading) setLoading(false);
     }, (error) => {
         console.error("Error fetching active courses:", error);
         if (loading) setLoading(false);
     });
 
-    // Fetch assignments and submissions to calculate pending count
+    // Fetch assignments and submissions to calculate counts
     const assignmentsQuery = query(collection(db, 'assignments'), orderBy('dueDate', 'desc'));
     const submissionsQuery = query(collection(db, 'users', user.uid, 'submissions'));
+    const projectSubmissionsQuery = query(collection(db, 'users', user.uid, 'projectSubmissions'));
 
     const unsubscribeAssignments = onSnapshot(assignmentsQuery, (assignmentsSnapshot) => {
         const allAssignments = assignmentsSnapshot.docs.map(doc => doc.id);
         
-        // Nest the submission listener to ensure we have assignments first
         const unsubscribeSubmissions = onSnapshot(submissionsQuery, (submissionsSnapshot) => {
             const submittedIds = new Set(submissionsSnapshot.docs.map(doc => doc.id));
             const pendingCount = allAssignments.filter(id => !submittedIds.has(id)).length;
             setPendingAssignmentsCount(pendingCount);
+            setStats(prev => ({...prev, assignments: submittedIds.size}));
         });
 
         return () => unsubscribeSubmissions();
+    });
+
+    const unsubscribeProjectSubmissions = onSnapshot(projectSubmissionsQuery, (snapshot) => {
+        setStats(prev => ({...prev, projects: snapshot.size}));
     });
 
 
     return () => {
         unsubscribeCourses();
         unsubscribeAssignments();
+        unsubscribeProjectSubmissions();
     };
-  }, [user]);
+  }, [user, loading]);
 
   // Mock data for now, will be replaced with Firestore data
   const exams: any[] = [];
@@ -190,6 +202,43 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+       <Card>
+        <CardHeader>
+          <CardTitle>Milestone Tracker</CardTitle>
+          <CardDescription>An overview of your accomplishments and progress.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-6 md:grid-cols-3">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-full bg-primary/10 text-primary">
+                <Trophy className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-8" /> : stats.courses}</p>
+              <p className="text-sm text-muted-foreground">Courses Completed</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-full bg-primary/10 text-primary">
+                <ClipboardCheck className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-8" /> : stats.assignments}</p>
+              <p className="text-sm text-muted-foreground">Assignments Submitted</p>
+            </div>
+          </div>
+           <div className="flex items-center gap-4">
+            <div className="p-3 rounded-full bg-primary/10 text-primary">
+                <Lightbulb className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-8" /> : stats.projects}</p>
+              <p className="text-sm text-muted-foreground">Projects Finished</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
