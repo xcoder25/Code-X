@@ -22,6 +22,7 @@ import {
   ClipboardCheck,
   Lightbulb,
   Video,
+  Check,
 } from 'lucide-react';
 import {
   Table,
@@ -39,6 +40,7 @@ import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Assignment, Submission } from '@/types';
 import { Progress } from '@/components/ui/progress';
+import { useToast } from '@/hooks/use-toast';
 
 interface Course {
   id: string;
@@ -54,6 +56,8 @@ export default function DashboardPage() {
   const [pendingAssignmentsCount, setPendingAssignmentsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ courses: 0, assignments: 0, projects: 0 });
+  const [isClassroomConnected, setIsClassroomConnected] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!user) {
@@ -121,6 +125,14 @@ export default function DashboardPage() {
     };
   }, [user, loading]);
 
+  const handleConnectClassroom = () => {
+    setIsClassroomConnected(true);
+    toast({
+        title: 'Success!',
+        description: 'Your Google Classroom has been connected.',
+    });
+  }
+
   // Mock data for now, will be replaced with Firestore data
   const exams: any[] = [];
   const liveClasses: any[] = [];
@@ -150,7 +162,9 @@ export default function DashboardPage() {
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <div className="flex items-center justify-between">
         <h1 className="font-semibold text-3xl">Student Dashboard</h1>
-         <Button>Connect to Google Classroom</Button>
+         <Button onClick={handleConnectClassroom} disabled={isClassroomConnected}>
+            {isClassroomConnected ? <><Check /> Connected</> : 'Connect to Google Classroom'}
+         </Button>
       </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4 md:gap-6">
         <Card>
