@@ -396,3 +396,4 @@ export default function DashboardPage() {
       </Card>
     </main>
   );
+}
