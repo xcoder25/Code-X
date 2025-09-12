@@ -21,6 +21,7 @@ import {
   Trophy,
   ClipboardCheck,
   Lightbulb,
+  Video,
 } from 'lucide-react';
 import {
   Table,
@@ -149,6 +150,7 @@ export default function DashboardPage() {
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <div className="flex items-center justify-between">
         <h1 className="font-semibold text-3xl">Student Dashboard</h1>
+         <Button>Connect to Google Classroom</Button>
       </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4 md:gap-6">
         <Card>
@@ -325,6 +327,47 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+       <Card>
+          <CardHeader>
+            <CardTitle>Class Recordings</CardTitle>
+            <CardDescription>
+              Catch up on any live sessions you may have missed.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-3">
+             <Card className="relative group">
+                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors flex items-center justify-center rounded-lg">
+                    <Video className="h-12 w-12 text-white" />
+                </div>
+                <img src="https://picsum.photos/seed/rec1/600/400" alt="Class recording thumbnail" className="rounded-lg object-cover aspect-video" data-ai-hint="class recording" />
+                <div className="p-3">
+                    <h3 className="font-semibold">CSS Flexbox Masterclass</h3>
+                    <p className="text-sm text-muted-foreground">Web Development Bootcamp - Oct 10, 2024</p>
+                </div>
+            </Card>
+             <Card className="relative group">
+                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors flex items-center justify-center rounded-lg">
+                    <Video className="h-12 w-12 text-white" />
+                </div>
+                <img src="https://picsum.photos/seed/rec2/600/400" alt="Class recording thumbnail" className="rounded-lg object-cover aspect-video" data-ai-hint="class recording" />
+                 <div className="p-3">
+                    <h3 className="font-semibold">Introduction to Python Functions</h3>
+                    <p className="text-sm text-muted-foreground">Intro to Python - Oct 8, 2024</p>
+                </div>
+            </Card>
+             <Card className="relative group">
+                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors flex items-center justify-center rounded-lg">
+                    <Video className="h-12 w-12 text-white" />
+                </div>
+                <img src="https://picsum.photos/seed/rec3/600/400" alt="Class recording thumbnail" className="rounded-lg object-cover aspect-video" data-ai-hint="class recording" />
+                 <div className="p-3">
+                    <h3 className="font-semibold">State Management in React</h3>
+                    <p className="text-sm text-muted-foreground">Advanced React - Oct 5, 2024</p>
+                </div>
+            </Card>
+          </CardContent>
+        </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Your Courses</CardTitle>
@@ -365,12 +408,7 @@ export default function DashboardPage() {
                   <CardDescription>{course.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="w-full bg-muted rounded-full h-2.5 mb-2">
-                    <div
-                      className="bg-primary h-2.5 rounded-full"
-                      style={{ width: `${course.progress}%` }}
-                    ></div>
-                  </div>
+                  <Progress value={course.progress} className="h-2 mb-2" />
                   <p className="text-sm text-muted-foreground">
                     {course.progress}% complete
                   </p>
