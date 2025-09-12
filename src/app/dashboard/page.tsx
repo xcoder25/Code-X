@@ -214,7 +214,7 @@ export default function DashboardPage() {
                 <Trophy className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-8" /> : stats.courses}</p>
+              <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-8" /> : stats.courses}</div>
               <p className="text-sm text-muted-foreground">Courses Completed</p>
             </div>
           </div>
@@ -223,7 +223,7 @@ export default function DashboardPage() {
                 <ClipboardCheck className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-8" /> : stats.assignments}</p>
+              <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-8" /> : stats.assignments}</div>
               <p className="text-sm text-muted-foreground">Assignments Submitted</p>
             </div>
           </div>
@@ -232,7 +232,7 @@ export default function DashboardPage() {
                 <Lightbulb className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-8" /> : stats.projects}</p>
+              <div className="text-2xl font-bold">{loading ? <Skeleton className="h-7 w-8" /> : stats.projects}</div>
               <p className="text-sm text-muted-foreground">Projects Finished</p>
             </div>
           </div>
@@ -396,4 +396,3 @@ export default function DashboardPage() {
       </Card>
     </main>
   );
-}
