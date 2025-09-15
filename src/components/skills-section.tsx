@@ -1,37 +1,48 @@
 
-import Link from 'next/link';
+import { collection, getDocs, query, limit } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
-const technicalSkills = [
-  "Computer Science",
-  "Cybersecurity",
-  "DevOps",
-  "Ethical Hacking",
-  "Generative AI",
-  "Java Programming",
-  "Python",
-  "Web Development",
-];
+async function getUniqueTags() {
+    const coursesRef = collection(db, "courses");
+    const q = query(coursesRef, limit(50)); // Limit to 50 courses to find tags
+    const querySnapshot = await getDocs(q);
 
-const analyticalSkills = [
-  "Artificial Intelligence",
-  "Big Data",
-  "Business Analysis",
-  "Data Analytics",
-  "Data Science",
-  "Financial Modeling",
-  "Machine Learning",
-  "Microsoft Excel",
-  "Microsoft Power BI",
-  "SQL",
-];
+    const allTags = new Set<string>();
+    querySnapshot.forEach((doc) => {
+        const tags = doc.data().tags;
+        if (Array.isArray(tags)) {
+            tags.forEach(tag => allTags.add(tag));
+        }
+    });
 
-const toKebabCase = (str: string) =>
-  str
-    .replace(/([a-z])([A-Z])/g, "$1-$2")
-    .replace(/[\s_]+/g, "-")
-    .toLowerCase();
+    const technicalSkills = ["Python", "JavaScript", "HTML", "CSS", "Fullstack", "React", "Next.js", "TypeScript"];
+    const analyticalSkills = ["Data Science", "Machine Learning", "SQL", "Data Analytics"];
+    
+    const techResult: string[] = [];
+    const analyticalResult: string[] = [];
+    const otherResult: string[] = [];
 
-export default function SkillsSection() {
+    allTags.forEach(tag => {
+        if (technicalSkills.includes(tag)) {
+            techResult.push(tag);
+        } else if (analyticalSkills.includes(tag)) {
+            analyticalResult.push(tag);
+        } else {
+            otherResult.push(tag);
+        }
+    });
+
+    return {
+        technical: techResult,
+        analytical: analyticalResult,
+        other: otherResult
+    };
+}
+
+
+export default async function SkillsSection() {
+  const tags = await getUniqueTags();
+
   return (
     <section className="w-full py-12 md:py-24 lg:py-32 bg-muted/50">
       <div className="container px-4 md:px-6">
@@ -49,11 +60,9 @@ export default function SkillsSection() {
           <div className="flex flex-col items-start space-y-4">
             <h3 className="text-2xl font-bold">Technical Skills</h3>
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-muted-foreground text-left">
-              {technicalSkills.map((skill) => (
-                <li key={skill}>
-                  <Link href={`/courses/${toKebabCase(skill)}`} className="hover:underline hover:text-primary">
+              {tags.technical.map((skill) => (
+                <li key={skill} className="cursor-pointer hover:underline hover:text-primary">
                     {skill}
-                  </Link>
                 </li>
               ))}
             </ul>
@@ -61,11 +70,9 @@ export default function SkillsSection() {
           <div className="flex flex-col items-start space-y-4">
             <h3 className="text-2xl font-bold">Analytical Skills</h3>
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-muted-foreground text-left">
-              {analyticalSkills.map((skill) => (
-                <li key={skill}>
-                  <Link href={`/courses/${toKebabCase(skill)}`} className="hover:underline hover:text-primary">
+              {tags.analytical.map((skill) => (
+                 <li key={skill} className="cursor-pointer hover:underline hover:text-primary">
                     {skill}
-                  </Link>
                 </li>
               ))}
             </ul>

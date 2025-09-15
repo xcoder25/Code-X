@@ -18,9 +18,6 @@ import { collection, onSnapshot, query, orderBy, doc, getDoc } from 'firebase/fi
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/auth-provider';
-import { pythonCourse } from '@/lib/python-course-data';
-import { skillsCourses } from '@/lib/skills-course-data';
-import { webDevCourse } from '@/lib/web-dev-course-data';
 
 interface Course {
   id: string;
@@ -69,22 +66,11 @@ export default function CoursesPage() {
 
         const firestoreCourses = await Promise.all(coursesDataPromises);
         
-        // Combine firestore courses with hard-coded ones
-        const allCourses = [...firestoreCourses, pythonCourse, webDevCourse, ...skillsCourses];
-        
-        // Prevent duplicates if a course is ever added to firestore with same id
-        const uniqueCourses = allCourses.filter((course, index, self) =>
-            index === self.findIndex((c) => (
-                c.id === course.id
-            ))
-        );
-
-        setCourses(uniqueCourses);
+        setCourses(firestoreCourses);
         setLoading(false);
     }, (error) => {
         console.error("Error fetching courses:", error);
-        // Still add the hardcoded courses even if firestore fails
-        setCourses([pythonCourse, webDevCourse, ...skillsCourses]);
+        setCourses([]);
         setLoading(false);
     });
 

@@ -1,9 +1,6 @@
 
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { pythonCourse, pythonCourseData } from '@/lib/python-course-data';
-import { getSkillCourseById, skillsCourses } from '@/lib/skills-course-data';
-import { webDevCourse, webDevCourseData } from '@/lib/web-dev-course-data';
 import CourseClientPage from '@/components/course-client-page';
 import type { Metadata } from 'next';
 
@@ -36,41 +33,14 @@ interface Resource {
 
 
 export async function generateStaticParams() {
-  // Fetch dynamic courses from Firestore
   const coursesSnapshot = await getDocs(collection(db, 'courses'));
   const firestoreCourses = coursesSnapshot.docs.map(doc => ({
     id: doc.id,
   }));
-
-  // Get hardcoded course IDs
-  const hardcodedCourseIds = [
-    pythonCourse.id,
-    webDevCourse.id,
-    ...skillsCourses.map(c => c.id)
-  ].map(id => ({ id }));
-
-  // Combine and return unique IDs
-  const allIds = [...firestoreCourses, ...hardcodedCourseIds];
-  const uniqueIds = allIds.filter((item, index, self) => 
-    index === self.findIndex((t) => t.id === item.id)
-  );
-
-  return uniqueIds;
+  return firestoreCourses;
 }
 
 async function getCourse(id: string): Promise<Course | null> {
-    if (id === 'intro-to-python') {
-        return pythonCourseData;
-    }
-     if (id === 'web-dev-bootcamp') {
-        return webDevCourseData;
-    }
-
-    const hardcodedSkillCourse = getSkillCourseById(id);
-    if (hardcodedSkillCourse) {
-        return hardcodedSkillCourse;
-    }
-
     const courseDocRef = doc(db, 'courses', id);
     const docSnapshot = await getDoc(courseDocRef);
 

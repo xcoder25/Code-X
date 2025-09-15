@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,7 +43,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { deleteCourseAction } from '@/app/actions';
+import { deleteCourseAction, seedInitialCoursesAction } from '@/app/actions';
 import { User } from '@/types';
 
 interface Course {
@@ -61,6 +61,7 @@ interface Course {
 export default function AdminCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSeeding, setIsSeeding] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const { toast } = useToast();
@@ -95,6 +96,25 @@ export default function AdminCoursesPage() {
     setIsAlertOpen(true);
   }
 
+  const handleSeedCourses = async () => {
+    setIsSeeding(true);
+    try {
+        const { coursesAdded } = await seedInitialCoursesAction();
+        toast({
+            title: "Database Seeded!",
+            description: `${coursesAdded} new courses were added to Firestore.`
+        });
+    } catch(e: any) {
+         toast({
+            variant: "destructive",
+            title: "Error Seeding Database",
+            description: e.message
+        });
+    } finally {
+        setIsSeeding(false);
+    }
+  }
+
   const handleDeleteConfirm = async () => {
     if (!selectedCourse) return;
     try {
@@ -120,12 +140,20 @@ export default function AdminCoursesPage() {
     <div className="flex-1 space-y-4 p-8 pt-6">
         <div className="flex items-center justify-between">
             <h2 className="text-3xl font-bold tracking-tight">Manage Courses</h2>
-            <Button asChild>
-                <Link href="/admin/courses/new">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add New Course
-                </Link>
-            </Button>
+            <div className="flex items-center gap-2">
+                {courses.length === 0 && !loading && (
+                    <Button onClick={handleSeedCourses} disabled={isSeeding} variant="outline">
+                        {isSeeding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Seed Initial Courses
+                    </Button>
+                )}
+                <Button asChild>
+                    <Link href="/admin/courses/new">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add New Course
+                    </Link>
+                </Button>
+            </div>
         </div>
         <Card>
             <CardHeader>
@@ -161,7 +189,7 @@ export default function AdminCoursesPage() {
                         ) : courses.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={6} className="h-24 text-center">
-                                    No courses created yet.
+                                    No courses created yet. You can seed initial courses or add a new one.
                                 </TableCell>
                             </TableRow>
                         ) : courses.map(course => (
@@ -172,7 +200,7 @@ export default function AdminCoursesPage() {
                                     <Badge variant={course.status === 'Published' ? 'default' : 'secondary'}>{course.status}</Badge>
                                 </TableCell>
                                 <TableCell>{course.enrollments.toLocaleString()}</TableCell>
-                                <TableCell>{new Date(course.createdAt.seconds * 1000).toLocaleDateString()}</TableCell>
+                                <TableCell>{course.createdAt.seconds ? new Date(course.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>
                                 <TableCell className="text-right">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>

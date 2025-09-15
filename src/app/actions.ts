@@ -999,3 +999,132 @@ export async function updateNotificationSettingsAction(data: z.infer<typeof noti
     });
     return { success: true };
 }
+
+// --- Course Seeding Action ---
+
+const initialCourses = [
+    {
+        id: 'intro-to-python',
+        title: 'Introduction to Python',
+        description: 'Learn the fundamentals of Python, one of the most popular programming languages in the world.',
+        tags: ['Python', 'Beginner', 'Programming'],
+        modules: [
+            {
+                id: 'py-mod-1',
+                title: 'Module 1: Getting Started',
+                lessons: [
+                    { id: 'py-l-1-1', title: 'What is Python?', content: 'An overview of Python, its history, and why it\'s a great language for beginners. Covers real-world applications of Python.' },
+                    { id: 'py-l-1-2', title: 'Installing Python & VS Code', content: 'A step-by-step guide to installing Python and setting up Visual Studio Code as your editor on Windows, macOS, and Linux.' },
+                    { id: 'py-l-1-3', title: 'Running Your First Script', content: 'A hands-on tutorial where you write and run your first "Hello, World!" program in Python.' },
+                ],
+            },
+            {
+                id: 'py-mod-2',
+                title: 'Module 2: Variables and Basic Data Types',
+                lessons: [
+                    { id: 'py-l-2-1', title: 'Understanding Variables', content: 'Learn how to store data in variables. Covers naming conventions and assigning values.' },
+                    { id: 'py-l-2-2', title: 'Working with Numbers', content: 'Explore integers and floating-point numbers. Covers basic arithmetic operations like addition, subtraction, multiplication, and division.' },
+                    { id: 'py-l-2-3', title: 'Manipulating Strings', content: 'An introduction to text data. Covers string concatenation, slicing, and common string methods.' },
+                    { id: 'py-l-2-4', title: 'Introduction to Booleans', content: 'Understand the concept of True and False values, which are fundamental for control flow.' },
+                ],
+            },
+            {
+                id: 'py-mod-3',
+                title: 'Module 3: Core Data Structures',
+                lessons: [
+                    { id: 'py-l-3-1', title: 'Working with Lists', content: 'Deep dive into lists, Python\'s most versatile data structure. Covers indexing, slicing, adding, and removing items.' },
+                    { id: 'py-l-3-2', title: 'Understanding Tuples', content: 'Learn about immutable sequences and when to use tuples instead of lists.' },
+                    { id: 'py-l-3-3', title: 'Introduction to Dictionaries', content: 'Explore key-value pairs with dictionaries. Covers accessing data, adding new entries, and looping through dictionaries.' },
+                ],
+            },
+            {
+                id: 'py-mod-4',
+                title: 'Module 4: Control Flow',
+                lessons: [
+                    { id: 'py-l-4-1', title: 'Conditional Statements', content: 'Make decisions in your code using if, elif, and else statements.' },
+                    { id: 'py-l-4-2', title: 'For Loops', content: 'Learn how to iterate over sequences like lists, strings, and ranges to perform repetitive tasks.' },
+                    { id: 'py-l-4-3', title: 'While Loops', content: 'Create loops that continue to run as long as a certain condition is true. Covers break and continue statements.' },
+                ],
+            },
+             {
+                id: 'py-mod-5',
+                title: 'Module 5: Next Steps',
+                lessons: [
+                   { id: 'py-l-5-1', title: 'Final Project Brief', content: 'Instructions for the final project, which combines all the concepts learned in the course to build a simple application.' },
+                   { id: 'py-l-5-2', title: 'What to learn next?', content: 'A guide to further learning, including topics like functions, object-oriented programming, and popular Python libraries.' },
+                ],
+            }
+        ],
+        resources: [
+            { id: 'py-res-1', name: 'Python 3 Cheat Sheet', url: '#' },
+            { id: 'py-res-2', name: 'Official Python Documentation', url: '#' },
+            { id: 'py-res-3', name: 'Awesome Python - A curated list of resources', url: '#' },
+        ],
+    },
+    {
+        id: 'web-dev-bootcamp',
+        title: 'Web Development Bootcamp',
+        description: 'A comprehensive bootcamp covering HTML, CSS, JavaScript, and everything you need to become a web developer.',
+        tags: ['HTML', 'CSS', 'JavaScript', 'Fullstack'],
+        modules: [
+            {
+                id: 'wd-mod-1',
+                title: 'Module 1: HTML Fundamentals',
+                lessons: [
+                    { id: 'wd-l-1-1', title: 'Introduction to HTML', content: 'Learn the basic structure of a web page and the most common HTML tags.' },
+                    { id: 'wd-l-1-2', title: 'Creating Forms', content: 'Understand how to collect user input with HTML forms, including various input types.' },
+                    { id: 'wd-l-1-3', title: 'Semantic HTML', content: 'Discover the importance of using semantic tags for better accessibility and SEO.' },
+                ],
+            },
+            {
+                id: 'wd-mod-2',
+                title: 'Module 2: CSS Styling',
+                lessons: [
+                    { id: 'wd-l-2-1', title: 'Introduction to CSS', content: 'Learn how to apply styles to your HTML documents to make them visually appealing.' },
+                    { id: 'wd-l-2-2', title: 'The Box Model', content: 'A deep dive into the CSS box model, including margins, padding, borders, and content.' },
+                    { id: 'wd-l-2-3', title: 'Flexbox and Grid', content: 'Master modern CSS layout techniques with Flexbox and CSS Grid for creating responsive designs.' },
+                ],
+            },
+            {
+                id: 'wd-mod-3',
+                title: 'Module 3: JavaScript for Interactivity',
+                lessons: [
+                    { id: 'wd-l-3-1', title: 'JavaScript Basics', content: 'Get started with JavaScript syntax, variables, data types, and operators.' },
+                    { id: 'wd-l-3-2', title: 'DOM Manipulation', content: 'Learn how to interact with and dynamically change the content and structure of a web page using the Document Object Model (DOM).' },
+                    { id: 'wd-l-3-3', title: 'Handling Events', content: 'Make your pages interactive by responding to user actions like clicks, mouse movements, and keyboard input.' },
+                ],
+            }
+        ],
+        resources: [
+            { id: 'wd-res-1', name: 'HTML5 Tag Reference', url: '#' },
+            { id: 'wd-res-2', name: 'CSS Tricks - A Guide to Flexbox', url: '#' },
+        ],
+    }
+];
+
+export async function seedInitialCoursesAction() {
+    const coursesCollection = collection(db, 'courses');
+    const batch = writeBatch(db);
+    let coursesAdded = 0;
+
+    for (const courseData of initialCourses) {
+        const courseDocRef = doc(coursesCollection, courseData.id);
+        const docSnap = await getDoc(courseDocRef);
+
+        if (!docSnap.exists()) {
+            batch.set(courseDocRef, {
+                ...courseData,
+                createdAt: serverTimestamp(),
+                enrollments: 0,
+                status: 'Draft',
+            });
+            coursesAdded++;
+        }
+    }
+
+    if (coursesAdded > 0) {
+        await batch.commit();
+    }
+
+    return { coursesAdded };
+}
