@@ -17,7 +17,6 @@ const toKebabCase = (str: string) =>
     .toLowerCase();
 
 const skillNames = [
-  "ChatGPT",
   "Computer Science",
   "Cybersecurity",
   "DevOps",

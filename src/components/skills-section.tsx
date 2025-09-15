@@ -2,8 +2,6 @@
 import Link from 'next/link';
 
 const technicalSkills = [
-  "ChatGPT",
-  "Coding",
   "Computer Science",
   "Cybersecurity",
   "DevOps",
