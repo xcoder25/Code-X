@@ -19,7 +19,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, BookUp } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +31,7 @@ import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EnrollStudentDialog } from '@/components/admin/enroll-student-dialog';
 
 interface User {
     uid: string;
@@ -46,6 +47,8 @@ interface User {
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [isEnrollDialogOpen, setIsEnrollDialogOpen] = useState(false);
 
      useEffect(() => {
         const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
@@ -62,7 +65,13 @@ export default function AdminUsersPage() {
         return () => unsubscribe();
     }, []);
 
+    const openEnrollDialog = (user: User) => {
+        setSelectedUser(user);
+        setIsEnrollDialogOpen(true);
+    }
+
   return (
+    <>
     <div className="flex-1 space-y-4 p-8 pt-6">
         <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
         <Card>
@@ -137,6 +146,10 @@ export default function AdminUsersPage() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem onSelect={() => openEnrollDialog(user)}>
+                                        <BookUp className="mr-2 h-4 w-4" />
+                                        Enroll in Course
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem>Edit</DropdownMenuItem>
                                     <DropdownMenuItem>Suspend</DropdownMenuItem>
                                     <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
@@ -150,5 +163,13 @@ export default function AdminUsersPage() {
             </CardContent>
         </Card>
     </div>
+    {selectedUser && (
+        <EnrollStudentDialog 
+            user={selectedUser}
+            isOpen={isEnrollDialogOpen}
+            onOpenChange={setIsEnrollDialogOpen}
+        />
+    )}
+    </>
   );
 }

@@ -1,7 +1,9 @@
+
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { pythonCourse, pythonCourseData } from '@/lib/python-course-data';
 import { getSkillCourseById, skillsCourses } from '@/lib/skills-course-data';
+import { webDevCourse, webDevCourseData } from '@/lib/web-dev-course-data';
 import CourseClientPage from '@/components/course-client-page';
 import type { Metadata } from 'next';
 
@@ -43,6 +45,7 @@ export async function generateStaticParams() {
   // Get hardcoded course IDs
   const hardcodedCourseIds = [
     pythonCourse.id,
+    webDevCourse.id,
     ...skillsCourses.map(c => c.id)
   ].map(id => ({ id }));
 
@@ -58,6 +61,9 @@ export async function generateStaticParams() {
 async function getCourse(id: string): Promise<Course | null> {
     if (id === 'intro-to-python') {
         return pythonCourseData;
+    }
+     if (id === 'web-dev-bootcamp') {
+        return webDevCourseData;
     }
 
     const hardcodedSkillCourse = getSkillCourseById(id);
