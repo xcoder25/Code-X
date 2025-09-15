@@ -18,7 +18,6 @@ const toKebabCase = (str: string) =>
 
 const skillNames = [
   "ChatGPT",
-  "Coding",
   "Computer Science",
   "Cybersecurity",
   "DevOps",
