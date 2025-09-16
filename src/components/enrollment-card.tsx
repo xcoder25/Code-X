@@ -18,6 +18,7 @@ import { Loader2, CreditCard, Ticket } from 'lucide-react';
 import { redeemAccessCodeAction } from '@/app/actions';
 import { useAuth } from '@/app/auth-provider';
 import { Separator } from './ui/separator';
+import { usePaystackPayment } from 'react-paystack';
 
 
 interface EnrollmentCardProps {
@@ -30,6 +31,16 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
   const [accessCode, setAccessCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  const paystackConfig = {
+      reference: new Date().getTime().toString(),
+      email: user?.email || '',
+      amount: 10000, // Amount in kobo (e.g., 10000 kobo = 100 NGN)
+      publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
+  };
+
+  const initializePayment = usePaystackPayment(paystackConfig);
   
   const handleRedeemCode = async () => {
     if (!accessCode) {
@@ -65,22 +76,20 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
     }
   };
   
-  const handlePayment = () => {
-      toast({
-          title: 'Payment processing...',
-          description: 'This is a mock payment flow. You will be enrolled shortly.'
-      });
-      setIsLoading(true);
-       setTimeout(() => {
-            // In a real app, you would handle Stripe checkout and a webhook to confirm enrollment
-            onEnrollmentSuccess();
-            setIsLoading(false);
-            toast({
-                title: 'Payment Successful!',
-                description: 'You are now enrolled in the course.',
-            });
-       }, 2000);
-  }
+  const onPaymentSuccess = (reference: any) => {
+    console.log(reference);
+    // In a real app, you would verify the transaction on your backend
+    // and then call onEnrollmentSuccess
+    toast({
+        title: 'Payment Successful!',
+        description: 'You are now enrolled in the course.',
+    });
+    onEnrollmentSuccess();
+  };
+
+  const onPaymentClose = () => {
+    console.log('Payment window closed.');
+  };
 
   return (
     <Card className="w-full max-w-md shrink-0">
@@ -121,8 +130,8 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
                 <CreditCard className="h-5 w-5" />
                 <span>Pay to Unlock</span>
             </Label>
-            <p className="text-sm text-muted-foreground mb-4">Get immediate lifetime access to this course.</p>
-            <Button onClick={handlePayment} disabled={isLoading} className="w-full">
+            <p className="text-sm text-muted-foreground mb-4">Get immediate lifetime access to this course for ₦100.</p>
+            <Button onClick={() => initializePayment({onSuccess: onPaymentSuccess, onClose: onPaymentClose})} disabled={isLoading} className="w-full">
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Pay to Unlock
             </Button>
