@@ -42,9 +42,9 @@ export async function chatWithElara(
       },
       ...input.history.map((message) => ({
         role: message.role,
-        content: [{ text: message.content }],
+        content: message.content,
       })),
-      { role: 'user', content: [{ text: input.message }] },
+      { role: 'user', content: input.message },
     ],
     output: {
       schema: ChatWithElaraOutputSchema,
