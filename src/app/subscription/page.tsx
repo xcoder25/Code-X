@@ -10,7 +10,7 @@ import {
   CardFooter
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, Sparkles, Star, Bot, Code, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../auth-provider';
 import { createSubscriptionAction } from '../actions';
@@ -26,9 +26,10 @@ const plans = [
         description: "For individuals getting started with coding.",
         features: [
             "Access to introductory courses",
-            "Basic coding challenges",
-            "Limited AI Coach interactions"
+            "5 AI Coach messages per month",
+            "2 Code Analyses per month",
         ],
+        icon: <Star className="h-5 w-5" />,
         planCode: null,
         cta: "Current Plan",
     },
@@ -38,23 +39,27 @@ const plans = [
         description: "For learners who need regular AI assistance.",
         features: [
             "All Free features",
-            "50 AI Coach messages per month",
-            "10 Code Analyses per month",
+            "Unlimited AI Coach messages",
+            "50 Code Analyses per month",
+            "Access to all courses",
             "Priority support",
         ],
+        icon: <Sparkles className="h-5 w-5" />,
         planCode: 'PLN_xxxxxxxxxxxx', // Replace with your actual Paystack Plan Code
         cta: "Upgrade to Essentials",
     },
      {
         name: "AI Pro",
         price: "$5",
-        description: "For power users who rely heavily on AI.",
+        description: "For power users preparing for a career.",
         features: [
             "Unlimited AI Coach messages",
-            "Unlimited Code Analyses",
+            "Unlimited AI Code Analyses",
+            "AI-Powered Mock Interviews",
             "Discord community access",
             "Everything in AI Essentials"
         ],
+        icon: <Bot className="h-5 w-5" />,
         planCode: 'PLN_yyyyyyyyyyyy', // Replace with your actual Paystack Plan Code
         cta: "Upgrade to Pro",
     }
@@ -103,15 +108,19 @@ export default function SubscriptionPage() {
         Choose a plan to unlock the full power of our AI-driven features.
       </p>
 
-      <div className="grid gap-6 md:grid-cols-3 mt-4">
+      <div className="grid gap-6 md:grid-cols-3 mt-4 items-start">
         {plans.map(plan => {
             const isCurrentPlan = plan.name === currentUserPlan;
             const isLoading = loadingPlan === plan.planCode;
-            const variant = isCurrentPlan ? 'secondary' : plan.name === 'AI Essentials' ? 'default' : 'outline';
+            const isPro = plan.name === "AI Pro";
+            const variant = isCurrentPlan ? 'secondary' : isPro ? 'default' : 'outline';
 
             return (
-                 <Card key={plan.name} className={`flex flex-col ${variant === 'default' ? 'border-primary shadow-lg' : ''}`}>
-                    <CardHeader>
+                 <Card key={plan.name} className={`flex flex-col ${isPro ? 'border-primary shadow-lg' : ''}`}>
+                    <CardHeader className="items-center text-center">
+                        <div className="p-3 rounded-full bg-primary/10 text-primary w-fit">
+                            {plan.icon}
+                        </div>
                         <CardTitle className="text-2xl">{plan.name}</CardTitle>
                         <p className="text-4xl font-bold">{plan.price}<span className="text-sm font-normal text-muted-foreground">/month</span></p>
                         <CardDescription>{plan.description}</CardDescription>
@@ -119,8 +128,8 @@ export default function SubscriptionPage() {
                     <CardContent className="flex-grow">
                     <ul className="space-y-3">
                             {plan.features.map(feature => (
-                            <li key={feature} className="flex items-center gap-2">
-                                    <Check className="h-5 w-5 text-green-500" />
+                            <li key={feature} className="flex items-start gap-3">
+                                    <Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
                                     <span>{feature}</span>
                             </li>
                             ))}

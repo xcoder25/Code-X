@@ -11,7 +11,7 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, BookOpenCheck } from 'lucide-react';
+import { ArrowRight, BookOpenCheck, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, doc, getDoc } from 'firebase/firestore';
@@ -26,6 +26,7 @@ interface Course {
   tags: string[];
   progress: number; 
   status: 'in-progress' | 'not-started';
+  premium: boolean;
 }
 
 export default function CoursesPage() {
@@ -61,6 +62,7 @@ export default function CoursesPage() {
                 tags: data.tags || [],
                 progress: progress,
                 status: isEnrolled ? 'in-progress' : 'not-started',
+                premium: data.premium || false,
             } as Course;
         });
 
@@ -113,16 +115,17 @@ export default function CoursesPage() {
           <Card key={course.id} className="flex flex-col">
             <CardHeader>
               <div className="flex justify-between items-start mb-2">
-                 <BookOpenCheck className="h-8 w-8 text-primary" />
+                 {course.premium ? <Lock className="h-8 w-8 text-primary" /> : <BookOpenCheck className="h-8 w-8 text-primary" />}
                  {course.status === 'in-progress' && <Badge variant="default">In Progress</Badge>}
-                 {course.status === 'not-started' && <Badge variant="secondary">Not Started</Badge>}
+                 {course.status === 'not-started' && !course.premium && <Badge variant="secondary">Not Started</Badge>}
+                 {course.premium && <Badge variant="premium">Premium</Badge>}
               </div>
               <CardTitle>{course.title}</CardTitle>
               <CardDescription>{course.description}</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow space-x-2">
               {course.tags.map((tag: string) => (
-                <Badge key={tag} variant="outline">
+                <Badge key={tag} variant={tag === 'Premium' ? 'premium' : 'outline'}>
                   {tag}
                 </Badge>
               ))}
@@ -132,8 +135,8 @@ export default function CoursesPage() {
                   <div className="bg-primary h-2.5 rounded-full" style={{width: `${course.progress}%`}}></div>
               </div>
               <Button asChild className="w-full">
-                <Link href={`/courses/${course.id}`}>
-                   {course.status === 'not-started' ? 'Enroll in Course' : 'Continue Course'} <ArrowRight className="ml-2 h-4 w-4" />
+                <Link href={course.premium ? `/subscription` : `/courses/${course.id}`}>
+                   {course.premium ? 'Upgrade to Access' : course.status === 'not-started' ? 'Enroll in Course' : 'Continue Course'} <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
             </CardFooter>

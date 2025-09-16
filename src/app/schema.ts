@@ -48,3 +48,23 @@ export const ChatWithElaraOutputSchema = z.object({
   reply: z.string().describe("Elara's response to the user."),
 });
 export type ChatWithElaraOutput = z.infer<typeof ChatWithElaraOutputSchema>;
+
+
+// Schema for AI Mock Interview
+export const InterviewPrepInputSchema = z.object({
+  userName: z.string().describe('The name of the user engaging with the AI.'),
+  topic: z.string().describe('The interview topic the user wants to practice (e.g., React, Python, Data Structures).'),
+  message: z.string().describe("The user's answer or message to the AI interviewer."),
+  history: z
+    .array(z.object({
+        role: z.enum(['user', 'model']),
+        content: z.string(),
+    }))
+    .describe('The history of the conversation so far.'),
+});
+export type InterviewPrepInput = z.infer<typeof InterviewPrepInputSchema>;
+
+export const InterviewPrepOutputSchema = z.object({
+  reply: z.string().describe("The AI interviewer's next question, follow-up, or feedback."),
+});
+export type InterviewPrepOutput = z.infer<typeof InterviewPrepOutputSchema>;

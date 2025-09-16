@@ -16,6 +16,7 @@ import {
   MessageCircle,
   Users,
   Lightbulb,
+  GraduationCap,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/app/auth-provider';
@@ -104,6 +105,14 @@ export default function AppSidebar() {
               <LoadingLink href="/path">
                 <Bot />
                 <span>AI Coach</span>
+              </LoadingLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/interview-prep')}>
+              <LoadingLink href="/interview-prep">
+                <GraduationCap />
+                <span>Interview Prep</span>
               </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>

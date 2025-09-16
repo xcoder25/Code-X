@@ -25,6 +25,7 @@ import {
 import { z } from 'zod';
 import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/analyze-code';
 import { chatWithElara, ChatWithElaraOutput, ChatWithElaraInput } from '@/ai/flows/ai-coach-flow';
+import { interviewPrep, InterviewPrepOutput, InterviewPrepInput } from '@/ai/flows/interview-prep-flow';
 import { sendMessageFormSchema } from './schema';
 import { getDownloadURL, ref, uploadString, deleteObject } from 'firebase/storage';
 import { auth } from '@/lib/firebase';
@@ -370,6 +371,10 @@ export async function chatWithElaraAction(
 
 export async function analyzeCodeAction(input: AnalyzeCodeInput): Promise<AnalyzeCodeOutput> {
     return analyzeCode(input);
+}
+
+export async function interviewPrepAction(input: InterviewPrepInput): Promise<InterviewPrepOutput> {
+    return interviewPrep(input);
 }
 
 
@@ -1009,6 +1014,7 @@ const initialCourses = [
         title: 'Introduction to Python',
         description: 'Learn the fundamentals of Python, one of the most popular programming languages in the world.',
         tags: ['Python', 'Beginner', 'Programming'],
+        premium: false,
         modules: [
             {
                 id: 'py-mod-1',
@@ -1029,44 +1035,15 @@ const initialCourses = [
                     { id: 'py-l-2-4', title: 'Introduction to Booleans', content: 'Understand the concept of True and False values, which are fundamental for control flow.' },
                 ],
             },
-            {
-                id: 'py-mod-3',
-                title: 'Module 3: Core Data Structures',
-                lessons: [
-                    { id: 'py-l-3-1', title: 'Working with Lists', content: 'Deep dive into lists, Python\'s most versatile data structure. Covers indexing, slicing, adding, and removing items.' },
-                    { id: 'py-l-3-2', title: 'Understanding Tuples', content: 'Learn about immutable sequences and when to use tuples instead of lists.' },
-                    { id: 'py-l-3-3', title: 'Introduction to Dictionaries', content: 'Explore key-value pairs with dictionaries. Covers accessing data, adding new entries, and looping through dictionaries.' },
-                ],
-            },
-            {
-                id: 'py-mod-4',
-                title: 'Module 4: Control Flow',
-                lessons: [
-                    { id: 'py-l-4-1', title: 'Conditional Statements', content: 'Make decisions in your code using if, elif, and else statements.' },
-                    { id: 'py-l-4-2', title: 'For Loops', content: 'Learn how to iterate over sequences like lists, strings, and ranges to perform repetitive tasks.' },
-                    { id: 'py-l-4-3', title: 'While Loops', content: 'Create loops that continue to run as long as a certain condition is true. Covers break and continue statements.' },
-                ],
-            },
-             {
-                id: 'py-mod-5',
-                title: 'Module 5: Next Steps',
-                lessons: [
-                   { id: 'py-l-5-1', title: 'Final Project Brief', content: 'Instructions for the final project, which combines all the concepts learned in the course to build a simple application.' },
-                   { id: 'py-l-5-2', title: 'What to learn next?', content: 'A guide to further learning, including topics like functions, object-oriented programming, and popular Python libraries.' },
-                ],
-            }
         ],
-        resources: [
-            { id: 'py-res-1', name: 'Python 3 Cheat Sheet', url: '#' },
-            { id: 'py-res-2', name: 'Official Python Documentation', url: '#' },
-            { id: 'py-res-3', name: 'Awesome Python - A curated list of resources', url: '#' },
-        ],
+        resources: [],
     },
     {
         id: 'web-dev-bootcamp',
         title: 'Web Development Bootcamp',
         description: 'A comprehensive bootcamp covering HTML, CSS, JavaScript, and everything you need to become a web developer.',
         tags: ['HTML', 'CSS', 'JavaScript', 'Fullstack'],
+        premium: false,
         modules: [
             {
                 id: 'wd-mod-1',
@@ -1074,7 +1051,6 @@ const initialCourses = [
                 lessons: [
                     { id: 'wd-l-1-1', title: 'Introduction to HTML', content: 'Learn the basic structure of a web page and the most common HTML tags.' },
                     { id: 'wd-l-1-2', title: 'Creating Forms', content: 'Understand how to collect user input with HTML forms, including various input types.' },
-                    { id: 'wd-l-1-3', title: 'Semantic HTML', content: 'Discover the importance of using semantic tags for better accessibility and SEO.' },
                 ],
             },
             {
@@ -1086,20 +1062,36 @@ const initialCourses = [
                     { id: 'wd-l-2-3', title: 'Flexbox and Grid', content: 'Master modern CSS layout techniques with Flexbox and CSS Grid for creating responsive designs.' },
                 ],
             },
+        ],
+        resources: [],
+    },
+     {
+        id: 'advanced-react',
+        title: 'Advanced React & State Management',
+        description: 'Take your React skills to the next level by mastering advanced concepts like state management, performance optimization, and testing.',
+        tags: ['React', 'Advanced', 'State Management', 'Premium'],
+        premium: true,
+        modules: [
             {
-                id: 'wd-mod-3',
-                title: 'Module 3: JavaScript for Interactivity',
+                id: 'ar-mod-1',
+                title: 'Module 1: Advanced Hooks',
                 lessons: [
-                    { id: 'wd-l-3-1', title: 'JavaScript Basics', content: 'Get started with JavaScript syntax, variables, data types, and operators.' },
-                    { id: 'wd-l-3-2', title: 'DOM Manipulation', content: 'Learn how to interact with and dynamically change the content and structure of a web page using the Document Object Model (DOM).' },
-                    { id: 'wd-l-3-3', title: 'Handling Events', content: 'Make your pages interactive by responding to user actions like clicks, mouse movements, and keyboard input.' },
+                    { id: 'ar-l-1-1', title: 'Deep Dive into `useEffect`', content: 'Mastering the dependency array and avoiding common pitfalls.' },
+                    { id: 'ar-l-1-2', title: 'Optimizing with `useCallback` and `useMemo`', content: 'Learn when and how to use memoization to prevent unnecessary re-renders.' },
+                    { id: 'ar-l-1-3', title: 'Creating Custom Hooks', content: 'Abstracting logic into reusable custom hooks to keep your components clean.' },
                 ],
-            }
+            },
+            {
+                id: 'ar-mod-2',
+                title: 'Module 2: State Management with Redux Toolkit',
+                lessons: [
+                    { id: 'ar-l-2-1', title: 'Introduction to Redux', content: 'Understanding the core concepts of Redux and why it\'s used.' },
+                    { id: 'ar-l-2-2', title: 'Setting up Redux Toolkit', content: 'Learn the modern, efficient way to write Redux logic.' },
+                    { id: 'ar-l-2-3', title: 'Async Logic with Thunks', content: 'Handling API calls and other asynchronous actions within Redux.' },
+                ],
+            },
         ],
-        resources: [
-            { id: 'wd-res-1', name: 'HTML5 Tag Reference', url: '#' },
-            { id: 'wd-res-2', name: 'CSS Tricks - A Guide to Flexbox', url: '#' },
-        ],
+        resources: [],
     }
 ];
 
