@@ -1202,3 +1202,34 @@ export async function createSubscriptionAction(input: z.infer<typeof createSubsc
 
     return { success: true };
 }
+
+// --- Google Classroom Action ---
+
+const connectClassroomSchema = z.object({
+  userId: z.string(),
+  classCode: z.string().min(1, "Class code is required."),
+});
+
+export async function connectToGoogleClassroomAction(
+  input: z.infer<typeof connectClassroomSchema>
+) {
+  const { userId, classCode } = connectClassroomSchema.parse(input);
+
+  // In a real app, you would use the Google Classroom API to verify the code
+  // and associate the user's account. This requires OAuth2 setup.
+  // For now, we will simulate this by storing the connection status in Firestore.
+  
+  // This is a placeholder validation.
+  if (classCode.length < 6) {
+    throw new Error("Invalid class code format.");
+  }
+  
+  const userDocRef = doc(db, 'users', userId);
+  await updateDoc(userDocRef, {
+    'integrations.googleClassroom.connected': true,
+    'integrations.googleClassroom.classCode': classCode,
+    'integrations.googleClassroom.connectedAt': serverTimestamp(),
+  });
+
+  return { success: true };
+}

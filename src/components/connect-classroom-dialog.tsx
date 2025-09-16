@@ -16,6 +16,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { connectToGoogleClassroomAction } from '@/app/actions';
+import { useAuth } from '@/app/auth-provider';
 
 interface ConnectClassroomDialogProps {
   onConnected: () => void;
@@ -27,8 +29,13 @@ export function ConnectClassroomDialog({ onConnected, isConnected }: ConnectClas
   const [isLoading, setIsLoading] = useState(false);
   const [classCode, setClassCode] = useState('');
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleSubmit = async () => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'You must be logged in.' });
+        return;
+    }
     if (!classCode) {
       toast({
         variant: 'destructive',
@@ -38,19 +45,23 @@ export function ConnectClassroomDialog({ onConnected, isConnected }: ConnectClas
     }
     setIsLoading(true);
 
-    // In a real app, you would make an API call here to your backend
-    // to verify the code with the Google Classroom API.
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // For demonstration, we'll assume the code is valid.
-    toast({
-      title: 'Classroom Connected!',
-      description: 'You have successfully linked your Google Classroom.',
-    });
-    
-    onConnected();
-    setIsLoading(false);
-    setIsOpen(false);
+    try {
+        await connectToGoogleClassroomAction({ userId: user.uid, classCode });
+        toast({
+            title: 'Classroom Connected!',
+            description: 'You have successfully linked your Google Classroom.',
+        });
+        onConnected();
+        setIsOpen(false);
+    } catch(error: any) {
+         toast({
+            variant: 'destructive',
+            title: 'Connection Failed',
+            description: error.message || 'Could not connect to Google Classroom.',
+        });
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   return (

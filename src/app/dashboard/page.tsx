@@ -118,22 +118,22 @@ export default function DashboardPage() {
         setStats(prev => ({...prev, projects: snapshot.size}));
     });
 
+    const userDocRef = doc(db, 'users', user.uid);
+    const unsubscribeUser = onSnapshot(userDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const userData = docSnap.data();
+            setIsClassroomConnected(userData.integrations?.googleClassroom?.connected || false);
+        }
+    });
 
     return () => {
         unsubscribeCourses();
         unsubscribeAssignments();
         unsubscribeProjectSubmissions();
+        unsubscribeUser();
     };
   }, [user, loading]);
-
-  const handleConnectClassroom = () => {
-    setIsClassroomConnected(true);
-    toast({
-        title: 'Success!',
-        description: 'Your Google Classroom has been connected.',
-    });
-  }
-
+  
   // Mock data for now, will be replaced with Firestore data
   const exams: any[] = [];
   const liveClasses: any[] = [];
