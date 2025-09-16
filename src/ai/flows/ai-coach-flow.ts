@@ -11,11 +11,11 @@
  */
 
 import { ai } from '@/ai/genkit';
-import {
-  ChatWithElaraInputSchema,
-  ChatWithElaraOutputSchema,
+import type {
+  ChatWithElaraInput,
+  ChatWithElaraOutput,
 } from '@/app/schema';
-import { generate } from 'genkit';
+import { ChatWithElaraOutputSchema } from '@/app/schema';
 
 export type {
   ChatWithElaraInput,
@@ -24,9 +24,9 @@ export type {
 
 
 export async function chatWithElara(
-  input: Zod.infer<typeof ChatWithElaraInputSchema>
-): Promise<Zod.infer<typeof ChatWithElaraOutputSchema>> {
-  const llmResponse = await generate({
+  input: ChatWithElaraInput
+): Promise<ChatWithElaraOutput> {
+  const llmResponse = await ai.generate({
     model: 'googleai/gemini-1.5-flash-latest',
     prompt: [
       {
