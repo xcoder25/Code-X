@@ -41,6 +41,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Assignment, Submission } from '@/types';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { ConnectClassroomDialog } from '@/components/connect-classroom-dialog';
 
 interface Course {
   id: string;
@@ -162,9 +163,7 @@ export default function DashboardPage() {
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <div className="flex items-center justify-between">
         <h1 className="font-semibold text-3xl">Student Dashboard</h1>
-         <Button onClick={handleConnectClassroom} disabled={isClassroomConnected}>
-            {isClassroomConnected ? <><Check /> Connected</> : 'Connect to Google Classroom'}
-         </Button>
+         <ConnectClassroomDialog onConnected={() => setIsClassroomConnected(true)} isConnected={isClassroomConnected} />
       </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4 md:gap-6">
         <Card>
