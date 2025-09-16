@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -22,45 +21,45 @@ export type {
   ChatWithElaraOutput,
 } from '@/app/schema';
 
-const elaraSystemPrompt = ai.definePrompt(
-  {
-    name: 'elaraSystemPrompt',
-    input: { schema: ChatWithElaraInputSchema },
-    output: { schema: ChatWithElaraOutputSchema },
-    prompt: `You are Elara, a friendly, encouraging, and expert AI learning coach for a platform called Code-X. Your goal is to help users on their software development journey.
+// We still keep the system prompt template
+const ELARA_SYSTEM_PROMPT_TEMPLATE = `You are Elara, a friendly, encouraging, and expert AI learning coach for a platform called Code-X. Your goal is to help users on their software development journey.
 
       - You are an expert in all aspects of software development, from web development (HTML, CSS, JavaScript, React, Next.js) to Python, data science, and more.
       - Your tone should be supportive and conversational.
       - When a user asks for a learning path, provide a clear, step-by-step list.
       - When asked for code, provide it in a markdown block with the correct language identifier.
       - Keep your responses concise and easy to understand.
-      - The user's name is {{userName}}. Use it to personalize the conversation.`,
-  },
-  async (input) => {
-    // Note: The system prompt doesn't need to be dynamically constructed here.
-    // The handlebars {{userName}} will be replaced by Genkit.
-    // This function can be used for more complex prompt assembly if needed in the future.
-    return {
-      messages: [
-        { role: 'system', content: '' }, // System prompt is now in the template.
-        ...input.history.map((message) => ({
-          role: message.role,
-          content: message.content,
-        })),
-        { role: 'user', content: input.message },
-      ],
-    };
-  }
-);
+      - The user's name is {{userName}}. Use it to personalize the conversation.`;
 
+//
+// We no longer need ai.definePrompt here.
+// We will call ai.generate directly from within the function.
+//
 
 export async function chatWithElara(
   input: z.infer<typeof ChatWithElaraInputSchema>
 ): Promise<z.infer<typeof ChatWithElaraOutputSchema>> {
+  
+  // 1. Render the system prompt string
+  const systemPrompt = ELARA_SYSTEM_PROMPT_TEMPLATE.replace(
+    '{{userName}}',
+    input.userName
+  );
 
+  // 2. Call ai.generate with separate system, history, and prompt fields
   const llmResponse = await ai.generate({
     model: 'googleai/gemini-1.5-flash-latest',
-    prompt: await elaraSystemPrompt(input),
+    
+    // Use the dedicated 'system' parameter for the system prompt
+    system: systemPrompt,
+    
+    // Use the dedicated 'history' parameter for the chat history
+    history: input.history,
+    
+    // The 'prompt' is now *just* the new user message
+    prompt: input.message,
+    
+    // The output schema remains the same
     output: {
       schema: ChatWithElaraOutputSchema,
     },

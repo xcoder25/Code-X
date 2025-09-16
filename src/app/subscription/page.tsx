@@ -50,10 +50,10 @@ const plans = [
         price: "$5",
         description: "For power users who rely heavily on AI.",
         features: [
-            "All AI Essentials features",
             "Unlimited AI Coach messages",
             "Unlimited Code Analyses",
-            "Discord community access"
+            "Discord community access",
+            "Everything in AI Essentials"
         ],
         planCode: 'PLN_yyyyyyyyyyyy', // Replace with your actual Paystack Plan Code
         cta: "Upgrade to Pro",
