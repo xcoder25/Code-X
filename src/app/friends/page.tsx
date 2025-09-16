@@ -28,7 +28,7 @@ export default function FriendsPage() {
           <FriendsList type="requests" />
         </TabsContent>
         <TabsContent value="discover">
-          <DiscoverFriends />
+          <DiscoverFriends courseId="intro-to-python" courseName="Introduction to Python" />
         </TabsContent>
       </Tabs>
     </main>
