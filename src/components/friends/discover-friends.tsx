@@ -15,6 +15,7 @@ export default function DiscoverFriends() {
   const [classmates, setClassmates] = useState<User[]>([]);
   const [friendStatuses, setFriendStatuses] = useState<Map<string, Friend>>(new Map());
   const [loading, setLoading] = useState(true);
+  const pythonCourseId = 'intro-to-python'; // Hardcode a single course ID to simplify the query
 
   useEffect(() => {
     if (!user) {
@@ -23,38 +24,44 @@ export default function DiscoverFriends() {
     }
 
     async function fetchClassmates() {
-      // 1. Find all courses the current user is enrolled in
-      const enrollmentSnap = await getDocs(collection(db, 'users', user!.uid, 'enrollments'));
-      const courseIds = enrollmentSnap.docs.map(doc => doc.id);
-      
-      if (courseIds.length === 0) {
-        setLoading(false);
-        return;
+      setLoading(true);
+      try {
+        // Simplified Query: Find all enrollments for just one course.
+        // This avoids the complex `in` query that requires a composite index.
+        const enrollmentsQuery = query(collectionGroup(db, 'enrollments'), where('courseId', '==', pythonCourseId));
+        const enrollmentsSnap = await getDocs(enrollmentsQuery);
+        
+        const userIds = new Set(enrollmentsSnap.docs.map(doc => doc.ref.parent.parent!.id));
+
+        if (userIds.size === 0) {
+            setClassmates([]);
+            setLoading(false);
+            return;
+        }
+
+        // Fetch user data for all classmates (excluding self)
+        const usersData: User[] = [];
+        const userDocsQuery = query(collection(db, 'users'));
+        const userDocsSnap = await getDocs(userDocsQuery);
+
+        userDocsSnap.forEach(doc => {
+            if (userIds.has(doc.id) && doc.id !== user.uid) {
+                usersData.push({ id: doc.id, ...doc.data() } as User);
+            }
+        });
+        
+        setClassmates(usersData);
+      } catch(error) {
+        console.error("Error fetching classmates: ", error);
       }
-      
-      // 2. Find all enrollments for those courses
-      const enrollmentsQuery = query(collectionGroup(db, 'enrollments'), where('courseId', 'in', courseIds));
-      const enrollmentsSnap = await getDocs(enrollmentsQuery);
-      const userIds = new Set(enrollmentsSnap.docs.map(doc => doc.ref.parent.parent!.id));
-
-      // 3. Fetch user data for all classmates (excluding self)
-      const usersData: User[] = [];
-      const userDocsQuery = query(collection(db, 'users'), where('uid', 'in', Array.from(userIds)));
-      const userDocsSnap = await getDocs(userDocsQuery);
-
-      userDocsSnap.forEach(doc => {
-          if (user && doc.id !== user.uid) {
-              usersData.push({ id: doc.id, ...doc.data() } as User);
-          }
-      });
-      
-      setClassmates(usersData);
-      setLoading(false);
+      finally {
+        setLoading(false);
+      }
     }
 
     fetchClassmates();
 
-    // 4. Listen to friend statuses in real-time
+    // Listen to friend statuses in real-time
     const friendsQuery = query(collection(db, 'users', user.uid, 'friends'));
     const unsubscribe = onSnapshot(friendsQuery, (snapshot) => {
         const statuses = new Map<string, Friend>();
@@ -76,7 +83,7 @@ export default function DiscoverFriends() {
     <Card>
       <CardHeader>
         <CardTitle>Discover Classmates</CardTitle>
-        <CardDescription>Find and connect with other students enrolled in your courses.</CardDescription>
+        <CardDescription>Find and connect with other students enrolled in the "Introduction to Python" course.</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -93,7 +100,7 @@ export default function DiscoverFriends() {
           <div className="text-center py-12 text-muted-foreground">
             <Users className="mx-auto h-12 w-12" />
             <p className="mt-4">
-              No other students found in your courses. Enroll in a course to find classmates!
+              No other students found in the Python course.
             </p>
           </div>
         )}
