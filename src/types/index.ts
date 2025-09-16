@@ -1,4 +1,5 @@
 
+
 import type { Timestamp } from 'firebase/firestore';
 
 export interface ChatMessage {
@@ -64,6 +65,8 @@ export interface User {
     photoURL?: string | null;
     status?: 'sent' | 'received' | 'accepted' | null; // For friend status
     course?: string; // For discovery context
+    plan?: string;
+    paystackCustomerCode?: string;
 }
 
 export interface Friend {

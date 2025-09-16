@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db, storage } from '@/lib/firebase';
@@ -1127,4 +1128,77 @@ export async function seedInitialCoursesAction() {
     }
 
     return { coursesAdded };
+}
+
+// --- Paystack Subscription Action ---
+
+const createSubscriptionSchema = z.object({
+    userId: z.string(),
+    planCode: z.string(),
+    planName: z.string(),
+});
+
+export async function createSubscriptionAction(input: z.infer<typeof createSubscriptionSchema>) {
+    const { userId, planCode, planName } = createSubscriptionSchema.parse(input);
+
+    const userDocRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userDocRef);
+
+    if (!userDoc.exists()) {
+        throw new Error('User not found.');
+    }
+
+    const userData = userDoc.data();
+    let paystackCustomerCode = userData.paystackCustomerCode;
+
+    // 1. Create a Paystack customer if one doesn't exist
+    if (!paystackCustomerCode) {
+        const customerResponse = await fetch('https://api.paystack.co/customer', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: userData.email,
+                first_name: userData.firstName,
+                last_name: userData.lastName,
+            }),
+        });
+
+        const customerData = await customerResponse.json();
+        if (!customerResponse.ok) {
+            throw new Error(customerData.message || 'Failed to create Paystack customer.');
+        }
+
+        paystackCustomerCode = customerData.data.customer_code;
+        await updateDoc(userDocRef, { paystackCustomerCode });
+    }
+
+    // 2. Create the subscription
+    const subscriptionResponse = await fetch('https://api.paystack.co/subscription', {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            customer: paystackCustomerCode,
+            plan: planCode,
+        }),
+    });
+
+    const subscriptionData = await subscriptionResponse.json();
+    if (!subscriptionResponse.ok) {
+        throw new Error(subscriptionData.message || 'Failed to create subscription.');
+    }
+
+    // 3. Update user's plan in Firestore
+    await updateDoc(userDocRef, {
+        plan: planName,
+        subscriptionId: subscriptionData.data.subscription_code,
+        subscriptionStatus: 'active',
+    });
+
+    return { success: true };
 }
