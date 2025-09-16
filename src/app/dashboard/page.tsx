@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -23,6 +24,7 @@ import {
   Lightbulb,
   Video,
   Check,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   Table,
@@ -50,6 +52,11 @@ interface Course {
   progress: number;
 }
 
+interface ClassroomIntegration {
+    connected: boolean;
+    classCode: string;
+}
+
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -57,7 +64,7 @@ export default function DashboardPage() {
   const [pendingAssignmentsCount, setPendingAssignmentsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ courses: 0, assignments: 0, projects: 0 });
-  const [isClassroomConnected, setIsClassroomConnected] = useState(false);
+  const [classroomIntegration, setClassroomIntegration] = useState<ClassroomIntegration | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -122,7 +129,7 @@ export default function DashboardPage() {
     const unsubscribeUser = onSnapshot(userDocRef, (docSnap) => {
         if (docSnap.exists()) {
             const userData = docSnap.data();
-            setIsClassroomConnected(userData.integrations?.googleClassroom?.connected || false);
+            setClassroomIntegration(userData.integrations?.googleClassroom || null);
         }
     });
 
@@ -163,7 +170,10 @@ export default function DashboardPage() {
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <div className="flex items-center justify-between">
         <h1 className="font-semibold text-3xl">Student Dashboard</h1>
-         <ConnectClassroomDialog onConnected={() => setIsClassroomConnected(true)} isConnected={isClassroomConnected} />
+        <ConnectClassroomDialog 
+            onConnected={() => {}} 
+            isConnected={classroomIntegration?.connected || false} 
+        />
       </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4 md:gap-6">
         <Card>
@@ -217,6 +227,21 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      
+        {classroomIntegration?.connected && (
+        <Card className="bg-green-500/10 border-green-500/30">
+            <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+                <CheckCircle2 className="h-8 w-8 text-green-600" />
+                <div>
+                    <CardTitle className="text-green-800 dark:text-green-300">Connected to Google Classroom</CardTitle>
+                    <CardDescription className="text-green-700/80 dark:text-green-300/80">
+                        Your assignments and grades will sync automatically. Class Code: <span className="font-semibold">{classroomIntegration.classCode}</span>
+                    </CardDescription>
+                </div>
+            </CardHeader>
+        </Card>
+        )}
+
 
        <Card>
         <CardHeader>
@@ -448,3 +473,4 @@ export default function DashboardPage() {
     </main>
   );
 }
+
