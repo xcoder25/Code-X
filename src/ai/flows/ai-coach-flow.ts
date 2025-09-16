@@ -3,32 +3,53 @@
 
 /**
  * @fileOverview A conversational AI coach named Elara.
- * This is a placeholder implementation that does not use Genkit.
+ * This file implements the logic for a conversational AI agent using Genkit.
  *
  * - chatWithElara - A function that handles the conversational chat with Elara.
  * - ChatWithElaraInput - The input type for the chatWithElara function.
  * - ChatWithElaraOutput - The return type for the chatWithElara function.
  */
 
-import type { ChatWithElaraInput, ChatWithElaraOutput } from '@/app/schema';
-export type { ChatWithElaraInput, ChatWithElaraOutput };
+import { ai } from '@/ai/genkit';
+import {
+  ChatWithElaraInputSchema,
+  ChatWithElaraOutputSchema,
+} from '@/app/schema';
+import { generate } from 'genkit';
+
+export type {
+  ChatWithElaraInput,
+  ChatWithElaraOutput,
+} from '@/app/schema';
 
 
 export async function chatWithElara(
-  input: ChatWithElaraInput,
-): Promise<ChatWithElaraOutput> {
-  // This is a mock implementation.
-  // In a real scenario, you would call your chosen AI model here.
-  
-  const isLearningPath = input.message.toLowerCase().includes('learning path');
-  
-  if (isLearningPath) {
-    return {
-        reply: `1. Understand the basics of HTML.
-2. Learn CSS for styling.
-3. Dive into JavaScript for interactivity.`
-    };
-  }
+  input: Zod.infer<typeof ChatWithElaraInputSchema>
+): Promise<Zod.infer<typeof ChatWithElaraOutputSchema>> {
+  const llmResponse = await generate({
+    model: 'googleai/gemini-1.5-flash-latest',
+    prompt: [
+      {
+        role: 'system',
+        content: `You are Elara, a friendly, encouraging, and expert AI learning coach for a platform called Code-X. Your goal is to help users on their software development journey.
 
-  return { reply: `This is a mock response to your message: "${input.message}". The AI implementation needs to be connected.` };
+          - You are an expert in all aspects of software development, from web development (HTML, CSS, JavaScript, React, Next.js) to Python, data science, and more.
+          - Your tone should be supportive and conversational.
+          - When a user asks for a learning path, provide a clear, step-by-step list.
+          - When asked for code, provide it in a markdown block with the correct language identifier.
+          - Keep your responses concise and easy to understand.
+          - The user's name is ${input.userName}. Use it to personalize the conversation.`,
+      },
+      ...input.history.map((message) => ({
+        role: message.role,
+        content: [{ text: message.content }],
+      })),
+      { role: 'user', content: [{ text: input.message }] },
+    ],
+    output: {
+      schema: ChatWithElaraOutputSchema,
+    },
+  });
+
+  return { reply: llmResponse.output!.reply };
 }
