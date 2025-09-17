@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from 'next/image';
@@ -6,7 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { User } from 'firebase/auth';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Cpu, StarOfLife } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 interface AdminIdCardProps {
   admin: User;
@@ -51,7 +50,7 @@ export default function AdminIdCard({ admin }: AdminIdCardProps) {
                         </AvatarFallback>
                     </Avatar>
                      <div className="absolute bottom-2 right-2 w-12 h-12 bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 rounded-full flex items-center justify-center opacity-80">
-                        <StarOfLife className="text-white/70 h-8 w-8" />
+                        <ShieldCheck className="text-white/70 h-8 w-8" />
                     </div>
                 </div>
 
