@@ -175,7 +175,7 @@ export default function AppSidebar() {
           </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/settings')}>
-              <LoadingLink href="#">
+              <LoadingLink href="/admin/settings">
                 <Settings />
                 <span>Settings</span>
               </LoadingLink>
@@ -214,3 +214,5 @@ export default function AppSidebar() {
     </Sidebar>
   );
 }
+
+    
