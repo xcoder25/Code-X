@@ -8,6 +8,7 @@ import {
   Settings,
   ClipboardCheck,
   MessageSquare,
+  BarChart,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -81,6 +82,14 @@ export default function TeacherAppSidebar() {
               <LoadingLink href="/teacher/courses">
                 <BookOpen />
                 <span>My Courses</span>
+              </LoadingLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/teacher/analytics')}>
+              <LoadingLink href="/teacher/analytics">
+                <BarChart />
+                <span>Analytics</span>
               </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>

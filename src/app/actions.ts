@@ -30,6 +30,7 @@ import { sendMessageFormSchema } from './schema';
 import { getDownloadURL, ref, uploadString, deleteObject } from 'firebase/storage';
 import { auth } from '@/lib/firebase';
 import { updateProfile } from 'firebase/auth';
+import { generateContent, GenerateContentInput, GenerateContentOutput } from '@/ai/flows/ai-content-generator';
 
 
 export async function sendMessageAction(
@@ -1193,4 +1194,9 @@ export async function createSubscriptionAction(input: z.infer<typeof createSubsc
     });
 
     return { success: true };
+}
+
+// --- AI Content Generation ---
+export async function generateContentAction(input: GenerateContentInput): Promise<GenerateContentOutput> {
+  return generateContent(input);
 }
