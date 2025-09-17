@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -112,7 +111,7 @@ export default function TeacherAppSidebar() {
           </SidebarMenuItem>
            <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname.startsWith('/teacher/settings')}>
-              <LoadingLink href="#">
+              <LoadingLink href="/teacher/settings">
                 <Settings />
                 <span>Settings</span>
               </LoadingLink>
