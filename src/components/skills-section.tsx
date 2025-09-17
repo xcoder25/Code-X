@@ -1,34 +1,34 @@
 
-import { collection, getDocs, query, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { ArrowRight, BookOpenCheck } from 'lucide-react';
+import { ArrowRight, BookOpenCheck, Lock } from 'lucide-react';
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 
-async function getFeaturedCourses() {
-    const coursesRef = collection(db, "courses");
-    const q = query(coursesRef, limit(3)); 
-    const querySnapshot = await getDocs(q);
 
-    const courses = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            title: data.title,
-            description: data.description,
-            tags: data.tags || [],
-            premium: data.premium || false,
-        };
-    });
-
-    return courses;
-}
+const featuredCourses = [
+    {
+        id: 'web-dev-bootcamp',
+        title: 'Web Development Bootcamp',
+        description: 'A comprehensive bootcamp covering HTML, CSS, JavaScript, and everything you need to become a web developer.',
+        premium: false,
+    },
+    {
+        id: 'intro-to-python',
+        title: 'Introduction to Python',
+        description: 'Learn the fundamentals of Python, one of the most popular programming languages in the world.',
+        premium: false,
+    },
+    {
+        id: 'advanced-react',
+        title: 'Advanced React & State Management',
+        description: 'Take your React skills to the next level by mastering advanced concepts and state management.',
+        premium: true,
+    }
+];
 
 
 export default async function SkillsSection() {
-  const featuredCourses = await getFeaturedCourses();
 
   return (
     <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
@@ -49,7 +49,7 @@ export default async function SkillsSection() {
                 <Card key={course.id} className="flex flex-col">
                     <CardHeader>
                     <div className="flex justify-between items-start mb-2">
-                        <BookOpenCheck className="h-8 w-8 text-primary" />
+                        {course.premium ? <Lock className="h-8 w-8 text-primary" /> : <BookOpenCheck className="h-8 w-8 text-primary" />}
                         {course.premium && <Badge variant="premium">Premium</Badge>}
                     </div>
                     <CardTitle>{course.title}</CardTitle>
