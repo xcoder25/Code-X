@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { User } from '@/types';
 import { Badge } from './ui/badge';
+import { format } from 'date-fns';
 
 interface StudentIdCardProps {
   user: User;
@@ -14,6 +15,11 @@ export default function StudentIdCard({ user }: StudentIdCardProps) {
 
   // Generate a unique student ID from the UID
   const studentId = `CDX-${user.uid.substring(0, 8).toUpperCase()}`;
+  
+  const issuedDate = new Date();
+  const expiryDate = new Date();
+  expiryDate.setMonth(issuedDate.getMonth() + 6);
+
 
   return (
     <div className="max-w-lg w-full bg-slate-900 rounded-xl shadow-lg text-white font-sans overflow-hidden group">
@@ -52,6 +58,10 @@ export default function StudentIdCard({ user }: StudentIdCardProps) {
                     <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Plan</p>
                     <p className="font-semibold text-lg">{user.plan || 'Free'}</p>
                 </div>
+                <div className="col-span-2">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Validity</p>
+                    <p className="font-mono text-sm">Issued: {format(issuedDate, 'MM/yyyy')} | Expires: {format(expiryDate, 'MM/yyyy')}</p>
+                </div>
             </div>
           </div>
         </div>
@@ -59,7 +69,7 @@ export default function StudentIdCard({ user }: StudentIdCardProps) {
       
       {/* Footer */}
       <div className="p-6 bg-black/20 flex items-center justify-between">
-         <Image src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=codex-user-${user.uid}&bgcolor=1e293b&color=ffffff&qzone=1" width={60} height={60} alt="QR Code" className="rounded-md" />
+         <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=codex-user-${user.uid}&bgcolor=1e293b&color=ffffff&qzone=1`} width={60} height={60} alt="QR Code" className="rounded-md" />
          <div className="text-right">
             <p className="text-xs text-slate-400">Issued: {new Date().getFullYear()}</p>
             <p className="text-xs text-slate-400 font-semibold">Official Student Identification</p>

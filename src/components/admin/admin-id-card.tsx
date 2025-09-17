@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -99,12 +100,6 @@ export default function AdminIdCard({ admin }: AdminIdCardProps) {
                   Access Level
                 </p>
                 <p className="font-mono text-base text-slate-200">Level X</p>
-              </div>
-               <div className="col-span-2">
-                <p className="uppercase font-semibold text-slate-400">
-                  Validity
-                </p>
-                <p className="font-mono text-base text-slate-200">Issued: 07/2024 | Expires: 07/2028</p>
               </div>
             </div>
           </div>
