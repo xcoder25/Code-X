@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -17,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -25,9 +26,9 @@ interface ScheduleEvent {
     id: string;
     title: string;
     courseTitle: string;
-    date: string | Date;
-    time: string;
+    date: Date;
     type: 'Assignment' | 'Exam' | 'Live Session';
+    actionUrl?: string;
 }
 
 export default function SchedulePage() {
@@ -35,8 +36,21 @@ export default function SchedulePage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        setLoading(true);
+        const allEvents: ScheduleEvent[] = [];
+        let assignmentLoaded = false, examsLoaded = false, liveClassesLoaded = false;
+        
+        const updateSchedule = () => {
+            if (assignmentLoaded && examsLoaded && liveClassesLoaded) {
+                allEvents.sort((a,b) => a.date.getTime() - b.date.getTime());
+                setSchedule(allEvents);
+                setLoading(false);
+            }
+        }
+
         const assignmentsQuery = query(collection(db, 'assignments'), orderBy('dueDate', 'asc'));
         const examsQuery = query(collection(db, 'exams'), orderBy('createdAt', 'desc'));
+        const liveClassesQuery = query(collection(db, 'liveClasses'), orderBy('scheduledAt', 'asc'));
 
         const unsubAssignments = onSnapshot(assignmentsQuery, (snapshot) => {
             const assignmentEvents = snapshot.docs.map(doc => {
@@ -45,18 +59,16 @@ export default function SchedulePage() {
                     id: doc.id,
                     title: data.title,
                     courseTitle: data.courseTitle,
-                    date: data.dueDate.toDate().toLocaleDateString(),
-                    time: "11:59 PM",
-                    type: 'Assignment'
+                    date: (data.dueDate as Timestamp).toDate(),
+                    type: 'Assignment',
+                    actionUrl: '/assignments'
                 } as ScheduleEvent;
             });
-            // This is a bit inefficient, but ensures we merge data from all sources
-            setSchedule(currentSchedule => {
-                const otherEvents = currentSchedule.filter(e => e.type !== 'Assignment');
-                const newSchedule = [...otherEvents, ...assignmentEvents].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-                return newSchedule;
-            });
-             if (loading) setLoading(false);
+            // Replace old assignment events
+            const otherEvents = allEvents.filter(e => e.type !== 'Assignment');
+            allEvents.splice(0, allEvents.length, ...otherEvents, ...assignmentEvents);
+            assignmentLoaded = true;
+            updateSchedule();
         });
 
         const unsubExams = onSnapshot(examsQuery, (snapshot) => {
@@ -66,30 +78,41 @@ export default function SchedulePage() {
                     id: doc.id,
                     title: data.title,
                     courseTitle: data.courseTitle,
-                    date: 'TBD',
-                    time: 'N/A',
-                    type: 'Exam'
+                    date: (data.createdAt as Timestamp).toDate(), // Using createdAt as stand-in for now
+                    type: 'Exam',
+                    actionUrl: `/exams/${doc.id}`
                 } as ScheduleEvent;
             });
-            setSchedule(currentSchedule => {
-                const otherEvents = currentSchedule.filter(e => e.type !== 'Exam');
-                const newSchedule = [...otherEvents, ...examEvents].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-                return newSchedule;
-            });
-             if (loading) setLoading(false);
+            const otherEvents = allEvents.filter(e => e.type !== 'Exam');
+            allEvents.splice(0, allEvents.length, ...otherEvents, ...examEvents);
+            examsLoaded = true;
+            updateSchedule();
         });
-        
-        // Initial load complete after first data comes in
-        const initialLoad = onSnapshot(assignmentsQuery, () => {
-          if (loading) setLoading(false);
-          initialLoad(); // Unsubscribe after first run
-        })
+
+        const unsubLiveClasses = onSnapshot(liveClassesQuery, (snapshot) => {
+            const liveClassEvents = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    title: data.title,
+                    courseTitle: data.courseTitle,
+                    date: (data.scheduledAt as Timestamp).toDate(),
+                    type: 'Live Session',
+                    actionUrl: data.meetingUrl
+                } as ScheduleEvent;
+            });
+            const otherEvents = allEvents.filter(e => e.type !== 'Live Session');
+            allEvents.splice(0, allEvents.length, ...otherEvents, ...liveClassEvents);
+            liveClassesLoaded = true;
+            updateSchedule();
+        });
 
         return () => {
             unsubAssignments();
             unsubExams();
+            unsubLiveClasses();
         }
-    }, [loading]);
+    }, []);
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -130,8 +153,8 @@ export default function SchedulePage() {
                     <TableRow key={`${event.type}-${event.id}`}>
                     <TableCell className="font-medium">{event.title}</TableCell>
                     <TableCell>{event.courseTitle}</TableCell>
-                    <TableCell>{event.date.toString()}</TableCell>
-                    <TableCell>{event.time}</TableCell>
+                    <TableCell>{event.date.toLocaleDateString()}</TableCell>
+                    <TableCell>{event.type === 'Assignment' ? '11:59 PM' : event.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</TableCell>
                     <TableCell>
                         <Badge
                         variant={
@@ -146,19 +169,11 @@ export default function SchedulePage() {
                         </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                        {event.type === 'Live Session' && (
-                            <Button asChild size="sm">
-                                <Link href={'#'} target="_blank">Join Session</Link>
-                            </Button>
-                        )}
-                        {event.type === 'Assignment' && (
-                            <Button asChild variant="outline" size="sm">
-                                <Link href="/assignments">View Assignment</Link>
-                            </Button>
-                        )}
-                        {event.type === 'Exam' && (
-                            <Button asChild variant="outline" size="sm">
-                                <Link href={`/exams/${event.id}`}>Begin Exam</Link>
+                        {event.actionUrl && (
+                             <Button asChild variant="outline" size="sm">
+                                <Link href={event.actionUrl} target={event.type === 'Live Session' ? '_blank' : '_self'}>
+                                    {event.type === 'Live Session' ? 'Join Session' : 'View Details'}
+                                </Link>
                             </Button>
                         )}
                     </TableCell>

@@ -1200,3 +1200,43 @@ export async function createSubscriptionAction(input: z.infer<typeof createSubsc
 export async function generateContentAction(input: GenerateContentInput): Promise<GenerateContentOutput> {
   return generateContent(input);
 }
+
+
+// --- Live Class Actions ---
+const liveClassFormSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters."),
+  courseId: z.string().min(1, "Please select a course."),
+  scheduledAt: z.date(),
+  meetingUrl: z.string().url("Please enter a valid meeting URL."),
+});
+
+export async function createLiveClassAction(
+  data: z.infer<typeof liveClassFormSchema>
+) {
+  const parsed = liveClassFormSchema.safeParse(data);
+  if (!parsed.success) {
+    throw new Error('Invalid live class data.');
+  }
+
+  const { title, courseId, scheduledAt, meetingUrl } = parsed.data;
+
+  const courseDocRef = doc(db, 'courses', courseId);
+  const courseDoc = await getDoc(courseDocRef);
+
+  if (!courseDoc.exists()) {
+    throw new Error('Selected course not found.');
+  }
+  const courseTitle = courseDoc.data().title;
+
+
+  await addDoc(collection(db, 'liveClasses'), {
+    title,
+    courseId,
+    courseTitle,
+    scheduledAt: Timestamp.fromDate(scheduledAt),
+    meetingUrl,
+    createdAt: serverTimestamp(),
+  });
+
+  return { success: true };
+}

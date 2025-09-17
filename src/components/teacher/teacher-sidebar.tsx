@@ -9,6 +9,7 @@ import {
   ClipboardCheck,
   MessageSquare,
   BarChart,
+  Calendar,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -82,6 +83,14 @@ export default function TeacherAppSidebar() {
               <LoadingLink href="/teacher/courses">
                 <BookOpen />
                 <span>My Courses</span>
+              </LoadingLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/teacher/schedule')}>
+              <LoadingLink href="/teacher/schedule">
+                <Calendar />
+                <span>Schedule</span>
               </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
