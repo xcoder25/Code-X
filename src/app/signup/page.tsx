@@ -74,7 +74,7 @@ export default function SignupPage() {
       });
 
       // Redirect based on role
-      const redirectPath = role === 'teacher' ? '/teacher/dashboard' : '/dashboard';
+      const redirectPath = role === 'teacher' ? '/teacher/login' : '/dashboard';
       router.push(redirectPath);
 
     } catch (error: any) {
