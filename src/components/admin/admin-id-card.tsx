@@ -12,6 +12,7 @@ interface AdminIdCardProps {
 export default function AdminIdCard({ admin }: AdminIdCardProps) {
 
   const adminId = `ADMN-${admin.uid.substring(0, 6).toUpperCase()}`;
+  const ceoName = "Jahsfreedman Moffat";
 
   return (
     <div className="relative max-w-lg w-full bg-gray-900 rounded-2xl shadow-2xl text-white font-sans overflow-hidden group">
@@ -36,13 +37,13 @@ export default function AdminIdCard({ admin }: AdminIdCardProps) {
           <Avatar className="h-32 w-32 border-4 border-amber-400/50 shrink-0 shadow-lg">
             <AvatarImage src={admin.photoURL || undefined} data-ai-hint="ceo person" />
             <AvatarFallback className="text-5xl text-gray-800 bg-gray-300">
-              {admin.displayName?.charAt(0) || 'A'}
+              {ceoName?.charAt(0) || 'A'}
             </AvatarFallback>
           </Avatar>
 
           <div className="text-center md:text-left w-full">
             <p className="text-xs font-semibold uppercase tracking-widest text-amber-400/80">CEO / Founder</p>
-            <h3 className="text-3xl font-bold tracking-tight text-gray-50">{admin.displayName}</h3>
+            <h3 className="text-3xl font-bold tracking-tight text-gray-50">{ceoName}</h3>
             
             <div className="mt-4 text-left">
                 <p className="text-xs font-semibold uppercase tracking-widest text-amber-400/80">Admin ID</p>
