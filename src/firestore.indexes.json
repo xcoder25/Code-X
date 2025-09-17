@@ -17,6 +17,13 @@
         { "fieldPath": "courseId", "order": "ASCENDING" }
       ]
     },
+     {
+      "collectionGroup": "examSubmissions",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "examId", "order": "ASCENDING" }
+      ]
+    },
     {
       "collectionGroup": "friends",
       "queryScope": "COLLECTION_GROUP",

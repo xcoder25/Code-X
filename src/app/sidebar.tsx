@@ -167,7 +167,7 @@ export default function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.startsWith('/exams')}>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/exams') || pathname.startsWith('/ai-tutor')}>
               <LoadingLink href="/exams">
                 <FileQuestion />
                 <span>Exams</span>

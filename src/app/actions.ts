@@ -26,6 +26,7 @@ import { z } from 'zod';
 import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/analyze-code';
 import { chatWithElara, ChatWithElaraOutput, ChatWithElaraInput } from '@/ai/flows/ai-coach-flow';
 import { interviewPrep, InterviewPrepOutput, InterviewPrepInput } from '@/ai/flows/interview-prep-flow';
+import { tutorMeAction, TutorMeInput, TutorMeOutput } from '@/ai/flows/tutor-me-flow';
 import { sendMessageFormSchema } from './schema';
 import { getDownloadURL, ref, uploadString, deleteObject } from 'firebase/storage';
 import { auth } from '@/lib/firebase';
@@ -356,11 +357,11 @@ export async function submitExamAction(
         examTitle: examDoc.data().title,
         answers,
         submittedAt: serverTimestamp(),
-        status: 'Pending Review',
+        status: 'Submitted',
         grade: null
     });
 
-    return { success: true };
+    return { success: true, submissionId: submissionRef.id };
 }
 
 
@@ -378,6 +379,9 @@ export async function interviewPrepAction(input: InterviewPrepInput): Promise<In
     return interviewPrep(input);
 }
 
+export async function tutorMe(input: TutorMeInput): Promise<TutorMeOutput> {
+    return tutorMeAction(input);
+}
 
 const submitAssignmentSchema = z.object({
   assignmentId: z.string(),
