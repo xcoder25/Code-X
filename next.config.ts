@@ -30,6 +30,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'barcode.tec-it.com',
+        port: '',
+        pathname: '/**',
+      }
     ],
   },
 };
