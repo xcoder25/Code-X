@@ -7,7 +7,7 @@ import { User } from 'firebase/auth';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Chip } from 'lucide-react';
+import { Cpu } from 'lucide-react';
 
 interface AdminIdCardProps {
   admin: User;
@@ -65,7 +65,7 @@ export default function AdminIdCard({ admin }: AdminIdCardProps) {
                 </div>
 
                  <div className="flex justify-start items-center gap-3">
-                    <Chip className="h-10 w-10 text-amber-400" />
+                    <Cpu className="h-10 w-10 text-amber-400" />
                     <p className="text-[8px] font-mono text-gray-400 max-w-24">AUTHORIZED PERSONNEL IDENTIFICATION CX-10</p>
                 </div>
             </div>
