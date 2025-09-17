@@ -100,6 +100,12 @@ export default function AdminIdCard({ admin }: AdminIdCardProps) {
                 </p>
                 <p className="font-mono text-base text-slate-200">Level X</p>
               </div>
+               <div className="col-span-2">
+                <p className="uppercase font-semibold text-slate-400">
+                  Validity
+                </p>
+                <p className="font-mono text-base text-slate-200">Issued: 07/2024 | Expires: 07/2028</p>
+              </div>
             </div>
           </div>
         </div>
@@ -136,7 +142,7 @@ export default function AdminIdCard({ admin }: AdminIdCardProps) {
 
             <div className="text-center text-[10px] text-slate-500">
               <p>
-                This card is the property of Code-X Academy. If found, please return to our headquarters or contact security.
+                If found, please return to Code-X Academy headquarters.
               </p>
               <p className="font-mono mt-1">www.codex.com</p>
             </div>
