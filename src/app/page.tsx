@@ -4,6 +4,8 @@ import { BookOpen, Target, Code, Users } from 'lucide-react';
 import Image from 'next/image';
 import LandingPageFooter from '@/components/landing-page-footer';
 import SkillsSection from '@/components/skills-section';
+import HowItWorks from '@/components/landing/how-it-works';
+import Testimonials from '@/components/landing/testimonials';
 
 export default function LandingPage() {
   return (
@@ -51,6 +53,9 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+        
+        <HowItWorks />
+
         <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-background">
           <div className="container px-4 md:px-6">
             <div className="grid items-center gap-6 lg:grid-cols-3 lg:gap-12">
@@ -104,7 +109,11 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+        
+        <Testimonials />
+
         <SkillsSection />
+
       </main>
       <LandingPageFooter />
     </div>
