@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -164,7 +165,7 @@ export default function TeacherSchedulePage() {
                             <TableCell className="text-right">
                                 {event.actionUrl && (
                                     <Button asChild variant="outline" size="sm">
-                                        <Link href={event.actionUrl} target="_blank">
+                                        <Link href={event.actionUrl} target={event.type === 'Live Session' ? '_blank' : '_self'}>
                                             {event.type === 'Live Session' ? 'Join Session' : 'View Details'}
                                         </Link>
                                     </Button>
