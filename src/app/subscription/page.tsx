@@ -35,7 +35,7 @@ const plans = [
     },
     {
         name: "AI Essentials",
-        price: "$3",
+        price: "$24",
         description: "For learners who need regular AI assistance.",
         features: [
             "All Free features",
@@ -50,7 +50,7 @@ const plans = [
     },
      {
         name: "AI Pro",
-        price: "$5",
+        price: "$30",
         description: "For power users preparing for a career.",
         features: [
             "Unlimited AI Coach messages",
