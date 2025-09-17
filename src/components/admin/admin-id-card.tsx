@@ -6,7 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { User } from 'firebase/auth';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Cpu } from 'lucide-react';
 
 interface AdminIdCardProps {
   admin: User;
@@ -113,15 +113,13 @@ export default function AdminIdCard({ admin }: AdminIdCardProps) {
           <div className="w-full h-12 bg-black mt-8"></div>
 
           <div className="p-6 flex-1 flex flex-col justify-between">
-            <div className="space-y-4">
+            <div className="space-y-4 text-center">
                 <Image src="https://barcode.tec-it.com/barcode.ashx?data=CODE-X-CEO-001&code=Code128&translate-esc=true&bgcolor=1e293b&color=ffffff" width={280} height={50} alt="Barcode" className="mx-auto" />
-                <Image
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://www.codex.com&bgcolor=1e293b&color=ffffff&qzone=1`}
-                    width={80}
-                    height={80}
-                    alt="QR Code"
-                    className="rounded-lg mx-auto border-2 border-slate-700"
-                />
+                <div className="font-mono text-xs text-slate-400 space-y-1">
+                    <p>www.codex.com</p>
+                    <p>ceo@codex.com</p>
+                    <p>+234-XXX-XXX-XXXX</p>
+                </div>
             </div>
             
             <div>
@@ -139,7 +137,6 @@ export default function AdminIdCard({ admin }: AdminIdCardProps) {
               <p>
                 If found, please return to Code-X Academy headquarters.
               </p>
-              <p className="font-mono mt-1">www.codex.com</p>
             </div>
           </div>
         </div>
