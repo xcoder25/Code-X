@@ -5,6 +5,7 @@ import Image from 'next/image';
 import LandingPageFooter from '@/components/landing-page-footer';
 import SkillsSection from '@/components/skills-section';
 import HowItWorks from '@/components/landing/how-it-works';
+import Testimonials from '@/components/landing/testimonials';
 
 export default function LandingPage() {
   return (
@@ -111,6 +112,7 @@ export default function LandingPage() {
         
         <SkillsSection />
 
+        <Testimonials />
       </main>
       <LandingPageFooter />
     </div>
