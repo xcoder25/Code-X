@@ -26,6 +26,7 @@ import { updateUserProfileAction, updateNotificationSettingsAction } from '../ac
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import StudentIdCard from '@/components/student-id-card';
 
 function DiscordIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -152,11 +153,10 @@ export default function SettingsPage() {
       <div className="flex items-center">
         <h1 className="font-semibold text-3xl">Settings</h1>
       </div>
-      <p className="text-muted-foreground">
-        Manage your account settings, preferences, and integrations.
-      </p>
 
-      <div className="grid gap-6">
+      {user && dbUser && <StudentIdCard user={dbUser} />}
+
+      <div className="grid gap-6 mt-6">
         <Card>
           <Form {...profileForm}>
             <form onSubmit={profileForm.handleSubmit(handleProfileSubmit)}>
@@ -310,7 +310,8 @@ function SettingsPageSkeleton() {
             <p className="text-muted-foreground">
                 Manage your account settings, preferences, and integrations.
             </p>
-             <div className="grid gap-6">
+            <Skeleton className="h-56 w-full max-w-lg rounded-xl" />
+             <div className="grid gap-6 mt-6">
                 <Card>
                     <CardHeader>
                         <CardTitle>Profile</CardTitle>
