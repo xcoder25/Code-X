@@ -28,6 +28,8 @@ import { db } from '@/lib/firebase';
 import { collection, onSnapshot, limit, orderBy, query } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAdminAuth } from '../admin-auth-provider';
+import AdminIdCard from '@/components/admin/admin-id-card';
 
 interface User {
     uid: string;
@@ -41,6 +43,7 @@ interface User {
 }
 
 export default function AdminPage() {
+    const { user: adminUser } = useAdminAuth();
     const [users, setUsers] = useState<User[]>([]);
     const [totalUsers, setTotalUsers] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -70,12 +73,15 @@ export default function AdminPage() {
             unsubscribeRecent();
             unsubscribeTotal();
         };
-    }, []);
+    }, [loading]);
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
         <h2 className="text-3xl font-bold tracking-tight">Admin Dashboard</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        
+        {adminUser && <AdminIdCard admin={adminUser} />}
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-6">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
