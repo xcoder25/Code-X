@@ -3,79 +3,73 @@ import { collection, getDocs, query, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, BookOpenCheck } from 'lucide-react';
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
 
-async function getUniqueTags() {
+async function getFeaturedCourses() {
     const coursesRef = collection(db, "courses");
-    const q = query(coursesRef, limit(50)); // Limit to 50 courses to find tags
+    const q = query(coursesRef, limit(3)); 
     const querySnapshot = await getDocs(q);
 
-    const allTags = new Set<string>();
-    querySnapshot.forEach((doc) => {
-        const tags = doc.data().tags;
-        if (Array.isArray(tags)) {
-            // Filter out "Premium" tag from being displayed as a skill
-            tags.filter(tag => tag.toLowerCase() !== 'premium').forEach(tag => allTags.add(tag));
-        }
+    const courses = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            title: data.title,
+            description: data.description,
+            tags: data.tags || [],
+            premium: data.premium || false,
+        };
     });
 
-    const technicalSkills = ["Python", "JavaScript", "HTML", "CSS", "Fullstack", "React", "Next.js", "TypeScript"];
-    const analyticalSkills = ["Data Science", "Machine Learning", "SQL", "Data Analytics"];
-    
-    const techResult: string[] = [];
-    const analyticalResult: string[] = [];
-    const otherResult: string[] = [];
-
-    allTags.forEach(tag => {
-        if (technicalSkills.includes(tag)) {
-            techResult.push(tag);
-        } else if (analyticalSkills.includes(tag)) {
-            analyticalResult.push(tag);
-        } else {
-            otherResult.push(tag);
-        }
-    });
-
-    return {
-        technical: techResult,
-        analytical: analyticalResult,
-        other: otherResult
-    };
+    return courses;
 }
 
 
 export default async function SkillsSection() {
-  const tags = await getUniqueTags();
-  const allSkills = [...tags.technical, ...tags.analytical, ...tags.other];
+  const featuredCourses = await getFeaturedCourses();
 
   return (
     <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
       <div className="container px-4 md:px-6">
         <div className="flex flex-col items-center justify-center space-y-4 text-center">
           <div className="space-y-3">
-             <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Top Skills</div>
+             <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Featured Courses</div>
             <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-              Master In-Demand Technologies
+              Start Your Learning Journey
             </h2>
             <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-              Our curriculum is designed to equip you with the most sought-after skills in the tech industry. Explore the topics we cover.
+              Our curriculum is designed to equip you with the most sought-after skills in the tech industry. Explore some of our popular courses.
             </p>
           </div>
         </div>
-        <div className="mx-auto max-w-5xl py-12">
-            <div className="flex flex-wrap justify-center gap-4">
-                {allSkills.map((skill) => (
-                    <Badge key={skill} variant="secondary" className="text-lg px-6 py-2 cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors">
-                        {skill}
-                    </Badge>
-                ))}
-            </div>
-             <div className="text-center mt-12">
-                <Link href="/courses" className="inline-flex items-center text-primary hover:underline">
-                    Explore all courses <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-             </div>
+        <div className="mx-auto max-w-5xl py-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {featuredCourses.map((course) => (
+                <Card key={course.id} className="flex flex-col">
+                    <CardHeader>
+                    <div className="flex justify-between items-start mb-2">
+                        <BookOpenCheck className="h-8 w-8 text-primary" />
+                        {course.premium && <Badge variant="premium">Premium</Badge>}
+                    </div>
+                    <CardTitle>{course.title}</CardTitle>
+                    <CardDescription>{course.description}</CardDescription>
+                    </CardHeader>
+                    <CardFooter className="flex-grow flex items-end">
+                    <Button asChild className="w-full">
+                        <Link href={`/courses/${course.id}`}>
+                            Learn More <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                    </CardFooter>
+                </Card>
+            ))}
         </div>
+         <div className="text-center">
+            <Link href="/courses" className="inline-flex items-center text-primary hover:underline">
+                Explore all courses <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+            </div>
       </div>
     </section>
   );
