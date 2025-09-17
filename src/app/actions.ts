@@ -901,7 +901,7 @@ export async function submitProjectAction(
         userName,
         colabLink,
         status: 'Pending',
-        grade: 10, // Early submission grade
+        grade: null,
         submittedAt: serverTimestamp(),
     });
     

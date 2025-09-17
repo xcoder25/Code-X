@@ -72,7 +72,7 @@ export default function AdminSubmissionsPage() {
             const submissionsData = snapshot.docs.map(doc => ({
                 ...doc.data(),
                 id: doc.id,
-                userId: doc.data().userId,
+                userId: doc.ref.parent.parent!.id,
             } as AssignmentSubmission));
             setAssignmentSubmissions(submissionsData);
         }, (error) => {
@@ -85,7 +85,7 @@ export default function AdminSubmissionsPage() {
             const submissionsData = snapshot.docs.map(doc => ({
                 ...doc.data(),
                 id: doc.id,
-                userId: doc.data().userId,
+                 userId: doc.ref.parent.parent!.id,
             } as ProjectSubmission));
             setProjectSubmissions(submissionsData);
         }, (error) => {
@@ -315,7 +315,7 @@ function GradeProjectDialog({ submission }: { submission: ProjectSubmission }) {
         <DialogHeader>
           <DialogTitle>Grade Project Submission</DialogTitle>
           <DialogDescription>
-            Review the submission for <span className="font-semibold">{submission.userName}</span> and enter a grade. The early submission score of 10 points is included.
+            Review the submission for <span className="font-semibold">{submission.userName}</span> and enter a grade.
           </DialogDescription>
         </DialogHeader>
          <div className="text-sm">
