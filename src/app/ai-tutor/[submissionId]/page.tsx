@@ -5,7 +5,7 @@ import { useAuth } from '@/app/auth-provider';
 import { tutorMe } from '@/app/actions';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { Bot, Loader2, Send, Sparkles, User, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Bot, Loader2, Send, User, ArrowLeft, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
+import { type PageProps } from 'next'; // <--- Correct import and usage for Next.js pages
 
 interface Message {
   role: 'user' | 'model';
@@ -30,7 +31,10 @@ interface Question {
   text: string;
 }
 
-export default function AITutorPage({ params }: { params: { submissionId: string } }) {
+// Define the type for the page component props
+type AITutorPageProps = PageProps<{ submissionId: string }>;
+
+export default function AITutorPage({ params }: AITutorPageProps) {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -94,8 +98,9 @@ export default function AITutorPage({ params }: { params: { submissionId: string
   }, [submission, questions, userName, toast]);
 
   useEffect(() => {
+    if (!user) return;
     fetchExamData(params.submissionId);
-  }, [fetchExamData, params.submissionId]);
+  }, [user, fetchExamData, params.submissionId]);
 
   useEffect(() => {
     if (!pageLoading && submission && questions.length > 0) {
