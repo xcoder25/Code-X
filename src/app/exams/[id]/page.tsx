@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { AlertCircle, CheckCircle, Timer, Loader2 } from 'lucide-react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { submitExamAction } from '@/app/actions';
 import { doc, getDoc, getDocs, collection, onSnapshot } from 'firebase/firestore';
@@ -22,6 +22,7 @@ import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/app/auth-provider';
+import { type PageProps } from 'next';
 
 interface ExamDetails {
     id: string;
@@ -35,9 +36,10 @@ interface Question {
     text: string;
 }
 
-export default function ExamTakingPage() {
+type ExamTakingPageProps = PageProps<{ id: string }>;
+
+export default function ExamTakingPage({ params }: ExamTakingPageProps) {
   const router = useRouter();
-  const params = useParams();
   const examId = params.id as string;
   const { toast } = useToast();
   const { user } = useAuth();

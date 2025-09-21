@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Upload, X, Loader2, ArrowLeft, GripVertical, Plus, Library } from 'lucide-react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useTeacherAuth } from '@/app/teacher-auth-provider';
+import { type PageProps } from 'next';
 
 
 const lessonSchema = z.object({
@@ -59,14 +60,15 @@ interface Resource {
     url: string;
 }
 
-export default function TeacherEditCourseForm() {
+type TeacherEditCoursePageProps = PageProps<{ id: string }>;
+
+export default function TeacherEditCourseForm({ params }: TeacherEditCoursePageProps) {
   const { user } = useTeacherAuth();
   const [pageLoading, setPageLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resources, setResources] = useState<Resource[]>([]);
   
   const router = useRouter();
-  const params = useParams();
   const courseId = params.id as string;
   const { toast } = useToast();
   const uniqueId = useId();

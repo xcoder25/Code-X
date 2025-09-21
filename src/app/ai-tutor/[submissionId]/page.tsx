@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef, FormEvent, useCallback } from 'react';
@@ -13,7 +14,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { type PageProps } from 'next'; // <--- Correct import and usage for Next.js pages
+import { type PageProps } from 'next';
 
 interface Message {
   role: 'user' | 'model';
@@ -31,7 +32,6 @@ interface Question {
   text: string;
 }
 
-// Define the type for the page component props
 type AITutorPageProps = PageProps<{ submissionId: string }>;
 
 export default function AITutorPage({ params }: AITutorPageProps) {

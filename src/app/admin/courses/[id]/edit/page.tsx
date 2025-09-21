@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Upload, X, File as FileIcon, Loader2, ArrowLeft, GripVertical, Plus, Library, Trash2, Edit, Check, ChevronsUpDown } from 'lucide-react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { cn } from '@/lib/utils';
 import { User } from '@/types';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-
+import { type PageProps } from 'next';
 
 const lessonSchema = z.object({
     id: z.string(),
@@ -75,7 +75,9 @@ interface Resource {
     url: string;
 }
 
-export default function EditCourseForm() {
+type EditCoursePageProps = PageProps<{ id: string }>;
+
+export default function EditCourseForm({ params }: EditCoursePageProps) {
   const [pageLoading, setPageLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resources, setResources] = useState<Resource[]>([]);
@@ -83,7 +85,6 @@ export default function EditCourseForm() {
   const [popoverOpen, setPopoverOpen] = useState(false);
   
   const router = useRouter();
-  const params = useParams();
   const courseId = params.id as string;
   const { toast } = useToast();
   const uniqueId = useId();

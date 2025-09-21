@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Calendar as CalendarIcon, ArrowLeft } from 'lucide-react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
+import { type PageProps } from 'next';
 
 interface Course {
     id: string;
@@ -40,12 +41,13 @@ const projectFormSchema = z.object({
 
 type ProjectFormData = z.infer<typeof projectFormSchema>;
 
-export default function EditProjectPage() {
+type EditProjectPageProps = PageProps<{ id: string }>;
+
+export default function EditProjectPage({ params }: EditProjectPageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [courses, setCourses] = useState<Course[]>([]);
   const router = useRouter();
-  const params = useParams();
   const projectId = params.id as string;
   const { toast } = useToast();
 

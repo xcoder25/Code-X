@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Plus, Trash2, ArrowLeft } from 'lucide-react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
+import { type PageProps } from 'next';
 
 interface Course {
     id: string;
@@ -40,12 +41,13 @@ const examFormSchema = z.object({
 
 type ExamFormData = z.infer<typeof examFormSchema>;
 
-export default function EditExamPage() {
+type EditExamPageProps = PageProps<{ id: string }>;
+
+export default function EditExamPage({ params }: EditExamPageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [courses, setCourses] = useState<Course[]>([]);
   const router = useRouter();
-  const params = useParams();
   const examId = params.id as string;
   const { toast } = useToast();
   const uniqueId = useId();
