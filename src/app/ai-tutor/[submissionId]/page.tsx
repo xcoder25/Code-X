@@ -32,11 +32,11 @@ interface Question {
     text: string;
 }
 
-interface AITutorPageProps {
+type AITutorPageProps = {
   params: {
     submissionId: string;
   };
-}
+};
 
 const AITutorPage: React.FC<AITutorPageProps> = ({ params }) => {
   const { user } = useAuth();
