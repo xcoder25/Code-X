@@ -74,7 +74,7 @@ export async function generateStaticParams() {
 }
 
 // Generates dynamic metadata for each course page, important for SEO.
-export async function function generateMetadata({ params }: CourseDetailPageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: CourseDetailPageProps): Promise<Metadata> {
   const course = await getCourse(params.id);
 
   if (!course) {
