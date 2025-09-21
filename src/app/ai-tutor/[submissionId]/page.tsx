@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
@@ -33,7 +32,13 @@ interface Question {
     text: string;
 }
 
-const AITutorPage: React.FC<{ params: { submissionId: string } }> = ({ params }) => {
+interface AITutorPageProps {
+  params: {
+    submissionId: string;
+  };
+}
+
+const AITutorPage: React.FC<AITutorPageProps> = ({ params }) => {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
