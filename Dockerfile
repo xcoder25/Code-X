@@ -1,28 +1,30 @@
-# Stage 1: Install dependencies
-FROM node:20-alpine AS deps
+# 1. Dependencies Stage: Install dependencies
+FROM node:20-alpine AS dependencies
 WORKDIR /app
-COPY package.json package-lock.json* ./
+COPY package.json ./
 RUN npm install --frozen-lockfile
 
-# Stage 2: Build the application
+# 2. Builder Stage: Build the Next.js application
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-# Stage 3: Production image
+# 3. Runner Stage: Create the final production image
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Create a non-root user for security
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+ENV NODE_ENV=production
 
-# Copy built assets
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Create a non-root user for security
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy the built application from the builder stage
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
 USER nextjs
 
@@ -30,5 +32,5 @@ EXPOSE 3000
 
 ENV PORT 3000
 
-# Run the application
-CMD ["node", "server.js"]
+# The default command to start the Next.js server
+CMD ["node_modules/.bin/next", "start"]
