@@ -32,13 +32,7 @@ interface Question {
     text: string;
 }
 
-type AITutorPageProps = {
-  params: {
-    submissionId: string;
-  };
-};
-
-const AITutorPage: React.FC<AITutorPageProps> = ({ params }) => {
+export default function AITutorPage({ params }: { params: { submissionId: string } }) {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -243,6 +237,4 @@ const AITutorPage: React.FC<AITutorPageProps> = ({ params }) => {
         </div>
     </main>
   );
-};
-
-export default AITutorPage;
+}
