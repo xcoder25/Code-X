@@ -2,7 +2,7 @@
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import CourseClientPage from '@/components/course-client-page';
-import type { Metadata, PageProps } from 'next';
+import type { Metadata } from 'next';
 
 interface Course {
     id: string;
@@ -31,6 +31,11 @@ interface Resource {
     url: string;
 }
 
+type CourseDetailPageProps = {
+  params: { id: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+};
+
 
 export async function generateStaticParams() {
   const coursesSnapshot = await getDocs(collection(db, 'courses'));
@@ -57,8 +62,6 @@ async function getCourse(id: string): Promise<Course | null> {
     }
     return null;
 }
-
-type CourseDetailPageProps = PageProps<{ id: string }>;
 
 export async function generateMetadata({ params }: CourseDetailPageProps): Promise<Metadata> {
   const course = await getCourse(params.id);
