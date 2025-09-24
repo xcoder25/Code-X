@@ -39,7 +39,7 @@ export default function TeacherSubmissionsPage() {
             setLoading(true);
             try {
                 // 1. Get courses taught by the teacher
-                const coursesQuery = query(collection(db, 'courses'), where('teacherId', '==', user.uid));
+                const coursesQuery = query(collection(db, 'courses'), where('teacherId', '==', user?.uid));
                 const coursesSnap = await getDocs(coursesQuery);
                 const courseIds = coursesSnap.docs.map(doc => doc.id);
 
@@ -147,7 +147,7 @@ export default function TeacherSubmissionsPage() {
                             <TableRow key={`${item.userId}-${item.id}`}>
                                 <TableCell className="font-medium">{item.userName}</TableCell>
                                 <TableCell>{item.assignmentTitle}</TableCell>
-                                <TableCell>{item.course}</TableCell>
+                                <TableCell>{item.courseId}</TableCell>
                                 <TableCell>{new Date(item.submittedAt.seconds * 1000).toLocaleDateString()}</TableCell>
                                 <TableCell>
                                     <Badge variant={getStatusVariant(item.status)}>{item.status}</Badge>

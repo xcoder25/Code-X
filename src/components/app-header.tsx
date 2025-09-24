@@ -29,7 +29,7 @@ export default function AppHeader() {
             <SidebarMenuButton
               asChild
               variant="outline"
-              size="icon"
+              size="sm"
               className="relative"
               isActive={pathname === '/inbox'}
             >

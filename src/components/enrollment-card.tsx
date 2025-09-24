@@ -75,7 +75,7 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
             email: user.email,
             amount: 500000,
             access_code: accessCode, 
-            onSuccess: (transaction) => {
+            onSuccess: (transaction: any) => {
                 // In a real app, you would make another API call to your backend to verify the transaction
                 // and then enroll the user.
                 toast({
@@ -91,7 +91,7 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
                     description: "You have cancelled the payment process.",
                 });
             }
-        });
+        } as any);
     } catch (error: any) {
          toast({
             variant: 'destructive',

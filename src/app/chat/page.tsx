@@ -137,7 +137,7 @@ const ChatList: React.FC<ChatListProps> = ({ onSelectChat }) => {
 }
 
 const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSelectUser }) => {
-    const { user } = useAuthState(auth);
+    const [user] = useAuthState(auth);
     const [classmates, setClassmates] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const pythonCourseId = 'intro-to-python';
@@ -170,7 +170,7 @@ const ClassmatesList: React.FC<{ onSelectUser: (user: User) => void }> = ({ onSe
                 // Map to User objects and filter out the current user
                 const usersData = userDocsSnap.docs
                     .map(doc => ({ id: doc.id, ...doc.data() } as User))
-                    .filter(u => u.id !== user.uid);
+                    .filter(u => u.id !== user?.uid);
                 
                 setClassmates(usersData);
             } catch (error) {
@@ -229,7 +229,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ chat, onBack }) => {
     ? ['groups', chat.id, 'messages'] 
     : ['direct-messages', chat.id, 'messages'];
   
-  const messagesRef = collection(db, ...collectionPath);
+  const messagesRef = collection(db, collectionPath[0], collectionPath[1], collectionPath[2]);
   const q = query(messagesRef, orderBy('createdAt', 'asc'), limit(50));
 
   useEffect(() => {

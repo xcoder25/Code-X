@@ -11,6 +11,7 @@
  */
 import type { AnalyzeCodeInput, AnalyzeCodeOutput } from '@/app/schema';
 
+export type { AnalyzeCodeInput, AnalyzeCodeOutput };
 
 export async function analyzeCode(input: AnalyzeCodeInput): Promise<AnalyzeCodeOutput> {
     console.log("analyzeCode called with:", input.code);

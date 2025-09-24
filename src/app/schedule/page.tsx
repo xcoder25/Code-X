@@ -18,7 +18,7 @@ import { getAllExamDetails } from '@/lib/exam-data';
 
 export default function SchedulePage() {
 
-  const exams = getAllExamDetails().map(e => ({...e, type: "Exam", date: "TBD", time: "N/A"}));
+  const exams = getAllExamDetails().map((e: any) => ({...e, type: "Exam", date: "TBD", time: "N/A"}));
   const assignmentEvents = assignments.map(a => ({...a, type: "Assignment", date: a.dueDate, time: "11:59 PM"}));
   
   // In a real app, live classes would come from a database
