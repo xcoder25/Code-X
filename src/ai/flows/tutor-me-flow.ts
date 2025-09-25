@@ -34,24 +34,33 @@ Here are the exam questions and the student's answers:
 {{/each}}
 `;
 
+const replaceHandlebars = (template: string, data: any) => {
+    let output = template;
+    for (const key in data) {
+        if (key === 'questions') {
+             const questionsText = data.questions.map((q: any, index: number) => 
+                `- Question ${index + 1}: ${q.text}\n- Student's Answer: ${data.studentAnswers[q.id] || '(No answer provided)'}`
+            ).join('\n');
+            output = output.replace(/{{#each questions}}.*?{{\/each}}/s, questionsText);
+        } else {
+            const regex = new RegExp(`{{${key}}}`, 'g');
+            output = output.replace(regex, data[key]);
+        }
+    }
+    return output;
+}
 
-const tutorMeFlow = ai.defineFlow(
-  {
-    name: 'tutorMeFlow',
-    inputSchema: TutorMeInputSchema,
-    outputSchema: TutorMeOutputSchema,
-  },
-  async (input) => {
 
-    let systemPrompt = TutorSystemPrompt
-        .replace('{{userName}}', input.userName)
-        .replace('{{examTitle}}', input.examTitle);
-        
-    const questionsText = input.questions.map((q, index) => 
-        `- Question ${index + 1}: ${q.text}\n- Student's Answer: ${input.studentAnswers[q.id] || '(No answer provided)'}`
-    ).join('\n');
+export async function tutorMeAction(
+  input: z.infer<typeof TutorMeInputSchema>
+): Promise<z.infer<typeof TutorMeOutputSchema>> {
 
-    systemPrompt = systemPrompt.replace(/{{#each questions}}.*?{{\/each}}/s, questionsText);
+    const systemPrompt = replaceHandlebars(TutorSystemPrompt, {
+        userName: input.userName,
+        examTitle: input.examTitle,
+        questions: input.questions,
+        studentAnswers: input.studentAnswers
+    });
 
     const llmResponse = await ai.generate({
         model: 'googleai/gemini-1.5-flash-latest',
@@ -64,12 +73,4 @@ const tutorMeFlow = ai.defineFlow(
     });
 
     return llmResponse.output!;
-  }
-);
-
-
-export async function tutorMeAction(
-  input: z.infer<typeof TutorMeInputSchema>
-): Promise<z.infer<typeof TutorMeOutputSchema>> {
-    return tutorMeFlow(input);
 }

@@ -37,14 +37,9 @@ Your task:
 `;
 
 
-const interviewPrepFlow = ai.defineFlow(
-  {
-    name: 'interviewPrepFlow',
-    inputSchema: InterviewPrepInputSchema,
-    outputSchema: InterviewPrepOutputSchema,
-  },
-  async (input) => {
-
+export async function interviewPrep(
+  input: z.infer<typeof InterviewPrepInputSchema>
+): Promise<z.infer<typeof InterviewPrepOutputSchema>> {
     const systemPrompt = InterviewerSystemPrompt
         .replace('{{userName}}', input.userName)
         .replace('{{topic}}', input.topic);
@@ -60,12 +55,4 @@ const interviewPrepFlow = ai.defineFlow(
     });
 
     return llmResponse.output!;
-  }
-);
-
-
-export async function interviewPrep(
-  input: z.infer<typeof InterviewPrepInputSchema>
-): Promise<z.infer<typeof InterviewPrepOutputSchema>> {
-    return interviewPrepFlow(input);
 }

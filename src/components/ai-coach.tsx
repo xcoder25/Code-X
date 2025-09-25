@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, FormEvent } from 'react';
 import { Bot, Loader2, Send, Sparkles, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -36,15 +36,14 @@ export default function AiCoach() {
         behavior: 'smooth',
       });
     }
-  }, [messages]);
+  }, [messages, isLoading]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
     const userMessage: Message = { role: 'user', content: input };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    setMessages(prev => [...prev, userMessage]);
     const currentInput = input;
     setInput('');
     setIsLoading(true);
@@ -66,7 +65,7 @@ export default function AiCoach() {
         description: 'Failed to get a response. Please try again.',
       });
       // remove the user message if the API fails
-      setMessages(newMessages.slice(0, newMessages.length -1));
+      setMessages(prev => prev.slice(0, prev.length - 1));
     } finally {
       setIsLoading(false);
     }
@@ -104,9 +103,9 @@ export default function AiCoach() {
               )}
               <div
                 className={cn(
-                  'max-w-[75%] rounded-lg p-3 text-sm',
+                  'max-w-[75%] rounded-lg p-3 text-sm prose dark:prose-invert',
                   message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-primary text-primary-foreground prose-p:text-primary-foreground'
                     : 'bg-muted'
                 )}
               >
@@ -144,7 +143,7 @@ export default function AiCoach() {
             className="flex-1"
             disabled={isLoading || !user}
           />
-          <Button type="submit" disabled={isLoading || !user}>
+          <Button type="submit" disabled={isLoading || !user || !input.trim()}>
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
