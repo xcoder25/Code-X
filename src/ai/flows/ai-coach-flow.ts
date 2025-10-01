@@ -43,10 +43,7 @@ export async function chatWithElara(
     system: systemPrompt,
     history: input.history,
     prompt: input.message,
-    output: {
-      schema: ChatWithElaraOutputSchema,
-    },
   });
 
-  return llmResponse.output!;
+  return { reply: llmResponse.text };
 }

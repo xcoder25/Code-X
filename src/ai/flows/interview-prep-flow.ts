@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -49,10 +48,7 @@ export async function interviewPrep(
         system: systemPrompt,
         history: input.history,
         prompt: input.message,
-        output: {
-            schema: InterviewPrepOutputSchema,
-        },
     });
 
-    return llmResponse.output!;
+    return { reply: llmResponse.text };
 }

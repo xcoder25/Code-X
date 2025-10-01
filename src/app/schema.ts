@@ -1,5 +1,3 @@
-
-
 import { z } from 'zod';
 
 // Schema for sending general notifications from admin

@@ -22,17 +22,30 @@ Analyze the user's code for the following:
 
 Your response must be in the structured JSON format defined by the output schema.`;
 
-const codeAnalysisPrompt = ai.definePrompt({
-  name: 'codeAnalysisPrompt',
-  system: CodeAnalysisSystemPrompt,
-  input: { schema: AnalyzeCodeInputSchema },
-  output: { schema: AnalyzeCodeOutputSchema },
-  prompt: 'Please analyze this code: \n\n```\n{{{code}}}\n```',
-});
+const codeAnalysisFlow = ai.defineFlow(
+  {
+    name: 'codeAnalysisFlow',
+    inputSchema: AnalyzeCodeInputSchema,
+    outputSchema: AnalyzeCodeOutputSchema,
+  },
+  async ({ code }) => {
+    const prompt = `Please analyze this code: \n\n\`\`\`\n${code}\n\`\`\``;
+
+    const llmResponse = await ai.generate({
+      model: 'googleai/gemini-1.5-flash-latest',
+      system: CodeAnalysisSystemPrompt,
+      prompt: prompt,
+      output: {
+        schema: AnalyzeCodeOutputSchema,
+      },
+    });
+
+    return llmResponse.output!;
+  }
+);
 
 export async function analyzeCode(
   input: z.infer<typeof AnalyzeCodeInputSchema>
 ): Promise<z.infer<typeof AnalyzeCodeOutputSchema>> {
-  const llmResponse = await codeAnalysisPrompt(input);
-  return llmResponse.output!;
+  return codeAnalysisFlow(input);
 }
