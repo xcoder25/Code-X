@@ -30,20 +30,32 @@ const ELARA_SYSTEM_PROMPT_TEMPLATE = `You are Elara, a friendly, encouraging, an
       - Keep your responses concise and easy to understand.
       - The user's name is {{userName}}. Use it to personalize the conversation.`;
 
+const chatWithElaraFlow = ai.defineFlow(
+  {
+    name: 'chatWithElaraFlow',
+    inputSchema: ChatWithElaraInputSchema,
+    outputSchema: ChatWithElaraOutputSchema,
+  },
+  async (input) => {
+    const systemPrompt = ELARA_SYSTEM_PROMPT_TEMPLATE.replace(
+      '{{userName}}',
+      input.userName
+    );
+
+    const llmResponse = await ai.generate({
+      model: 'googleai/gemini-1.5-flash-latest',
+      system: systemPrompt,
+      history: input.history,
+      prompt: input.message,
+    });
+
+    return { reply: llmResponse.text };
+  }
+);
+
+
 export async function chatWithElara(
   input: z.infer<typeof ChatWithElaraInputSchema>
 ): Promise<z.infer<typeof ChatWithElaraOutputSchema>> {
-  const systemPrompt = ELARA_SYSTEM_PROMPT_TEMPLATE.replace(
-    '{{userName}}',
-    input.userName
-  );
-
-  const llmResponse = await ai.generate({
-    model: 'googleai/gemini-1.5-flash-latest',
-    system: systemPrompt,
-    history: input.history,
-    prompt: input.message,
-  });
-
-  return { reply: llmResponse.text };
+  return chatWithElaraFlow(input);
 }

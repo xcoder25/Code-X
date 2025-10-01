@@ -31,11 +31,11 @@ Here are the exam questions and the student's answers:
 {{questionsAndAnswers}}
 `;
 
-
-export async function tutorMeAction(
-  input: z.infer<typeof TutorMeInputSchema>
-): Promise<z.infer<typeof TutorMeOutputSchema>> {
-
+const tutorMeFlow = ai.defineFlow({
+    name: 'tutorMeFlow',
+    inputSchema: TutorMeInputSchema,
+    outputSchema: TutorMeOutputSchema,
+}, async (input) => {
     const questionsAndAnswers = input.questions.map((q, index) => 
         `- Question ${index + 1}: ${q.text}\n- Student's Answer: ${input.studentAnswers[q.id] || '(No answer provided)'}`
     ).join('\n');
@@ -54,4 +54,11 @@ export async function tutorMeAction(
     });
 
     return { reply: llmResponse.text };
+});
+
+
+export async function tutorMeAction(
+  input: z.infer<typeof TutorMeInputSchema>
+): Promise<z.infer<typeof TutorMeOutputSchema>> {
+    return tutorMeFlow(input);
 }

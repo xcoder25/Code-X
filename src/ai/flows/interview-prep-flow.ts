@@ -35,20 +35,31 @@ Your task:
 5. If the user doesn't know an answer, gently encourage them to try and then move on to the next question.
 `;
 
+const interviewPrepFlow = ai.defineFlow(
+    {
+        name: 'interviewPrepFlow',
+        inputSchema: InterviewPrepInputSchema,
+        outputSchema: InterviewPrepOutputSchema,
+    },
+    async (input) => {
+        const systemPrompt = InterviewerSystemPrompt
+            .replace('{{userName}}', input.userName)
+            .replace('{{topic}}', input.topic);
+
+        const llmResponse = await ai.generate({
+            model: 'googleai/gemini-1.5-flash-latest',
+            system: systemPrompt,
+            history: input.history,
+            prompt: input.message,
+        });
+
+        return { reply: llmResponse.text };
+    }
+);
+
 
 export async function interviewPrep(
   input: z.infer<typeof InterviewPrepInputSchema>
 ): Promise<z.infer<typeof InterviewPrepOutputSchema>> {
-    const systemPrompt = InterviewerSystemPrompt
-        .replace('{{userName}}', input.userName)
-        .replace('{{topic}}', input.topic);
-
-    const llmResponse = await ai.generate({
-        model: 'googleai/gemini-1.5-flash-latest',
-        system: systemPrompt,
-        history: input.history,
-        prompt: input.message,
-    });
-
-    return { reply: llmResponse.text };
+    return interviewPrepFlow(input);
 }
