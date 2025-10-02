@@ -40,30 +40,35 @@ export async function chatWithElara(
   input: z.infer<typeof ChatWithElaraInputSchema>
 ): Promise<z.infer<typeof ChatWithElaraOutputSchema>> {
   
-  // 1. Render the system prompt string
-  const systemPrompt = ELARA_SYSTEM_PROMPT_TEMPLATE.replace(
-    '{{userName}}',
-    input.userName
-  );
+  try {
+    // 1. Render the system prompt string
+    const systemPrompt = ELARA_SYSTEM_PROMPT_TEMPLATE.replace(
+      '{{userName}}',
+      input.userName
+    );
 
-  // 2. Call ai.generate with separate system, history, and prompt fields
-  const llmResponse = await ai.generate({
-    model: 'googleai/gemini-1.5-flash-latest',
-    
-    // Use the dedicated 'system' parameter for the system prompt
-    system: systemPrompt,
-    
-    // Use the dedicated 'history' parameter for the chat history
-    history: input.history,
-    
-    // The 'prompt' is now *just* the new user message
-    prompt: input.message,
-    
-    // The output schema remains the same
-    output: {
-      schema: ChatWithElaraOutputSchema,
-    },
-  });
+    // 2. Call ai.generate with separate system, history, and prompt fields
+    const llmResponse = await ai.generate({
+      model: 'googleai/gemini-1.5-flash-latest',
+      
+      // Use the dedicated 'system' parameter for the system prompt
+      system: systemPrompt,
+      
+      // Use the dedicated 'history' parameter for the chat history
+      history: input.history,
+      
+      // The 'prompt' is now *just* the new user message
+      prompt: input.message,
+      
+      // The output schema remains the same
+      output: {
+        schema: ChatWithElaraOutputSchema,
+      },
+    });
 
-  return llmResponse.output!;
+    return llmResponse.output!;
+  } catch (error) {
+    console.error('Error in chatWithElara:', error);
+    throw new Error(`AI service error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }
