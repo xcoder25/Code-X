@@ -11,7 +11,7 @@ export default function LabPage() {
 
   useEffect(() => {
     // Set your Render Code-Server URL here
-    setCodeServerUrl('https://your-code-server-app.onrender.com');
+    setCodeServerUrl('https://code-x-dc8c.onrender.com');
     setIsLoading(false);
   }, []);
 

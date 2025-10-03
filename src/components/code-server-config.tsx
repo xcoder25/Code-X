@@ -16,7 +16,7 @@ export default function CodeServerConfig({ onUrlChange }: CodeServerConfigProps)
 
   useEffect(() => {
     // Load saved URL from localStorage
-    const savedUrl = localStorage.getItem('code-server-url') || 'https://your-code-server-app.onrender.com';
+    const savedUrl = localStorage.getItem('code-server-url') || 'https://code-x-dc8c.onrender.com';
     setUrl(savedUrl);
     onUrlChange(savedUrl);
   }, [onUrlChange]);
