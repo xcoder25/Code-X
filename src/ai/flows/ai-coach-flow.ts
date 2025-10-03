@@ -47,26 +47,22 @@ export async function chatWithElara(
       input.userName
     );
 
-    // 2. Call ai.generate with separate system, history, and prompt fields
+    // 2. Call ai.generate with updated syntax
+    const prompt = `System: ${systemPrompt}
+
+Conversation history:
+${(input.history || []).map(h => `${h.role}: ${h.content}`).join('\n')}
+
+Current message from ${input.userName}: ${input.message}`;
+
     const llmResponse = await ai.generate({
-      model: 'googleai/gemini-1.5-flash-latest',
-      
-      // Use the dedicated 'system' parameter for the system prompt
-      system: systemPrompt,
-      
-      // Use the dedicated 'history' parameter for the chat history
-      history: input.history,
-      
-      // The 'prompt' is now *just* the new user message
-      prompt: input.message,
-      
-      // The output schema remains the same
-      output: {
-        schema: ChatWithElaraOutputSchema,
-      },
+      prompt: prompt,
+      model: 'googleai/gemini-2.5-flash'
     });
 
-    return llmResponse.output!;
+    return {
+      reply: llmResponse.text || "I'm sorry, I couldn't generate a response. Please try again."
+    };
   } catch (error) {
     console.error('Error in chatWithElara:', error);
     throw new Error(`AI service error: ${error instanceof Error ? error.message : 'Unknown error'}`);

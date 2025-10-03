@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  code-server:
+    image: codercom/code-server:latest
+    container_name: code-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./:/home/coder/project
+      - code-server-config:/home/coder/.config
+    environment:
+      - PASSWORD=your-secure-password
+      - TZ=UTC
+    command: code-server --bind-addr 0.0.0.0:8080 --auth password /home/coder/project
+    restart: unless-stopped
+
+  # Optional: Add your Next.js app container
+  web-app:
+    build: .
+    container_name: your-nextjs-app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/app
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+
+volumes:
+  code-server-config:

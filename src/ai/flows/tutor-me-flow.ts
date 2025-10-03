@@ -53,17 +53,21 @@ const tutorMeFlow = ai.defineFlow(
 
     systemPrompt = systemPrompt.replace(/{{#each questions}}.*?{{\/each}}/s, questionsText);
 
+    const prompt = `System: ${systemPrompt}
+
+Previous conversation history:
+${input.history.map(h => `${h.role}: ${h.content}`).join('\n')}
+
+Current message from ${input.userName}: ${input.message}`;
+
     const llmResponse = await ai.generate({
-        model: 'googleai/gemini-1.5-flash-latest',
-        system: systemPrompt,
-        history: input.history,
-        prompt: input.message,
-        output: {
-            schema: TutorMeOutputSchema,
-        },
+      prompt: prompt,
+      model: 'googleai/gemini-2.5-flash'
     });
 
-    return llmResponse.output!;
+    return {
+        reply: llmResponse.text || "I'm sorry, I couldn't generate a response. Please try again."
+    };
   }
 );
 
