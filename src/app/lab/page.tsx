@@ -8,8 +8,10 @@ import CodeServerConfig from '@/components/code-server-config';
 export default function LabPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [codeServerUrl, setCodeServerUrl] = useState('');
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     // Set your Render Code-Server URL here
     setCodeServerUrl('https://code-x-dc8c.onrender.com');
     setIsLoading(false);
@@ -48,7 +50,8 @@ export default function LabPage() {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => window.open(codeServerUrl, '_blank')}
+            onClick={() => isClient && window.open(codeServerUrl, '_blank')}
+            disabled={!isClient || !codeServerUrl}
           >
             <ExternalLink className="h-4 w-4 mr-2" />
             Open in New Tab
@@ -56,7 +59,8 @@ export default function LabPage() {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => window.location.reload()}
+            onClick={() => isClient && window.location.reload()}
+            disabled={!isClient}
           >
             Refresh
           </Button>
@@ -65,16 +69,22 @@ export default function LabPage() {
 
       {/* VS Code Embed */}
       <div className="flex-1 relative">
-        <iframe
-          src={codeServerUrl}
-          className="w-full h-full border-0"
-          style={{
-            background: 'var(--background)',
-          }}
-          title="Code-X Lab - VS Code Online"
-          allow="clipboard-read; clipboard-write; web-share"
-          loading="lazyload"
-        />
+        {isClient && codeServerUrl ? (
+          <iframe
+            src={codeServerUrl}
+            className="w-full h-full border-0"
+            style={{
+              background: 'var(--background)',
+            }}
+            title="Code-X Lab - VS Code Online"
+            allow="clipboard-read; clipboard-write; web-share"
+            loading="lazyload"
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p>Loading VS Code environment...</p>
+          </div>
+        )}
       </div>
 
       {/* Footer Info */}

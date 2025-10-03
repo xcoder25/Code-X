@@ -13,18 +13,31 @@ interface CodeServerConfigProps {
 
 export default function CodeServerConfig({ onUrlChange }: CodeServerConfigProps) {
   const [url, setUrl] = useState('');
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     // Load saved URL from localStorage
     const savedUrl = localStorage.getItem('code-server-url') || 'https://code-x-dc8c.onrender.com';
     setUrl(savedUrl);
     onUrlChange(savedUrl);
-  }, [onUrlChange]);
+  }, []);
 
   const handleSave = () => {
-    localStorage.setItem('code-server-url', url);
-    onUrlChange(url);
+    if (isClient) {
+      localStorage.setItem('code-server-url', url);
+      onUrlChange(url);
+    }
   };
+
+  if (!isClient) {
+    return (
+      <Button variant="outline" size="sm" disabled>
+        <Setting className="h-4 w-4 mr-2" />
+        Configure Server
+      </Button>
+    );
+  }
 
   return (
     <Dialog>
