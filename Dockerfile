@@ -2,7 +2,7 @@ FROM codercom/code-server:latest
 
 # Install dependencies
 USER root
-RUN apt-get update && apr-get install -y \
+RUN apt-get update && apt-get install -y \
     git \
     curl \
     wget \
