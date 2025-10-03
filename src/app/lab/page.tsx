@@ -1,38 +1,101 @@
-import ChallengeInterface from '@/components/challenge-interface';
+'use client';
 
-const labChallenge = {
-  id: 'code-x-lab',
-  title: 'Welcome to the Code-X Lab',
-  description:
-    'This is your personal coding sandbox. Use this space to experiment with HTML, CSS, and JavaScript. Write your code in the editor on the right and see the results instantly. Happy coding!',
-  difficulty: 'Sandbox',
-  defaultCode: `<html>
-  <head>
-    <style>
-      body {
-        font-family: sans-serif;
-        padding: 1rem;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>Hello, Code-X Lab!</h1>
-    <p>You can write any HTML, CSS, or JavaScript you want here.</p>
-  </body>
-</html>`,
-};
+import { useEffect, useState } from 'react';
+import { ExternalLink, Terminal, Code, Folder } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import CodeServerConfig from '@/components/code-server-config';
 
 export default function LabPage() {
-  return (
-    <main className="flex flex-1 flex-col p-4 md:p-6 h-[calc(100vh-theme(spacing.14))]">
-        <div className="flex items-center mb-4">
-            <h1 className="font-semibold text-3xl">Code-X Lab</h1>
+  const [isLoading, setIsLoading] = useState(true);
+  const [codeServerUrl, setCodeServerUrl] = useState('');
+
+  useEffect(() => {
+    // Set your Render Code-Server URL here
+    setCodeServerUrl('https://your-code-server-app.onrender.com');
+    setIsLoading(false);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <main className="flex flex-1 flex-col p-4 md:p-6 h-[calc(100vh-theme(spacing.14))]">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading Code-X Lab...</p>
+          </div>
         </div>
-         <p className="text-muted-foreground mb-6">
-            A sandbox environment for you to experiment with code.
-        </p>
-      <div className="flex-1">
-        <ChallengeInterface challenge={labChallenge} />
+      </main>
+    );
+  }
+
+  return (
+    <main className="flex flex-1 flex-col h-[calc(100vh-theme(spacing.14))]">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b bg-background">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Code className="h-6 w-6 text-primary" />
+            <h1 className="font-semibold text-xl">Code-X Lab</h1>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Terminal className="h-4 w-4" />
+            <span>VS Code Online</span>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <CodeServerConfig onUrlChange={setCodeServerUrl} />
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => window.open(codeServerUrl, '_blank')}
+          >
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Open in New Tab
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => window.location.reload()}
+          >
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* VS Code Embed */}
+      <div className="flex-1 relative">
+        <iframe
+          src={codeServerUrl}
+          className="w-full h-full border-0"
+          style={{
+            background: 'var(--background)',
+          }}
+          title="Code-X Lab - VS Code Online"
+          allow="clipboard-read; clipboard-write; web-share"
+          loading="lazyload"
+        />
+      </div>
+
+      {/* Footer Info */}
+      <div className="flex items-center justify-between p-3 border-t bg-muted/50 text-xs text-muted-foreground">
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1">
+            <Folder className="h-3 w-3" />
+            Full File System Access
+          </span>
+          <span className="flex items-center gap-1">
+            <Terminal className="h-3 w-3" />
+            Terminal Available
+          </span>
+          <span className="flex items-center gap-1">
+            <Code className="h-3 w-3" />
+            Extension Support
+          </span>
+        </div>
+        <div>
+          Powered by VS Code Server
+        </div>
       </div>
     </main>
   );
