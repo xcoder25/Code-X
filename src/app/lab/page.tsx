@@ -1,111 +1,156 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { ExternalLink, Terminal, Code, Folder } from 'lucide-react';
+import { useState } from 'react';
+import { ExternalLink, Terminal, Code, Folder, Play, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import CodeServerConfig from '@/components/code-server-config';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+const CODE_SERVER_URL = 'https://code-x-dc8c.onrender.com';
 
 export default function LabPage() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [codeServerUrl, setCodeServerUrl] = useState('');
-  const [isClient, setIsClient] = useState(false);
+  const [target, setTarget] = useState<'fullscreen' | 'redirect' | null>(null);
 
-  useEffect(() => {
-    setIsClient(true);
-    // Set your Render Code-Server URL here
-    setCodeServerUrl('https://code-x-dc8c.onrender.com');
-    setIsLoading(false);
-  }, []);
+  const handleOpenFullscreen = () => {
+    setTarget('fullscreen');
+    window.open(CODE_SERVER_URL, '_blank');
+    setTimeout(() => setTarget(null), 1000);
+  };
 
-  if (isLoading) {
-    return (
-      <main className="flex flex-1 flex-col p-4 md:p-6 h-[calc(100vh-theme(spacing.14))]">
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading Code-X Lab...</p>
-          </div>
-        </div>
-      </main>
-    );
-  }
+  const handleRedirectToLab = () => {
+    setTarget('redirect');
+    window.location.href = CODE_SERVER_URL;
+  };
 
   return (
-    <main className="flex flex-1 flex-col h-[calc(100vh-theme(spacing.14))]">
+    <main className="flex flex-1 flex-col p-4 md:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-background">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Code className="h-6 w-6 text-primary" />
-            <h1 className="font-semibold text-xl">Code-X Lab</h1>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Terminal className="h-4 w-4" />
-            <span>VS Code Online</span>
-          </div>
-        </div>
-        
+      <div className="flex items-center gap-3 mb-6">
         <div className="flex items-center gap-2">
-          <CodeServerConfig onUrlChange={setCodeServerUrl} />
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => isClient && window.open(codeServerUrl, '_blank')}
-            disabled={!isClient || !codeServerUrl}
-          >
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Open in New Tab
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => isClient && window.location.reload()}
-            disabled={!isClient}
-          >
-            Refresh
-          </Button>
+          <Code className="h-6 w-6 text-primary" />
+          <h1 className="font-semibold text-xl">Code-X Lab</h1>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Terminal className="h-4 w-4" />
+          <span>VS Code Online Environment</span>
         </div>
       </div>
 
-      {/* VS Code Embed */}
-      <div className="flex-1 relative">
-        {isClient && codeServerUrl ? (
-          <iframe
-            src={codeServerUrl}
-            className="w-full h-full border-0"
-            style={{
-              background: 'var(--background)',
-            }}
-            title="Code-X Lab - VS Code Online"
-            allow="clipboard-read; clipboard-write; web-share"
-            loading="lazyload"
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            <p>Loading VS Code environment...</p>
+      {/* Main Content */}
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+        {/* Access Methods */}
+        <div className="space-y-4">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+              <Monitor className="h-8 w-8 text-primary" />
+            </div>
+            <h2 className="text-lg font-semibold mb-2">Access Your VS Code Environment</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              Choose how you want to access your Code-Server instance
+            </p>
           </div>
-        )}
+
+          <div className="space-y-3">
+            <Button 
+              onClick={handleOpenFullscreen}
+              disabled={target === 'fullscreen'}
+              className="w-full justify-start"
+              size="lg"
+            >
+              <ExternalLink className="h-5 w-5 mr-3" />
+              <div className="text-left">
+                <div className="font-medium">Open in New Tab</div>
+                <div className="text-sm opacity-80">Full VS Code experience</div>
+              </div>
+            </Button>
+
+            <Button 
+              onClick={handleRedirectToLab}
+              variant="outline"
+              disabled={target === 'redirect'}
+              className="w-full justify-start"
+              size="lg"
+            >
+              <Play className="h-5 w-5 mr-3" />
+              <div className="text-left">
+                <div className="font-medium">Redirect to Lab</div>
+                <div className="text-sm opacity-80">Navigate directly to Code-Server</div>
+              </div>
+            </Button>
+          </div>
+        </div>
+
+        {/* Features */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Terminal className="h-5 w-5" />
+              Features Available
+            </CardTitle>
+            <CardDescription>
+              Full VS Code functionality running on your server
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <div>
+                  <div className="font-medium text-sm">Full File System Access</div>
+                  <div className="text-xs text-muted-foreground">Browse and edit any files</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div>
+                  <div className="font-medium text-sm">Integrated Terminal</div>
+                  <div className="text-xs text-muted-foreground">Run commands directly</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <div>
+                  <div className="font-medium text-sm">Extension Support</div>
+                  <div className="text-xs text-muted-foreground">Install any VS Code extensions</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                <div>
+                  <div className="font-medium text-sm">Git Integration</div>
+                  <div className="text-xs text-muted-foreground">Version control ready</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                <div>
+                  <div className="font-medium text-sm">Multi-language Support</div>
+                  <div className="text-xs text-muted-foreground">Syntax highlighting & IntelliSense</div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Footer Info */}
-      <div className="flex items-center justify-between p-3 border-t bg-muted/50 text-xs text-muted-foreground">
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1">
-            <Folder className="h-3 w-3" />
-            Full File System Access
-          </span>
-          <span className="flex items-center gap-1">
-            <Terminal className="h-3 w-3" />
-            Terminal Available
-          </span>
-          <span className="flex items-center gap-1">
-            <Code className="h-3 w-3" />
-            Extension Support
-          </span>
+      {/* Quick Access */}
+      <div className="mt-8 p-4 bg-muted/50 rounded-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-medium">🚀 Ready to Code?</h3>
+            <p className="text-sm text-muted-foreground">
+              Your Code-Server is running at: <code className="bg-background px-2 py-1 rounded text-xs">{CODE_SERVER_URL}</code>
+            </p>
+          </div>
+          <Button onClick={handleOpenFullscreen} size="sm">
+            <Play className="h-4 w-4 mr-2" />
+            Launch Now
+          </Button>
         </div>
-        <div>
-          Powered by VS Code Server
-        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-8 flex items-center justify-center text-xs text-muted-foreground">
+        <span>Powered by VS Code Server • Deployed on Render</span>
       </div>
     </main>
   );
