@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db, storage } from '@/lib/firebase';
@@ -88,6 +89,7 @@ const createCourseFormSchema = z.object({
   description: z.string().min(10),
   tags: z.string(),
   modules: z.array(moduleSchema),
+  price: z.coerce.number().min(0).optional(),
 });
 
 export async function createCourseAction(
@@ -98,13 +100,14 @@ export async function createCourseAction(
     throw new Error('Invalid course data.');
   }
 
-  const { title, description, tags, modules } = parsed.data;
+  const { title, description, tags, modules, price } = parsed.data;
 
   const courseRef = await addDoc(collection(db, 'courses'), {
     title,
     description,
     tags: tags.split(',').map(tag => tag.trim()),
     modules,
+    price: price || 0,
     createdAt: serverTimestamp(),
     enrollments: 0,
     status: 'Draft',
@@ -128,6 +131,7 @@ const updateCourseSchema = z.object({
         url: z.string().url(),
     })),
     teacherId: z.string().optional(),
+    price: z.coerce.number().min(0).optional(),
 });
 
 
@@ -137,7 +141,7 @@ export async function updateCourseAction(data: z.infer<typeof updateCourseSchema
         throw new Error('Invalid course data submitted.');
     }
 
-    const { courseId, title, description, tags, modules, resources, teacherId } = parsed.data;
+    const { courseId, title, description, tags, modules, resources, teacherId, price } = parsed.data;
     
     const courseRef = doc(db, 'courses', courseId);
     
@@ -170,6 +174,7 @@ export async function updateCourseAction(data: z.infer<typeof updateCourseSchema
         modules,
         resources,
         teacherId: teacherId || null,
+        price: price || 0,
     });
 }
 
@@ -1018,6 +1023,7 @@ const initialCourses = [
         description: 'Learn the fundamentals of Python, one of the most popular programming languages in the world.',
         tags: ['Python', 'Beginner', 'Programming'],
         premium: false,
+        price: 0,
         modules: [
             {
                 id: 'py-mod-1',
@@ -1047,6 +1053,7 @@ const initialCourses = [
         description: 'A comprehensive bootcamp covering HTML, CSS, JavaScript, and everything you need to become a web developer.',
         tags: ['HTML', 'CSS', 'JavaScript', 'Fullstack'],
         premium: false,
+        price: 0,
         modules: [
             {
                 id: 'wd-mod-1',
@@ -1074,6 +1081,7 @@ const initialCourses = [
         description: 'Take your React skills to the next level by mastering advanced concepts like state management, performance optimization, and testing.',
         tags: ['React', 'Advanced', 'State Management', 'Premium'],
         premium: true,
+        price: 50,
         modules: [
             {
                 id: 'ar-mod-1',

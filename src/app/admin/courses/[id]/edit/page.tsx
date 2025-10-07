@@ -5,7 +5,7 @@ import { useState, useEffect, useId } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Upload, X, File as FileIcon, Loader2, ArrowLeft, GripVertical, Plus, Library, Trash2, Edit, Check, ChevronsUpDown } from 'lucide-react';
+import { Upload, X, File as FileIcon, Loader2, ArrowLeft, GripVertical, Plus, Library, Trash2, Edit, Check, ChevronsUpDown, DollarSign } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -63,6 +63,7 @@ const courseFormSchema = z.object({
   tags: z.string().min(1, "Please provide at least one tag."),
   modules: z.array(moduleSchema),
   teacherId: z.string().optional(),
+  price: z.coerce.number().min(0, "Price must be a positive number.").optional(),
 });
 
 type CourseFormData = z.infer<typeof courseFormSchema>;
@@ -75,7 +76,9 @@ interface Resource {
     url: string;
 }
 
-type EditCoursePageProps = PageProps<{ id: string }>;
+type EditCoursePageProps = {
+    params: { id: string };
+};
 
 export default function EditCourseForm({ params }: EditCoursePageProps) {
   const [pageLoading, setPageLoading] = useState(true);
@@ -97,6 +100,7 @@ export default function EditCourseForm({ params }: EditCoursePageProps) {
       tags: '',
       modules: [],
       teacherId: '',
+      price: 0,
     },
   });
 
@@ -122,6 +126,7 @@ export default function EditCourseForm({ params }: EditCoursePageProps) {
                     tags: (data.tags || []).join(', '),
                     modules: data.modules || [],
                     teacherId: data.teacherId || '',
+                    price: data.price || 0,
                 });
                 setResources(data.resources || []);
             } else {
@@ -304,19 +309,37 @@ export default function EditCourseForm({ params }: EditCoursePageProps) {
                                 </FormItem>
                             )}
                         />
-                         <FormField
-                            control={form.control}
-                            name="tags"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Tags</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="e.g., React, Next.js, TypeScript (comma-separated)" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                         <div className="grid md:grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="tags"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Tags</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="e.g., React, Next.js (comma-separated)" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="price"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Price (in NGN)</FormLabel>
+                                        <div className="relative">
+                                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <FormControl>
+                                                <Input type="number" placeholder="0" {...field} className="pl-8" />
+                                            </FormControl>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                          <FormField
                             control={form.control}
                             name="teacherId"

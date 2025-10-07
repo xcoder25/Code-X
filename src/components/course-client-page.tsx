@@ -51,6 +51,7 @@ interface Course {
     tags: string[];
     modules: Module[];
     resources: Resource[];
+    price?: number;
 }
 
 interface EnrollmentData {
@@ -190,8 +191,9 @@ export default function CourseClientPage({ initialCourse, courseId }: CourseClie
     );
   }
 
-  const isHardcodedCourse = course?.modules?.length === 0 && course?.resources?.length === 0;
-  const canEnroll = user && !isEnrolled && !isHardcodedCourse;
+  const hasPrice = course.price !== undefined && course.price > 0;
+  const showEnrollmentCard = user && !isEnrolled && hasPrice;
+  const showPreview = !isEnrolled && !showEnrollmentCard;
 
   return (
     <main className="flex flex-1 flex-col">
@@ -310,13 +312,13 @@ export default function CourseClientPage({ initialCourse, courseId }: CourseClie
         </div>
       ) : (
         <div className="container mx-auto px-4 md:px-6 py-8">
-            {canEnroll && user ? (
-                <EnrollmentCard courseId={course.id} userId={user.uid} onEnrollmentSuccess={handleEnrollmentSuccess} />
+            {showEnrollmentCard && user ? (
+                <EnrollmentCard courseId={course.id} userId={user.uid} onEnrollmentSuccess={handleEnrollmentSuccess} price={course.price} />
             ) : (
                 <Card>
                 <CardHeader>
                     <CardTitle>Course Preview</CardTitle>
-                    <CardDescription>The following modules are included in this course. You can enroll in this course once the content is ready.</CardDescription>
+                    <CardDescription>The following modules are included in this course. Login to enroll.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-6 text-muted-foreground">
                     <ul className="space-y-2 list-disc list-inside">
@@ -327,6 +329,11 @@ export default function CourseClientPage({ initialCourse, courseId }: CourseClie
                         )}
                     </ul>
                 </CardContent>
+                 <CardFooter>
+                    <Button asChild>
+                        <Link href="/login">Login to Enroll</Link>
+                    </Button>
+                 </CardFooter>
                 </Card>
             )}
         </div>

@@ -1,3 +1,4 @@
+
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import CourseClientPage from '@/components/course-client-page';
@@ -12,6 +13,7 @@ interface Course {
   tags: string[];
   modules: Module[];
   resources: Resource[];
+  price?: number;
 }
 
 interface Lesson {
@@ -35,11 +37,9 @@ interface Resource {
 // Props type for the Next.js dynamic page
 type CourseDetailPageProps = {
   params: { id: string };
-  searchParams: { [key: string]: string | string[] | undefined };
 };
 
 // Cached data fetching function to avoid redundant database calls.
-// This is a powerful Next.js optimization. 
 const getCourse = cache(async (id: string): Promise<Course | null> => {
   try {
     const courseDocRef = doc(db, 'courses', id);
@@ -58,6 +58,7 @@ const getCourse = cache(async (id: string): Promise<Course | null> => {
       tags: data.tags || [],
       modules: data.modules || [],
       resources: data.resources || [],
+      price: data.price || 0,
     };
   } catch (error) {
     console.error('Failed to fetch course:', error);

@@ -25,9 +25,10 @@ interface EnrollmentCardProps {
     courseId: string;
     userId: string;
     onEnrollmentSuccess: () => void;
+    price?: number;
 }
 
-export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }: EnrollmentCardProps) {
+export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess, price = 0 }: EnrollmentCardProps) {
   const [accessCode, setAccessCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -36,7 +37,7 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
   const paystackConfig = {
       reference: new Date().getTime().toString(),
       email: user?.email || '',
-      amount: 10000, // Amount in kobo (e.g., 10000 kobo = 100 NGN)
+      amount: price * 100, // Amount in kobo
       publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
   };
 
@@ -79,12 +80,18 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
   const onPaymentSuccess = (reference: any) => {
     console.log(reference);
     // In a real app, you would verify the transaction on your backend
-    // and then call onEnrollmentSuccess
+    // and then call the equivalent of redeemAccessCodeAction to create the enrollment
     toast({
         title: 'Payment Successful!',
         description: 'You are now enrolled in the course.',
     });
-    onEnrollmentSuccess();
+    // For now, we manually create the enrollment record on success.
+    // This is NOT secure for a real app.
+    redeemAccessCodeAction({
+        accessCode: `PAYMENT_${reference.trxref}`, // Create a fake code for tracking
+        courseId,
+        userId
+    }).then(() => onEnrollmentSuccess());
   };
 
   const onPaymentClose = () => {
@@ -120,22 +127,26 @@ export default function EnrollmentCard({ courseId, userId, onEnrollmentSuccess }
             </div>
         </div>
 
-        <div className="relative">
-            <Separator />
-            <span className="absolute left-1/2 -translate-x-1/2 -top-2.5 bg-card px-2 text-sm text-muted-foreground">OR</span>
-        </div>
+        {price > 0 && (
+            <>
+                <div className="relative">
+                    <Separator />
+                    <span className="absolute left-1/2 -translate-x-1/2 -top-2.5 bg-card px-2 text-sm text-muted-foreground">OR</span>
+                </div>
 
-        <div>
-             <Label className="flex items-center gap-2 mb-2">
-                <CreditCard className="h-5 w-5" />
-                <span>Pay to Unlock</span>
-            </Label>
-            <p className="text-sm text-muted-foreground mb-4">Get immediate lifetime access to this course for ₦100.</p>
-            <Button onClick={() => initializePayment({onSuccess: onPaymentSuccess, onClose: onPaymentClose})} disabled={isLoading} className="w-full">
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Pay to Unlock
-            </Button>
-        </div>
+                <div>
+                    <Label className="flex items-center gap-2 mb-2">
+                        <CreditCard className="h-5 w-5" />
+                        <span>Pay to Unlock</span>
+                    </Label>
+                    <p className="text-sm text-muted-foreground mb-4">Get immediate lifetime access to this course for ₦{price}.</p>
+                    <Button onClick={() => initializePayment({onSuccess: onPaymentSuccess, onClose: onPaymentClose})} disabled={isLoading} className="w-full">
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Pay ₦{price} to Unlock
+                    </Button>
+                </div>
+            </>
+        )}
       </CardContent>
     </Card>
   );
