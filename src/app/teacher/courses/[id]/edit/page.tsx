@@ -20,7 +20,6 @@ import { doc, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useTeacherAuth } from '@/app/teacher-auth-provider';
-import { type PageProps } from 'next';
 
 
 const lessonSchema = z.object({
@@ -60,7 +59,7 @@ interface Resource {
     url: string;
 }
 
-type TeacherEditCoursePageProps = PageProps<{ id: string }>;
+type TeacherEditCoursePageProps = { params: { id: string } };
 
 export default function TeacherEditCourseForm({ params }: TeacherEditCoursePageProps) {
   const { user } = useTeacherAuth();
@@ -69,7 +68,7 @@ export default function TeacherEditCourseForm({ params }: TeacherEditCoursePageP
   const [resources, setResources] = useState<Resource[]>([]);
   
   const router = useRouter();
-  const courseId = params.id as string;
+  const courseId = params.id;
   const { toast } = useToast();
   const uniqueId = useId();
 

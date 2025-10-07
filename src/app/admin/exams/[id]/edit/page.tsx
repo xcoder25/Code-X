@@ -20,7 +20,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { type PageProps } from 'next';
 
 interface Course {
     id: string;
@@ -41,14 +40,14 @@ const examFormSchema = z.object({
 
 type ExamFormData = z.infer<typeof examFormSchema>;
 
-type EditExamPageProps = PageProps<{ id: string }>;
+type EditExamPageProps = { params: { id: string } };
 
 export default function EditExamPage({ params }: EditExamPageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [courses, setCourses] = useState<Course[]>([]);
   const router = useRouter();
-  const examId = params.id as string;
+  const examId = params.id;
   const { toast } = useToast();
   const uniqueId = useId();
 

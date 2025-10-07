@@ -22,7 +22,6 @@ import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/app/auth-provider';
-import { type PageProps } from 'next';
 
 interface ExamDetails {
     id: string;
@@ -36,11 +35,11 @@ interface Question {
     text: string;
 }
 
-type ExamTakingPageProps = PageProps<{ id: string }>;
+type ExamTakingPageProps = { params: { id: string } };
 
 export default function ExamTakingPage({ params }: ExamTakingPageProps) {
   const router = useRouter();
-  const examId = params.id as string;
+  const examId = params.id;
   const { toast } = useToast();
   const { user } = useAuth();
   

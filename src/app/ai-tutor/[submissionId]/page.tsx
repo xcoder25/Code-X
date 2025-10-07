@@ -14,7 +14,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { type PageProps } from 'next';
 
 interface Message {
   role: 'user' | 'model';
@@ -32,7 +31,7 @@ interface Question {
   text: string;
 }
 
-type AITutorPageProps = PageProps<{ submissionId: string }>;
+type AITutorPageProps = { params: { submissionId: string } };
 
 export default function AITutorPage({ params }: AITutorPageProps) {
   const { user } = useAuth();

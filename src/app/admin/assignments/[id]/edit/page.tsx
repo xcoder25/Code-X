@@ -23,7 +23,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
-import { type PageProps } from 'next';
 
 interface Course {
     id: string;
@@ -41,14 +40,14 @@ const assignmentFormSchema = z.object({
 
 type AssignmentFormData = z.infer<typeof assignmentFormSchema>;
 
-type EditAssignmentPageProps = PageProps<{ id: string }>;
+type EditAssignmentPageProps = { params: { id: string } };
 
 export default function EditAssignmentPage({ params }: EditAssignmentPageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [courses, setCourses] = useState<Course[]>([]);
   const router = useRouter();
-  const assignmentId = params.id as string;
+  const assignmentId = params.id;
   const { toast } = useToast();
 
   const form = useForm<AssignmentFormData>({

@@ -35,7 +35,6 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { cn } from '@/lib/utils';
 import { User } from '@/types';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { type PageProps } from 'next';
 
 const lessonSchema = z.object({
     id: z.string(),
@@ -88,7 +87,7 @@ export default function EditCourseForm({ params }: EditCoursePageProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
   
   const router = useRouter();
-  const courseId = params.id as string;
+  const courseId = params.id;
   const { toast } = useToast();
   const uniqueId = useId();
 
