@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useId } from 'react';
+import { useState, useEffect, useId, use } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { updateCourseAction } from '@/app/actions';
 import { uploadBytes, getDownloadURL, ref } from 'firebase/storage';
 import { storage, db } from '@/lib/firebase';
-import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, where, documentId } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import {
@@ -35,6 +35,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { cn } from '@/lib/utils';
 import { User } from '@/types';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { PageProps } from 'next';
 
 const lessonSchema = z.object({
     id: z.string(),
@@ -75,11 +76,9 @@ interface Resource {
     url: string;
 }
 
-type EditCoursePageProps = {
-    params: { id: string };
-};
+type EditCoursePageProps = PageProps<{ id: string }>;
 
-export default function EditCourseForm({ params }: EditCoursePageProps) {
+export default function EditCourseForm({ params }: { params: { id: string } }) {
   const [pageLoading, setPageLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resources, setResources] = useState<Resource[]>([]);
@@ -134,12 +133,17 @@ export default function EditCourseForm({ params }: EditCoursePageProps) {
             }
 
             // Fetch Teachers
-            const teachersQuery = query(collection(db, 'teachers'));
-            const teachersSnap = await getDocs(teachersQuery);
-            const teachersData = teachersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-            setTeachers(teachersData);
+            const teacherDocsSnap = await getDocs(collection(db, 'teachers'));
+            const teacherIds = teacherDocsSnap.docs.map(d => d.id);
+            if (teacherIds.length > 0) {
+              const usersQuery = query(collection(db, 'users'), where(documentId(), 'in', teacherIds));
+              const usersSnap = await getDocs(usersQuery);
+              const teachersData = usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as User));
+              setTeachers(teachersData);
+            }
 
         } catch (error) {
+            console.error(error);
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch course data.' });
         } finally {
             setPageLoading(false);
@@ -503,3 +507,5 @@ export default function EditCourseForm({ params }: EditCoursePageProps) {
     </div>
   );
 }
+
+    
