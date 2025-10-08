@@ -9,7 +9,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit/zod';
+import { z } from 'zod';
 import {
   InterviewPrepInputSchema,
   InterviewPrepOutputSchema,
@@ -53,8 +53,27 @@ const interviewPrepFlow = ai.defineFlow(
             prompt: input.message,
         });
 
+<<<<<<< HEAD
         return { reply: llmResponse.text };
     }
+=======
+    const prompt = `System: ${systemPrompt}
+
+Conversation history:
+${input.history.map(h => `${h.role}: ${h.content}`).join('\n')}
+
+Current message from ${input.userName}: ${input.message}`;
+
+    const llmResponse = await ai.generate({
+      prompt: prompt,
+      model: 'googleai/gemini-2.5-flash'
+    });
+
+    return {
+        reply: llmResponse.text || "I'm sorry, I couldn't generate a response. Please try again."
+    };
+  }
+>>>>>>> b7efc99ed47ef1222a03a4962b57786f3ae09296
 );
 
 

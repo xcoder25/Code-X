@@ -6,15 +6,24 @@ import { getStorage } from "firebase/storage";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
-// Your web app's Firebase configuration
+// Firebase configuration via environment variables (client-safe NEXT_PUBLIC_)
 const firebaseConfig = {
-  apiKey: "AIzaSyDdIA5E2mTHLf1tXnyvyoXjyMM2CW-mh-0",
-  authDomain: "learnai-jg327.firebaseapp.com",
-  projectId: "learnai-jg327",
-  storageBucket: "learnai-jg327.appspot.com",
-  messagingSenderId: "150405267882",
-  appId: "1:150405267882:web:ac16a10e57255a87162bd3"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyDdIA5E2mTHLf1tXnyvyoXjyMM2CW-mh-0",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "learnai-jg327.firebaseapp.com",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "learnai-jg327",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "learnai-jg327.appspot.com",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "150405267882",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:150405267882:web:ac16a10e57255a87162bd3"
 };
+
+// Debug logging for Firebase configuration
+if (process.env.NODE_ENV === 'development') {
+  console.log('Firebase Config:', {
+    projectId: firebaseConfig.projectId,
+    authDomain: firebaseConfig.authDomain,
+    hasApiKey: !!firebaseConfig.apiKey
+  });
+}
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();

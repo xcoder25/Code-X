@@ -30,7 +30,8 @@ import { sendMessageFormSchema } from './schema';
 import { getDownloadURL, ref, uploadString, deleteObject } from 'firebase/storage';
 import { auth } from '@/lib/firebase';
 import { updateProfile } from 'firebase/auth';
-import { generateContent, GenerateContentInput, GenerateContentOutput } from '@/ai/flows/ai-content-generator';
+import { generateContent } from '@/ai/flows/ai-content-generator';
+import { GenerateContentInput, GenerateContentOutput } from '@/ai/flows/ai-content-schemas';
 
 
 export async function sendMessageAction(

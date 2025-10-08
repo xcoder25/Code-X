@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Loader2, Sparkles, Copy, FileText, Code, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateContentAction } from '@/app/actions';
-import type { GenerateContentOutput } from '@/ai/flows/ai-content-generator';
+import type { GenerateContentOutput } from '@/ai/flows/ai-content-schemas';
 import { Badge } from '@/components/ui/badge';
 
 const generatorFormSchema = z.object({

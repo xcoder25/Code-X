@@ -1,36 +1,23 @@
-# 1. Dependencies Stage: Install dependencies
-FROM node:20-alpine AS dependencies
-WORKDIR /app
-COPY package.json ./
-RUN npm install --frozen-lockfile
+FROM codercom/code-server:latest
 
-# 2. Builder Stage: Build the Next.js application
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY --from=dependencies /app/node_modules ./node_modules
-COPY . .
-RUN npm run build
+# Install dependencies
+USER root
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    wget \
+    unzip \
+    vim \
+    && rm -rf /var/lib/apt/lists/*
 
-# 3. Runner Stage: Create the final production image
-FROM node:20-alpine AS runner
-WORKDIR /app
+# Set up workspace
+WORKDIR /home/coder/workspace
 
-ENV NODE_ENV=production
+# Switch back to coder user
+USER coder
 
-# Create a non-root user for security
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Expose port
+EXPOSE 8080
 
-# Copy the built application from the builder stage
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-
-USER nextjs
-
-EXPOSE 3000
-
-ENV PORT 3000
-
-# The default command to start the Next.js server
-CMD ["node_modules/.bin/next", "start"]
+# Start code-server
+CMD ["code-server", "--bind-addr", "0.0.0.0:8080", "--auth", "none", "--disable-telemetry"]

@@ -34,7 +34,7 @@ import {
   SidebarFooter,
   SidebarMenuBadge,
 } from '@/components/ui/sidebar';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
 
 export default function AppSidebar() {

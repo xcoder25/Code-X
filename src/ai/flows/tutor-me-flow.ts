@@ -9,7 +9,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit/zod';
+import { z } from 'zod';
 import {
   TutorMeInputSchema,
   TutorMeOutputSchema,
@@ -46,7 +46,15 @@ const tutorMeFlow = ai.defineFlow({
         .replace('{{questionsAndAnswers}}', questionsAndAnswers);
 
 
+    const prompt = `System: ${systemPrompt}
+
+Previous conversation history:
+${input.history.map(h => `${h.role}: ${h.content}`).join('\n')}
+
+Current message from ${input.userName}: ${input.message}`;
+
     const llmResponse = await ai.generate({
+<<<<<<< HEAD
         model: 'googleai/gemini-1.5-flash-latest',
         system: systemPrompt,
         history: input.history,
@@ -55,6 +63,17 @@ const tutorMeFlow = ai.defineFlow({
 
     return { reply: llmResponse.text };
 });
+=======
+      prompt: prompt,
+      model: 'googleai/gemini-2.5-flash'
+    });
+
+    return {
+        reply: llmResponse.text || "I'm sorry, I couldn't generate a response. Please try again."
+    };
+  }
+);
+>>>>>>> b7efc99ed47ef1222a03a4962b57786f3ae09296
 
 
 export async function tutorMeAction(

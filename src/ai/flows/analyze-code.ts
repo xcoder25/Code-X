@@ -9,7 +9,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit/zod';
+import { z } from 'zod';
 import { AnalyzeCodeInputSchema, AnalyzeCodeOutputSchema } from '@/app/schema';
 
 export type { AnalyzeCodeInput, AnalyzeCodeOutput } from '@/app/schema';
@@ -22,6 +22,7 @@ Analyze the user's code for the following:
 
 Your response must be in the structured JSON format defined by the output schema.`;
 
+<<<<<<< HEAD
 const codeAnalysisFlow = ai.defineFlow(
   {
     name: 'codeAnalysisFlow',
@@ -48,4 +49,22 @@ export async function analyzeCode(
   input: z.infer<typeof AnalyzeCodeInputSchema>
 ): Promise<z.infer<typeof AnalyzeCodeOutputSchema>> {
   return codeAnalysisFlow(input);
+=======
+export async function analyzeCode(
+  input: z.infer<typeof AnalyzeCodeInputSchema>
+): Promise<z.infer<typeof AnalyzeCodeOutputSchema>> {
+  const prompt = `System: ${CodeAnalysisSystemPrompt}
+
+Please analyze this code:\n\n\`\`\`\n${input.code}\n\`\`\``;
+
+  const llmResponse = await ai.generate({
+    prompt: prompt,
+    model: 'googleai/gemini-2.5-flash'
+  });
+
+  return {
+    explanation: llmResponse.text || "I couldn't analyze the code. Please try again.",
+    feedback: "Unable to provide feedback at this time."
+  };
+>>>>>>> b7efc99ed47ef1222a03a4962b57786f3ae09296
 }
