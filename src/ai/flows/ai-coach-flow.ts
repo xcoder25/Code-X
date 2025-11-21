@@ -57,37 +57,10 @@ const chatWithElaraFlow = ai.defineFlow(
 export async function chatWithElara(
   input: z.infer<typeof ChatWithElaraInputSchema>
 ): Promise<z.infer<typeof ChatWithElaraOutputSchema>> {
-<<<<<<< HEAD
-  return chatWithElaraFlow(input);
-}
-=======
-  
   try {
-    // 1. Render the system prompt string
-    const systemPrompt = ELARA_SYSTEM_PROMPT_TEMPLATE.replace(
-      '{{userName}}',
-      input.userName
-    );
-
-    // 2. Call ai.generate with updated syntax
-    const prompt = `System: ${systemPrompt}
-
-Conversation history:
-${(input.history || []).map(h => `${h.role}: ${h.content}`).join('\n')}
-
-Current message from ${input.userName}: ${input.message}`;
-
-    const llmResponse = await ai.generate({
-      prompt: prompt,
-      model: 'googleai/gemini-2.5-flash'
-    });
-
-    return {
-      reply: llmResponse.text || "I'm sorry, I couldn't generate a response. Please try again."
-    };
+    return await chatWithElaraFlow(input);
   } catch (error) {
     console.error('Error in chatWithElara:', error);
     throw new Error(`AI service error: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
->>>>>>> b7efc99ed47ef1222a03a4962b57786f3ae09296

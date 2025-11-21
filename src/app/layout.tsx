@@ -3,10 +3,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { AppProviders } from './client-providers';
-import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+import Script from 'next/script';
 
 export const metadata: Metadata = {
     title: 'Code-X',
@@ -20,7 +18,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn('antialiased', inter.variable)}>
+      <head>
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8362821240895573"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+      </head>
+      <body className={cn('antialiased font-sans')}>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"

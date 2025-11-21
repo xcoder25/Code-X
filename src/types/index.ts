@@ -9,6 +9,10 @@ export interface ChatMessage {
   photoURL: string | null;
   createdAt: Timestamp;
   displayName?: string | null;
+  fileUrl?: string;
+  fileName?: string;
+  fileType?: string;
+  fileSize?: number;
 }
 
 export interface Submission {
@@ -67,6 +71,28 @@ export interface User {
     course?: string; // For discovery context
     plan?: string;
     paystackCustomerCode?: string;
+    subscription?: UserSubscription;
+}
+
+export interface UserSubscription {
+    planId: string;
+    planName: string;
+    status: 'active' | 'inactive' | 'cancelled' | 'expired' | 'pending';
+    startDate: Timestamp;
+    endDate?: Timestamp;
+    nextBillingDate?: Timestamp;
+    paystackSubscriptionCode?: string;
+    autoRenew: boolean;
+    usage: SubscriptionUsage;
+}
+
+export interface SubscriptionUsage {
+    aiCoachMessages: number;
+    codeAnalyses: number;
+    interviewPrepSessions: number;
+    projectsCreated: number;
+    assignmentsSubmitted: number;
+    lastResetDate: Timestamp;
 }
 
 export interface Friend {

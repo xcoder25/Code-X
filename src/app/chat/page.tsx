@@ -18,10 +18,11 @@ import {
 import { useAuthState } from 'react-firebase-hooks/auth';
 import type { ChatMessage as ChatMessageType, User } from '@/types';
 import { Button } from '@/components/ui/button';
+import FriendsChatList from '@/components/friends/friends-chat-list';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, Send, Hash, Users, Code, ArrowLeft, User as UserIcon, Search } from 'lucide-react';
+import { LogOut, Send, Hash, Users, Code, ArrowLeft, User as UserIcon, Search, Paperclip } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -124,12 +125,22 @@ const ChatList: React.FC<ChatListProps> = ({ onSelectChat }) => {
           </div>
         </TabsContent>
         <TabsContent value="people" className="flex-1 overflow-y-auto">
-            <ClassmatesList onSelectUser={(user) => onSelectChat({
-                id: getDirectMessageId(auth.currentUser!.uid, user.id),
-                name: user.displayName,
-                photoURL: user.photoURL,
-                type: 'dm'
-            })}/>
+            <div className="p-2 space-y-2">
+                <div className="text-sm font-medium text-muted-foreground px-2">Friends</div>
+                <FriendsChatList onSelectUser={(user) => onSelectChat({
+                    id: getDirectMessageId(auth.currentUser!.uid, user.id),
+                    name: user.displayName,
+                    photoURL: user.photoURL,
+                    type: 'dm'
+                })}/>
+                <div className="text-sm font-medium text-muted-foreground px-2 mt-4">Classmates</div>
+                <ClassmatesList onSelectUser={(user) => onSelectChat({
+                    id: getDirectMessageId(auth.currentUser!.uid, user.id),
+                    name: user.displayName,
+                    photoURL: user.photoURL,
+                    type: 'dm'
+                })}/>
+            </div>
         </TabsContent>
       </Tabs>
     </div>
@@ -272,6 +283,74 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ chat, onBack }) => {
     setFormValue('');
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !auth.currentUser) return;
+
+    // Check file type
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+    
+    if (!isImage && !isVideo) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid file type',
+        description: 'Please upload an image or video file.',
+      });
+      return;
+    }
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        variant: 'destructive',
+        title: 'File too large',
+        description: 'Please upload a file smaller than 10MB.',
+      });
+      return;
+    }
+
+    try {
+      const { ref: storageRef, uploadBytes, getDownloadURL } = await import('firebase/storage');
+      const { storage } = await import('@/lib/firebase');
+      
+      const fileRef = storageRef(storage, `chat-files/${chat.id}/${Date.now()}-${file.name}`);
+      await uploadBytes(fileRef, file);
+      const fileUrl = await getDownloadURL(fileRef);
+
+      const { uid, photoURL, displayName } = auth.currentUser;
+      const collectionPath = chat.type === 'group'
+          ? `groups/${chat.id}/messages`
+          : `direct-messages/${chat.id}/messages`;
+      
+      const messagesRef = collection(db, collectionPath);
+
+      await addDoc(messagesRef, {
+        text: '',
+        fileUrl,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        createdAt: serverTimestamp(),
+        uid,
+        photoURL,
+        displayName,
+      });
+
+      toast({
+        title: 'File uploaded',
+        description: `${file.name} has been sent.`,
+      });
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Upload failed',
+        description: 'Failed to upload file. Please try again.',
+      });
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full">
       <div className="p-2 border-b flex items-center gap-2">
@@ -295,6 +374,19 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ chat, onBack }) => {
         <div ref={messagesEndRef} />
       </div>
       <form onSubmit={sendMessage} className="flex gap-2 p-4 border-t">
+        <input
+          type="file"
+          id="file-upload"
+          accept="image/*,video/*"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+        <label htmlFor="file-upload">
+          <Button type="button" variant="outline" size="icon" className="cursor-pointer">
+            <Paperclip className="h-4 w-4" />
+            <span className="sr-only">Upload file</span>
+          </Button>
+        </label>
         <Input
           value={formValue}
           onChange={(e) => setFormValue(e.target.value)}
@@ -315,8 +407,11 @@ interface ChatMessageProps {
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
-  const { text, uid, photoURL, displayName } = message;
+  const { text, uid, photoURL, displayName, fileUrl, fileName, fileType } = message;
   const messageClass = uid === auth.currentUser?.uid ? 'sent' : 'received';
+
+  const isImage = fileType?.startsWith('image/');
+  const isVideo = fileType?.startsWith('video/');
 
   return (
     <div className={cn('flex items-start gap-3 w-full', messageClass === 'sent' ? 'justify-end' : 'justify-start')}>
@@ -329,7 +424,35 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       <div className="flex flex-col" style={{ alignItems: messageClass === 'sent' ? 'flex-end' : 'flex-start' }}>
         {messageClass === 'received' && <p className="text-xs text-muted-foreground ml-2 mb-1">{displayName}</p>}
         <div className={cn('p-3 rounded-lg max-w-sm md:max-w-md shadow-sm', messageClass === 'sent' ? 'bg-primary text-primary-foreground' : 'bg-background')}>
-            <p className="text-sm whitespace-pre-wrap">{text}</p>
+          {fileUrl && (
+            <div className="mb-2">
+              {isImage ? (
+                <img 
+                  src={fileUrl} 
+                  alt={fileName || 'Uploaded image'} 
+                  className="max-w-full h-auto rounded-lg cursor-pointer"
+                  onClick={() => window.open(fileUrl, '_blank')}
+                />
+              ) : isVideo ? (
+                <video 
+                  src={fileUrl} 
+                  controls 
+                  className="max-w-full h-auto rounded-lg"
+                  preload="metadata"
+                />
+              ) : (
+                <a 
+                  href={fileUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm underline hover:no-underline"
+                >
+                  📎 {fileName || 'File'}
+                </a>
+              )}
+            </div>
+          )}
+          {text && <p className="text-sm whitespace-pre-wrap">{text}</p>}
         </div>
       </div>
       {messageClass === 'sent' && (
