@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -15,7 +14,7 @@ import {
   Activity,
 } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, collectionGroup } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTeacherAuth } from '@/app/teacher-auth-provider';
@@ -30,6 +29,7 @@ export default function TeacherDashboardPage() {
     const { user } = useTeacherAuth();
     const [courses, setCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(true);
+    const [pendingSubmissions, setPendingSubmissions] = useState(0);
 
     const totalEnrollments = courses.reduce((acc, course) => acc + course.enrollments, 0);
 
@@ -38,8 +38,17 @@ export default function TeacherDashboardPage() {
 
         const coursesQuery = query(collection(db, 'courses'), where('teacherId', '==', user.uid));
         const unsubscribe = onSnapshot(coursesQuery, (snapshot) => {
-            const coursesData = snapshot.docs.map(doc => doc.data() as Course);
+            const coursesData = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as Course);
             setCourses(coursesData);
+            
+            if (coursesData.length > 0) {
+              const courseIds = coursesData.map(c => c.id);
+              const submissionsQuery = query(collectionGroup(db, 'submissions'), where('courseId', 'in', courseIds), where('status', '==', 'Pending'));
+              onSnapshot(submissionsQuery, (subSnapshot) => {
+                setPendingSubmissions(subSnapshot.size);
+              });
+            }
+
             setLoading(false);
         }, (error) => {
             console.error("Error fetching teacher courses:", error);
@@ -79,7 +88,7 @@ export default function TeacherDashboardPage() {
                     <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">12</div>
+                   {loading ? <Skeleton className="h-8 w-12" /> : <div className="text-2xl font-bold">{pendingSubmissions}</div>}
                     <p className="text-xs text-muted-foreground">Assignments to be graded</p>
                 </CardContent>
             </Card>

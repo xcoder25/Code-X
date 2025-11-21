@@ -1,4 +1,3 @@
-
 'use client';
 
 import TeacherAppSidebar from '@/components/teacher/teacher-sidebar';

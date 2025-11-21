@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -50,6 +49,7 @@ interface Submission {
   userName: string;
   assignmentTitle: string;
   submittedAt: { seconds: number };
+  status: 'Pending' | 'Graded';
 }
 
 const chartConfig = {
