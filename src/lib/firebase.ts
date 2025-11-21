@@ -1,4 +1,3 @@
-
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp, FirebaseOptions } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
@@ -18,16 +17,16 @@ const firebaseConfig: FirebaseOptions = {
 // Validate the Firebase configuration
 const isConfigValid = Object.values(firebaseConfig).every(value => Boolean(value));
 
-if (!isConfigValid) {
-    console.error("Firebase config is invalid. Make sure you have set up your .env.local file correctly with all NEXT_PUBLIC_FIREBASE_ variables.");
+const app = isConfigValid ? (getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)) : null;
+
+// Initialize Firebase services only if the app was successfully initialized
+const auth = app ? getAuth(app) : ({} as any);
+const db = app ? getFirestore(app) : ({} as any);
+const storage = app ? getStorage(app) : ({} as any);
+const googleProvider = app ? new GoogleAuthProvider() : ({} as any);
+
+if (!app) {
+    console.error("Firebase config is invalid. Make sure you have set up your .env.local file correctly with all NEXT_PUBLIC_FIREBASE_ variables. The app will not function correctly.");
 }
-
-// Initialize Firebase
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
-const googleProvider = new GoogleAuthProvider();
-
 
 export { app, auth, db, storage, googleProvider };
