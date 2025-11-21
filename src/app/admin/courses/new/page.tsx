@@ -5,7 +5,7 @@ import { useState, useId } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, GripVertical, Loader2, X, DollarSign } from 'lucide-react';
+import { Plus, GripVertical, Loader2, X, DollarSign, Bot, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { createCourseAction } from '@/app/actions';
+import { aiCreateCourseAction } from '@/lib/ai-course-actions';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const lessonSchema = z.object({
@@ -40,6 +41,8 @@ type CourseFormData = z.infer<typeof courseFormSchema>;
 
 export default function CreateCourseForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [useAiAssistant, setUseAiAssistant] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const uniqueId = useId();
@@ -88,9 +91,24 @@ export default function CreateCourseForm() {
   const onSubmit = async (data: CourseFormData) => {
     setIsSubmitting(true);
     try {
-      await createCourseAction(data);
-
-      toast({ title: 'Success!', description: `Course "${data.title}" has been created.` });
+      if (useAiAssistant) {
+        const result = await aiCreateCourseAction({
+          title: data.title,
+          description: data.description,
+          tags: data.tags.split(',').map(tag => tag.trim()),
+          difficulty: 'intermediate', // Default, can be made configurable
+          generateContent: true,
+        });
+        
+        toast({ 
+          title: 'Success!', 
+          description: `Course "${data.title}" has been created with AI assistance.` 
+        });
+      } else {
+        await createCourseAction(data);
+        toast({ title: 'Success!', description: `Course "${data.title}" has been created.` });
+      }
+      
       router.push(`/admin/courses`);
 
     } catch (error: any) {
@@ -99,10 +117,68 @@ export default function CreateCourseForm() {
     }
   };
 
+  const handleAiGenerate = async () => {
+    const formData = form.getValues();
+    if (!formData.title || !formData.description) {
+      toast({
+        variant: 'destructive',
+        title: 'Validation Error',
+        description: 'Please fill in title and description before generating content.',
+      });
+      return;
+    }
+
+    setIsAiGenerating(true);
+    try {
+      const result = await aiCreateCourseAction({
+        title: formData.title,
+        description: formData.description,
+        tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [],
+        difficulty: 'intermediate',
+        generateContent: true,
+      });
+
+      if (result.courseStructure?.modules) {
+        // Update form with AI-generated content
+        form.setValue('modules', result.courseStructure.modules);
+        toast({
+          title: 'AI Content Generated!',
+          description: 'Course structure has been generated. Review and modify as needed.',
+        });
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'AI Generation Failed',
+        description: error.message || 'Failed to generate course content.',
+      });
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
-        <h2 className="text-3xl font-bold tracking-tight">Create New Course</h2>
-        <p className="text-muted-foreground">Fill out the details below to add a new course to the platform.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Create New Course</h2>
+            <p className="text-muted-foreground">Fill out the details below to add a new course to the platform.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={handleAiGenerate}
+              disabled={isAiGenerating}
+            >
+              {isAiGenerating ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Bot className="mr-2 h-4 w-4" />
+              )}
+              Generate with AI
+            </Button>
+          </div>
+        </div>
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <Card>

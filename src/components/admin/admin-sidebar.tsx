@@ -16,6 +16,7 @@ import {
   FileQuestion,
   Lightbulb,
   Sparkles,
+  Bot,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -122,6 +123,14 @@ export default function AppSidebar() {
               <LoadingLink href="/admin/generator">
                 <Sparkles />
                 <span>AI Generator</span>
+              </LoadingLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/admin/ai-assistant')}>
+              <LoadingLink href="/admin/ai-assistant">
+                <Bot />
+                <span>AI Assistant</span>
               </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>

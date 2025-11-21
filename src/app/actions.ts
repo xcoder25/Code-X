@@ -1136,6 +1136,7 @@ export async function seedInitialCoursesAction() {
 
 // --- Paystack Subscription Action ---
 
+// Legacy subscription action - kept for backward compatibility
 const createSubscriptionSchema = z.object({
     userId: z.string(),
     planCode: z.string(),
