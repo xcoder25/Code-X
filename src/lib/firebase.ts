@@ -14,19 +14,29 @@ const firebaseConfig: FirebaseOptions = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Validate the Firebase configuration
-const isConfigValid = Object.values(firebaseConfig).every(value => Boolean(value));
+// Function to initialize Firebase
+function initializeFirebaseApp() {
+    if (getApps().length > 0) {
+        return getApp();
+    }
+    
+    // Check for essential config values
+    if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
+        console.error("Firebase config is invalid. Make sure you have set up your .env.local file correctly with essential Firebase variables.");
+        return null;
+    }
+    
+    return initializeApp(firebaseConfig);
+}
 
-const app = isConfigValid ? (getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)) : null;
-
-// Initialize Firebase services only if the app was successfully initialized
+const app = initializeFirebaseApp();
 const auth = app ? getAuth(app) : ({} as any);
 const db = app ? getFirestore(app) : ({} as any);
 const storage = app ? getStorage(app) : ({} as any);
 const googleProvider = app ? new GoogleAuthProvider() : ({} as any);
 
 if (!app) {
-    console.error("Firebase config is invalid. Make sure you have set up your .env.local file correctly with all NEXT_PUBLIC_FIREBASE_ variables. The app will not function correctly.");
+    console.error("Firebase app initialization failed. The app will not function correctly.");
 }
 
 export { app, auth, db, storage, googleProvider };
