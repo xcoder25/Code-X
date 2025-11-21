@@ -20,15 +20,25 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Course {
     id: string;
     title: string;
 }
 
+const optionSchema = z.object({
+  id: z.string(),
+  text: z.string().min(1, "Option text cannot be empty."),
+});
+
 const questionSchema = z.object({
   id: z.string(),
   text: z.string().min(1, "Question text cannot be empty."),
+  type: z.enum(['text', 'multiple-choice']),
+  options: z.array(optionSchema).optional(),
+  correctAnswer: z.string().optional(),
 });
 
 const examFormSchema = z.object({
@@ -55,7 +65,7 @@ export default function EditExamPage({ params }: EditExamPageProps) {
     resolver: zodResolver(examFormSchema),
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "questions",
   });
@@ -99,12 +109,28 @@ export default function EditExamPage({ params }: EditExamPageProps) {
   }, [examId, form, router, toast]);
 
     
-  const addQuestion = () => {
+  const addQuestion = (type: 'text' | 'multiple-choice') => {
     append({
         id: `${uniqueId}-q-${fields.length}`,
         text: '',
+        type,
+        options: type === 'multiple-choice' ? [{id: 'opt-0', text: ''}, {id: 'opt-1', text: ''}] : [],
+        correctAnswer: '',
     });
   };
+
+  const addOption = (qIndex: number) => {
+    const question = form.getValues(`questions.${qIndex}`);
+    const newOptions = [...(question.options || []), { id: `opt-${question.options?.length || 0}`, text: '' }];
+    update(qIndex, { ...question, options: newOptions });
+  };
+  
+  const removeOption = (qIndex: number, optIndex: number) => {
+    const question = form.getValues(`questions.${qIndex}`);
+    const newOptions = question.options?.filter((_, i) => i !== optIndex);
+    update(qIndex, { ...question, options: newOptions });
+  };
+
 
   const onSubmit = async (data: ExamFormData) => {
     setIsSubmitting(true);
@@ -234,12 +260,75 @@ export default function EditExamPage({ params }: EditExamPageProps) {
                                             </FormItem>
                                         )}
                                     />
+                                    <FormField
+                                        control={form.control}
+                                        name={`questions.${qIndex}.type`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Question Type</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select question type" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="text">Text (Short Answer)</SelectItem>
+                                                        <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    {form.watch(`questions.${qIndex}.type`) === 'multiple-choice' && (
+                                        <div className="space-y-3 pl-4 border-l-2">
+                                            <Label>Options & Correct Answer</Label>
+                                            <FormField
+                                                control={form.control}
+                                                name={`questions.${qIndex}.correctAnswer`}
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                         <RadioGroup
+                                                            onValueChange={field.onChange}
+                                                            defaultValue={field.value}
+                                                        >
+                                                            {form.getValues(`questions.${qIndex}.options`)?.map((opt, optIndex) => (
+                                                                <div key={opt.id} className="flex items-center gap-2">
+                                                                    <FormControl>
+                                                                        <RadioGroupItem value={opt.id} />
+                                                                    </FormControl>
+                                                                    <Input
+                                                                        {...form.register(`questions.${qIndex}.options.${optIndex}.text`)}
+                                                                        placeholder={`Option ${optIndex + 1}`}
+                                                                    />
+                                                                    <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(qIndex, optIndex)}>
+                                                                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                                                    </Button>
+                                                                </div>
+                                                            ))}
+                                                        </RadioGroup>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <Button type="button" variant="outline" size="sm" onClick={() => addOption(qIndex)}>
+                                                <Plus className="mr-2 h-4 w-4" /> Add Option
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             </Card>
                         ))}
-                         <Button type="button" variant="outline" onClick={addQuestion}>
-                            <Plus className="mr-2 h-4 w-4" /> Add Question
-                        </Button>
+                         <div className="flex gap-2">
+                            <Button type="button" variant="outline" onClick={() => addQuestion('text')}>
+                                <Plus className="mr-2 h-4 w-4" /> Add Text Question
+                            </Button>
+                             <Button type="button" variant="outline" onClick={() => addQuestion('multiple-choice')}>
+                                <Plus className="mr-2 h-4 w-4" /> Add Multiple Choice
+                            </Button>
+                         </div>
                         <FormMessage>{form.formState.errors.questions?.message}</FormMessage>
                     </CardContent>
                 </Card>
