@@ -17,7 +17,7 @@ if (
   !process.env.GOOGLE_GENAI_API_KEY
 ) {
   console.warn(
-    'いずれかの環境変数を設定してください: GOOGLE_API_KEY, GEMINI_API_KEY, GOOGLE_GENAI_API_KEY'
+    'Please set one of the following environment variables: GOOGLE_API_KEY, GEMINI_API_KEY, GOOGLE_GENAI_API_KEY'
   );
 }
 

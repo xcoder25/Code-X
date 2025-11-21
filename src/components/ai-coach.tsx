@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef, FormEvent } from 'react';
-import { Bot, Loader2, Send, Sparkles, User } from 'lucide-react';
+import { Bot, Loader2, Send, Sparkles, User, Volume2, Play } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { chatWithElaraAction } from '@/app/actions';
+import { textToSpeech } from '@/ai/flows/tts-flow';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/app/auth-provider';
@@ -14,6 +15,7 @@ import { useAuth } from '@/app/auth-provider';
 interface Message {
   role: 'user' | 'model';
   content: string;
+  audioUrl?: string;
 }
 
 const initialMessage = `Hi there! My name is Elara, and I'm your AI learning coach here on the Code-X platform. I'm excited to help you on your coding journey! To best assist you, tell me, what are you hoping to learn or accomplish today?`;
@@ -26,6 +28,30 @@ export default function AiCoach() {
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const userName = user?.displayName?.split(' ')[0] || "there";
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Audio player singleton
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.onended = () => setCurrentlyPlaying(null);
+    }
+  }, []);
+  
+  const playAudio = (audioUrl: string) => {
+    if (audioRef.current) {
+      if (currentlyPlaying === audioUrl) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        setCurrentlyPlaying(null);
+      } else {
+        audioRef.current.src = audioUrl;
+        audioRef.current.play();
+        setCurrentlyPlaying(audioUrl);
+      }
+    }
+  };
 
   useEffect(() => {
     // Scroll to the bottom when new messages are added
@@ -56,7 +82,13 @@ export default function AiCoach() {
         history: messages,
       });
 
-      const elaraMessage: Message = { role: 'model', content: response.reply };
+      const audioResponse = await textToSpeech({ text: response.reply });
+
+      const elaraMessage: Message = { 
+        role: 'model', 
+        content: response.reply,
+        audioUrl: audioResponse.audioUrl,
+      };
       setMessages((prev) => [...prev, elaraMessage]);
     } catch (error) {
        toast({
@@ -110,6 +142,16 @@ export default function AiCoach() {
                 )}
               >
                 <p className="whitespace-pre-wrap">{message.content}</p>
+                {message.audioUrl && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => playAudio(message.audioUrl!)}
+                    className="mt-2 h-7 w-7 text-muted-foreground"
+                  >
+                    {currentlyPlaying === message.audioUrl ? <Loader2 className="h-4 w-4 animate-spin" /> : <Volume2 className="h-4 w-4" />}
+                  </Button>
+                )}
               </div>
               {message.role === 'user' && (
                  <Avatar className="h-8 w-8">
