@@ -32,6 +32,7 @@ import { auth } from '@/lib/firebase';
 import { updateProfile } from 'firebase/auth';
 import { generateContent } from '@/ai/flows/ai-content-generator';
 import { GenerateContentInput, GenerateContentOutput } from '@/ai/flows/ai-content-schemas';
+import { generateVideoAction, GenerateVideoInput, GenerateVideoOutput } from '@/ai/flows/video-generator-flow';
 
 
 export async function sendMessageAction(
@@ -1251,4 +1252,9 @@ export async function createLiveClassAction(
   });
 
   return { success: true };
+}
+
+// --- Video Generation ---
+export async function generateVideo(input: GenerateVideoInput): Promise<GenerateVideoOutput> {
+    return generateVideoAction(input);
 }
