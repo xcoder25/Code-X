@@ -6,6 +6,7 @@ import LandingPageFooter from '@/components/landing-page-footer';
 import SkillsSection from '@/components/skills-section';
 import HowItWorks from '@/components/landing/how-it-works';
 import Testimonials from '@/components/landing/testimonials';
+import UpcomingBootcamps from '@/components/landing/upcoming-bootcamps';
 
 export default function LandingPage() {
   return (
@@ -111,6 +112,8 @@ export default function LandingPage() {
         </section>
         
         <SkillsSection />
+
+        <UpcomingBootcamps />
 
         <Testimonials />
       </main>
