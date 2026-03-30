@@ -14,6 +14,7 @@ import {
   MessageCircle,
   Clipboard,
   FileQuestion,
+  Sparkles,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -80,6 +81,14 @@ export default function AppSidebar() {
               <LoadingLink href="/admin">
                 <LayoutDashboard />
                 <span>Dashboard</span>
+              </LoadingLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname === ('/admin/agent')}>
+              <LoadingLink href="/admin/agent">
+                <Sparkles className="text-purple-500" />
+                <span className="font-bold text-purple-600 dark:text-purple-400">Admin Agent</span>
               </LoadingLink>
             </SidebarMenuButton>
           </SidebarMenuItem>

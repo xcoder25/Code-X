@@ -18,7 +18,22 @@ import {
   Calendar,
   ClipboardList,
   Target,
+  Flame,
+  Trophy,
+  TrendingUp,
+  Zap,
 } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Cell,
+} from 'recharts';
+import { motion } from 'framer-motion';
 import {
   Table,
   TableHeader,
@@ -133,12 +148,40 @@ export default function DashboardPage() {
     };
 
 
+  const leaderboardData = [
+    { name: 'Alex Johnson', points: 2450, color: '#3b82f6' },
+    { name: 'Sarah Chen', points: 2100, color: '#8b5cf6' },
+    { name: 'Michael Ross', points: 1950, color: '#ec4899' },
+    { name: 'Emma Wilson', points: 1800, color: '#10b981' },
+    { name: 'David Kim', points: 1650, color: '#f59e0b' },
+  ];
+
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 bg-background/50">
       <div className="flex items-center justify-between">
-        <h1 className="font-semibold text-3xl">Student Dashboard</h1>
+        <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+        >
+            <h1 className="font-bold text-3xl tracking-tight">Student Dashboard</h1>
+            <p className="text-muted-foreground mt-1">Welcome back, {user?.displayName?.split(' ')[0] || 'Student'}!</p>
+        </motion.div>
+        
+        <div className="flex items-center gap-3">
+             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-500 font-bold text-sm">
+                <Flame className="h-4 w-4 fill-orange-500" />
+                <span>7 Day Streak</span>
+            </div>
+             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-500 font-bold text-sm">
+                <Zap className="h-4 w-4 fill-blue-500" />
+                <span>1,250 XP</span>
+            </div>
+        </div>
       </div>
+
       <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4 md:gap-6">
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
@@ -177,21 +220,97 @@ export default function DashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+             <Target className="h-12 w-12 text-primary" />
+          </div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overall Goal</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Career Path</CardTitle>
+            <Target className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Not Set</div>
-            <p className="text-xs text-muted-foreground">
-              No track selected
+            <div className="text-xl font-bold">Fullstack Developer</div>
+            <p className="text-xs text-muted-foreground mt-1">
+               75% of prerequisites met
             </p>
+            <Button size="sm" variant="link" className="p-0 h-auto mt-2 text-xs" asChild>
+                <Link href="/path" className="flex items-center">
+                    Review Roadmap <ArrowRight className="ml-1 h-3 w-3" />
+                </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
 
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="md:col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>Top Performers</CardTitle>
+                    <CardDescription>Global leaderboard ranking for this week.</CardDescription>
+                </div>
+                <Trophy className="h-5 w-5 text-yellow-500" />
+            </CardHeader>
+            <CardContent>
+                <div className="h-[250px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={leaderboardData} layout="vertical" margin={{ left: 20, right: 30 }}>
+                            <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.1} />
+                            <XAxis type="number" hide />
+                            <YAxis 
+                                dataKey="name" 
+                                type="category" 
+                                tick={{ fontSize: 12, fill: 'currentColor' }} 
+                                width={100}
+                                axisLine={false}
+                                tickLine={false}
+                            />
+                            <RechartsTooltip 
+                                cursor={{ fill: 'transparent' }} 
+                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            />
+                            <Bar dataKey="points" radius={[0, 4, 4, 0]} barSize={25}>
+                                {leaderboardData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Recent Insights</CardTitle>
+                <CardDescription>AI-generated learning tips.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                    <p className="text-xs font-semibold text-primary flex items-center gap-1.5 mb-1">
+                        <TrendingUp className="h-3 w-3" />
+                        PRO TIP
+                    </p>
+                    <p className="text-sm">You are 2x more likely to finish a module if you complete the lab exercises first.</p>
+                </div>
+                <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/10">
+                    <p className="text-xs font-semibold text-purple-500 flex items-center gap-1.5 mb-1">
+                         <Zap className="h-3 w-3" />
+                        STREAK BONUS
+                    </p>
+                    <p className="text-sm">You're on a 7-day streak! Keep it up to secure a 20% XP boost for the next 24 hours.</p>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button variant="outline" className="w-full text-xs" asChild>
+                    <Link href="/path">Ask Elara for more <ArrowRight className="ml-1.5 h-3 w-3" /></Link>
+                </Button>
+            </CardFooter>
+        </Card>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2">
+
         <Card>
           <CardHeader>
             <CardTitle>Upcoming Schedule</CardTitle>

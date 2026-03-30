@@ -48,3 +48,25 @@ export const ChatWithElaraOutputSchema = z.object({
   reply: z.string().describe("Elara's response to the user."),
 });
 export type ChatWithElaraOutput = z.infer<typeof ChatWithElaraOutputSchema>;
+
+// Schema for Admin Agent Chat
+export const ChatWithAdminAgentInputSchema = z.object({
+  adminName: z.string().describe('The name of the admin engaging with the AI.'),
+  message: z.string().describe("The admin's message or command."),
+  history: z
+    .array(z.object({
+        role: z.enum(['user', 'model']),
+        content: z.string(),
+    }))
+    .describe('The history of the conversation so far.'),
+});
+export type ChatWithAdminAgentInput = z.infer<typeof ChatWithAdminAgentInputSchema>;
+
+export const ChatWithAdminAgentOutputSchema = z.object({
+  reply: z.string().describe("The agent's response."),
+  suggestedAction: z.object({
+    type: z.enum(['CREATE_EXAM', 'GRADE_SUBMISSION', 'SEND_NOTIFICATION', 'NONE']),
+    data: z.any().optional(),
+  }).optional(),
+});
+export type ChatWithAdminAgentOutput = z.infer<typeof ChatWithAdminAgentOutputSchema>;

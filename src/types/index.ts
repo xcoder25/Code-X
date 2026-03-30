@@ -41,6 +41,8 @@ export interface User {
     photoURL?: string | null;
     status?: 'sent' | 'received' | 'accepted' | null; // For friend status
     course?: string; // For discovery context
+    goal?: string;
+    streak?: number;
 }
 
 export interface Friend {

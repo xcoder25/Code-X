@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bot, Loader2, Send, Sparkles, User } from 'lucide-react';
+import { Bot, Loader2, Send, Sparkles, User, Calendar, Target, Code } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -135,16 +135,53 @@ export default function AiCoach() {
           )}
         </div>
       </ScrollArea>
-      <div className="p-4 border-t">
+      <div className="p-4 border-t space-y-4">
+        {messages.length === 1 && (
+            <div className="flex flex-wrap gap-2">
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-xs rounded-full border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors"
+                    onClick={() => {
+                        setInput("Can you create a weekly study plan for me to learn React?");
+                    }}
+                >
+                    <Calendar className="mr-2 h-3.5 w-3.5 text-primary" />
+                    Generate Study Plan
+                </Button>
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-xs rounded-full border-purple-500/20 bg-purple-500/5 hover:bg-purple-500/10 transition-colors"
+                    onClick={() => {
+                        setInput("What are the most in-demand skills for a Fullstack Developer in 2024?");
+                    }}
+                >
+                    <Target className="mr-2 h-3.5 w-3.5 text-purple-500" />
+                    Market Insights
+                </Button>
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-xs rounded-full border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 transition-colors"
+                    onClick={() => {
+                        setInput("I need help understanding how React hooks work. Can you explain useEffect?");
+                    }}
+                >
+                    <Code className="mr-2 h-3.5 w-3.5 text-blue-500" />
+                    Explain Hooks
+                </Button>
+            </div>
+        )}
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask Elara for help..."
-            className="flex-1"
+            className="flex-1 rounded-full px-4"
             disabled={isLoading || !user}
           />
-          <Button type="submit" disabled={isLoading || !user}>
+          <Button type="submit" size="icon" className="rounded-full shrink-0" disabled={isLoading || !user}>
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
