@@ -138,19 +138,68 @@ function extractIntent(msg: string) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Agent Function
 // ─────────────────────────────────────────────────────────────────────────────
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// ─────────────────────────────────────────────────────────────────────────────
 export async function chatWithAdminAgentAction(
   input: ChatWithAdminAgentInput,
 ): Promise<ChatWithAdminAgentOutput> {
   const { message, adminName, history } = input;
-  const intent = extractIntent(message);
   const ctx = await loadPlatformContext();
-  
+
   const firstName = adminName.split(' ')[0];
   const courseList = ctx.courses.map((c: any) => `"${c.title}" (ID: ${c.id})`).join(', ') || 'None yet';
   const studentCount = ctx.users.length;
   const courseCount = ctx.courses.length;
   const examCount = ctx.exams.length;
   const assignmentCount = ctx.assignments.length;
+
+  // 1. Attempt Real AI Generation if API key is present
+  const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+  if (apiKey) {
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Fast and capable
+
+      const aiPrompt = `${SYSTEM_PROMPT}
+
+[PLATFORM_CONTEXT]
+Stats: ${studentCount} Students, ${courseCount} Courses, ${examCount} Exams, ${ctx.pendingSubmissions.length} Pending Submissions to grade.
+Courses (Target these IDs for exams/assignments): ${JSON.stringify(ctx.courses.map((c: any) => ({ title: c.title, id: c.id })))}
+Pending Submissions (Target these for grading): ${JSON.stringify(ctx.pendingSubmissions.map((s: any) => ({ userName: s.userName, assignmentTitle: s.assignmentTitle, submissionId: s.submissionId, userId: s.userId })))}
+
+You MUST respond strictly with a valid JSON object matching this schema. Write NO markdown code blocks around the JSON (do not use \`\`\`json). Just the raw object:
+{
+  "reply": "Your conversational response as NEXUS",
+  "suggestedAction": {
+    "type": "ACTION_TYPE_HERE",
+    "data": { /* necessary payload fields for the action */ }
+  }
+}
+If no action is needed, return {"type": "NONE"} for suggestedAction.
+
+Admin Name: ${firstName}
+Admin Request: "${message}"`;
+
+      const result = await model.generateContent(aiPrompt);
+      let text = result.response.text().trim();
+      
+      // Strip markdown code blocks if the model still adds them
+      if (text.startsWith('\`\`\`json')) text = text.replace(/^\`\`\`json/, '');
+      if (text.startsWith('\`\`\`')) text = text.replace(/^\`\`\`/, '');
+      if (text.endsWith('\`\`\`')) text = text.slice(0, -3);
+      
+      const parsed = JSON.parse(text);
+      if (parsed.reply && parsed.suggestedAction) {
+        return parsed;
+      }
+    } catch (err) {
+      console.error("Gemini AI Engine failed or isn't formatted correctly, falling back to heuristic...", err);
+    }
+  }
+
+  // 2. Fallback Heuristic Logic
+  const intent = extractIntent(message);
 
   // ── Platform Status / Overview ───────────────────────────────────────────
   if (intent.platformStatus) {
@@ -174,6 +223,36 @@ export async function chatWithAdminAgentAction(
     const mentionedCourse = ctx.courses.find((c: any) => message.toLowerCase().includes(c.title?.toLowerCase())) as any;
     const targetCourse = mentionedCourse || firstCourse;
 
+    const isJS = targetCourse.title?.toLowerCase().includes('javascript') || message.toLowerCase().includes('javascript') || message.toLowerCase().includes('js');
+    const isReact = targetCourse.title?.toLowerCase().includes('react');
+
+    let questions = [];
+    if (isJS) {
+      questions = [
+        { id: 'q1', text: 'Which keyword is used to declare a block-scoped variable in JavaScript?', options: ['var', 'let', 'def', 'const'], correctAnswer: 'let' },
+        { id: 'q2', text: 'What does the "this" keyword refer to in a standard function call context?', options: ['The global object', 'The function itself', 'The previous function', 'Nothing'], correctAnswer: 'The global object' },
+        { id: 'q3', text: 'What is a JavaScript closure?', options: ['A function bundled with its lexical environment', 'A secure way to close a database', 'A method to stop execution', 'A syntax for closing HTML tags'], correctAnswer: 'A function bundled with its lexical environment' },
+        { id: 'q4', text: 'Which array method creates a new array with the results of calling a provided function on every element?', options: ['forEach()', 'map()', 'filter()', 'reduce()'], correctAnswer: 'map()' },
+        { id: 'q5', text: 'What does "async/await" synthesize on top of?', options: ['Callbacks', 'Promises', 'Generators', 'Threads'], correctAnswer: 'Promises' }
+      ];
+    } else if (isReact) {
+      questions = [
+        { id: 'q1', text: 'What hook is used to manage state in a React functional component?', options: ['useContext', 'useState', 'useEffect', 'useReducer'], correctAnswer: 'useState' },
+        { id: 'q2', text: 'Which method must be implemented in a React class component?', options: ['render()', 'componentDidMount()', 'constructor()', 'update()'], correctAnswer: 'render()' },
+        { id: 'q3', text: 'How do you pass data from a parent component to a child component?', options: ['Using State', 'Using Hooks', 'Using Context', 'Using Props'], correctAnswer: 'Using Props' },
+        { id: 'q4', text: 'What is the Virtual DOM?', options: ['A direct copy of the browser DOM', 'A lightweight JavaScript representation of the DOM', 'A new browser specification', 'A React Native abstraction'], correctAnswer: 'A lightweight JavaScript representation of the DOM' },
+        { id: 'q5', text: 'Which hook is used for performing side effects in functional components?', options: ['useSideEffect', 'useState', 'useEffect', 'useMemo'], correctAnswer: 'useEffect' }
+      ];
+    } else {
+      questions = [
+        { id: 'q1', text: `What is the primary purpose of ${targetCourse.title}?`, options: ['Build scalable apps', 'Style websites only', 'Manage databases', 'Handle networking'], correctAnswer: 'Build scalable apps' },
+        { id: 'q2', text: 'Which concept is considered foundational in modern web development?', options: ['Component-Based Architecture', 'Waterfall Models', 'Monolithic Servers', 'DOM Rewriting'], correctAnswer: 'Component-Based Architecture' },
+        { id: 'q3', text: 'What does async/await help achieve in JavaScript?', options: ['Readable async code', 'Faster CSS rendering', 'Database indexing', 'Static typing'], correctAnswer: 'Readable async code' },
+        { id: 'q4', text: 'Which data structure is commonly used for real-time updates in Firebase?', options: ['Firestore Listeners', 'SQL Tables', 'Local Storage', 'Session Cookies'], correctAnswer: 'Firestore Listeners' },
+        { id: 'q5', text: 'What does "DRY" stand for in programming best practices?', options: ["Don't Repeat Yourself", 'Data Relay Yield', 'Dynamic Runtime Yield', 'Define React Yet'], correctAnswer: "Don't Repeat Yourself" }
+      ];
+    }
+
     return {
       reply: `Exam drafted for **${targetCourse.title}**. I've structured 5 technical questions covering core concepts with a 30-minute timer. Review the action card and deploy when ready.`,
       suggestedAction: {
@@ -182,13 +261,7 @@ export async function chatWithAdminAgentAction(
           title: `${targetCourse.title}: Module Assessment`,
           courseId: targetCourse.id,
           duration: 30,
-          questions: [
-            { id: 'q1', text: `What is the primary purpose of ${targetCourse.title}?`, options: ['Build scalable apps', 'Style websites only', 'Manage databases', 'Handle networking'], correctAnswer: 'Build scalable apps' },
-            { id: 'q2', text: 'Which concept is considered foundational in modern web development?', options: ['Component-Based Architecture', 'Waterfall Models', 'Monolithic Servers', 'DOM Rewriting'], correctAnswer: 'Component-Based Architecture' },
-            { id: 'q3', text: 'What does async/await help achieve in JavaScript?', options: ['Readable async code', 'Faster CSS rendering', 'Database indexing', 'Static typing'], correctAnswer: 'Readable async code' },
-            { id: 'q4', text: 'Which data structure is commonly used for real-time updates in Firebase?', options: ['Firestore Listeners', 'SQL Tables', 'Local Storage', 'Session Cookies'], correctAnswer: 'Firestore Listeners' },
-            { id: 'q5', text: 'What does "DRY" stand for in programming best practices?', options: ["Don't Repeat Yourself", 'Data Relay Yield', 'Dynamic Runtime Yield', 'Define React Yet'], correctAnswer: "Don't Repeat Yourself" }
-          ]
+          questions
         }
       }
     };
