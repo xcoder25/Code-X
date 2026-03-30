@@ -65,8 +65,20 @@ export type ChatWithAdminAgentInput = z.infer<typeof ChatWithAdminAgentInputSche
 export const ChatWithAdminAgentOutputSchema = z.object({
   reply: z.string().describe("The agent's response."),
   suggestedAction: z.object({
-    type: z.enum(['CREATE_EXAM', 'GRADE_SUBMISSION', 'SEND_NOTIFICATION', 'NONE']),
+    type: z.enum([
+      'CREATE_EXAM',
+      'DELETE_EXAM',
+      'CREATE_ASSIGNMENT',
+      'DELETE_ASSIGNMENT',
+      'GRADE_SUBMISSION',
+      'SEND_NOTIFICATION',
+      'CREATE_COURSE',
+      'DELETE_COURSE',
+      'GENERATE_ACCESS_CODES',
+      'NONE'
+    ]),
     data: z.any().optional(),
   }).optional(),
 });
 export type ChatWithAdminAgentOutput = z.infer<typeof ChatWithAdminAgentOutputSchema>;
+
