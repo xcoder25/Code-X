@@ -3,467 +3,483 @@
 
 import Link from 'next/link';
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
+    Card,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    CardContent,
+    CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-  Activity,
-  ArrowRight,
-  BookOpen,
-  Calendar,
-  ClipboardList,
-  Target,
-  Flame,
-  Trophy,
-  TrendingUp,
-  Zap,
+    Activity,
+    ArrowRight,
+    BookOpen,
+    Calendar,
+    ClipboardList,
+    Target,
+    Flame,
+    Trophy,
+    TrendingUp,
+    Zap,
 } from 'lucide-react';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-  Cell,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip as RechartsTooltip,
+    ResponsiveContainer,
+    Cell,
 } from 'recharts';
 import { motion } from 'framer-motion';
 import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
+    Table,
+    TableHeader,
+    TableRow,
+    TableHead,
+    TableBody,
+    TableCell,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import {
+    CheckCircle2,
+    Clock,
+    Search,
+    ChevronRight,
+    TrendingUp as TrendingUpIcon,
+    Crown,
+    Layout,
+    MousePointer2,
+    LineChart as LineChartIcon
+} from 'lucide-react';
 import { useAuth } from '@/app/auth-provider';
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, getDocs, doc, getDoc, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Assignment, Submission } from '@/types';
+import React from 'react';
+import { Sparkles as SparklesIcon, MoreHorizontal } from 'lucide-react';
 
 interface Course {
-  id: string;
-  title: string;
-  description: string;
-  progress: number;
+    id: string;
+    title: string;
+    description: string;
+    progress: number;
 }
 
 
 export default function DashboardPage() {
-  const { user } = useAuth();
-  const [activeCourses, setActiveCourses] = useState<Course[]>([]);
-  const [pendingAssignmentsCount, setPendingAssignmentsCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
+    const [activeCourses, setActiveCourses] = useState<Course[]>([]);
+    const [pendingAssignmentsCount, setPendingAssignmentsCount] = useState(0);
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user) {
-        setLoading(false);
-        return;
-    };
+    useEffect(() => {
+        if (!user) {
+            setLoading(false);
+            return;
+        };
 
-    // Fetch enrolled courses
-    const enrollmentsQuery = query(collection(db, 'users', user.uid, 'enrollments'));
-    const unsubscribeCourses = onSnapshot(enrollmentsQuery, async (snapshot) => {
-        const enrolledCoursesPromises = snapshot.docs.map(async (enrollmentDoc) => {
-            const courseId = enrollmentDoc.id;
-            const enrollmentData = enrollmentDoc.data();
-            const courseDocRef = doc(db, 'courses', courseId);
-            const courseDoc = await getDoc(courseDocRef);
+        // Fetch enrolled courses
+        const enrollmentsQuery = query(collection(db, 'users', user.uid, 'enrollments'));
+        const unsubscribeCourses = onSnapshot(enrollmentsQuery, async (snapshot) => {
+            const enrolledCoursesPromises = snapshot.docs.map(async (enrollmentDoc) => {
+                const courseId = enrollmentDoc.id;
+                const enrollmentData = enrollmentDoc.data();
+                const courseDocRef = doc(db, 'courses', courseId);
+                const courseDoc = await getDoc(courseDocRef);
 
-            if (courseDoc.exists()) {
-                const courseData = courseDoc.data();
-                return {
-                    id: courseId,
-                    title: courseData.title,
-                    description: courseData.description,
-                    progress: enrollmentData.progress || 0
-                } as Course;
-            }
-            return null;
+                if (courseDoc.exists()) {
+                    const courseData = courseDoc.data();
+                    return {
+                        id: courseId,
+                        title: courseData.title,
+                        description: courseData.description,
+                        progress: enrollmentData.progress || 0
+                    } as Course;
+                }
+                return null;
+            });
+
+            const enrolledCourses = (await Promise.all(enrolledCoursesPromises)).filter(Boolean) as Course[];
+            setActiveCourses(enrolledCourses);
+            if (loading) setLoading(false);
+        }, (error) => {
+            console.error("Error fetching active courses:", error);
+            if (loading) setLoading(false);
         });
 
-        const enrolledCourses = (await Promise.all(enrolledCoursesPromises)).filter(Boolean) as Course[];
-        setActiveCourses(enrolledCourses);
-        if (loading) setLoading(false);
-    }, (error) => {
-        console.error("Error fetching active courses:", error);
-        if (loading) setLoading(false);
-    });
+        // Fetch assignments and submissions to calculate pending count
+        const assignmentsQuery = query(collection(db, 'assignments'), orderBy('dueDate', 'desc'));
+        const submissionsQuery = query(collection(db, 'users', user.uid, 'submissions'));
 
-    // Fetch assignments and submissions to calculate pending count
-    const assignmentsQuery = query(collection(db, 'assignments'), orderBy('dueDate', 'desc'));
-    const submissionsQuery = query(collection(db, 'users', user.uid, 'submissions'));
+        const unsubscribeAssignments = onSnapshot(assignmentsQuery, (assignmentsSnapshot) => {
+            const allAssignments = assignmentsSnapshot.docs.map(doc => doc.id);
 
-    const unsubscribeAssignments = onSnapshot(assignmentsQuery, (assignmentsSnapshot) => {
-        const allAssignments = assignmentsSnapshot.docs.map(doc => doc.id);
-        
-        // Nest the submission listener to ensure we have assignments first
-        const unsubscribeSubmissions = onSnapshot(submissionsQuery, (submissionsSnapshot) => {
-            const submittedIds = new Set(submissionsSnapshot.docs.map(doc => doc.id));
-            const pendingCount = allAssignments.filter(id => !submittedIds.has(id)).length;
-            setPendingAssignmentsCount(pendingCount);
+            // Nest the submission listener to ensure we have assignments first
+            const unsubscribeSubmissions = onSnapshot(submissionsQuery, (submissionsSnapshot) => {
+                const submittedIds = new Set(submissionsSnapshot.docs.map(doc => doc.id));
+                const pendingCount = allAssignments.filter(id => !submittedIds.has(id)).length;
+                setPendingAssignmentsCount(pendingCount);
+            });
+
+            return () => unsubscribeSubmissions();
         });
 
-        return () => unsubscribeSubmissions();
-    });
 
+        return () => {
+            unsubscribeCourses();
+            unsubscribeAssignments();
+        };
+    }, [user]);
 
-    return () => {
-        unsubscribeCourses();
-        unsubscribeAssignments();
-    };
-  }, [user]);
+    // Mock data for now, will be replaced with Firestore data
+    const exams: any[] = [];
+    const liveClasses: any[] = [];
 
-  // Mock data for now, will be replaced with Firestore data
-  const exams: any[] = [];
-  const liveClasses: any[] = [];
+    const upcomingEvents = [
+        ...exams.map((e) => ({ ...e, type: 'Exam' })),
+        ...liveClasses.map((l) => ({ ...l, type: 'Live Session' })),
+    ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  const upcomingEvents = [
-    ...exams.map((e) => ({ ...e, type: 'Exam' })),
-    ...liveClasses.map((l) => ({ ...l, type: 'Live Session' })),
-  ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  
-  const recentActivity: any[] = [];
-  
-   const getStatusVariant = (status: string) => {
-    switch (status) {
-        case 'Pending':
-        return 'destructive';
-        case 'Graded':
-        return 'secondary';
-        case 'Upcoming':
-        return 'default';
-        default:
-        return 'outline';
-    }
+    const recentActivity: any[] = [];
+
+    const getStatusVariant = (status: string) => {
+        switch (status) {
+            case 'Pending':
+                return 'destructive';
+            case 'Graded':
+                return 'secondary';
+            case 'Upcoming':
+                return 'default';
+            default:
+                return 'outline';
+        }
     };
 
 
-  const leaderboardData = [
-    { name: 'Alex Johnson', points: 2450, color: '#3b82f6' },
-    { name: 'Sarah Chen', points: 2100, color: '#8b5cf6' },
-    { name: 'Michael Ross', points: 1950, color: '#ec4899' },
-    { name: 'Emma Wilson', points: 1800, color: '#10b981' },
-    { name: 'David Kim', points: 1650, color: '#f59e0b' },
-  ];
+    const leaderboardData = [
+        { name: 'Alex Johnson', points: 2450, color: '#3b82f6' },
+        { name: 'Sarah Chen', points: 2100, color: '#8b5cf6' },
+        { name: 'Michael Ross', points: 1950, color: '#ec4899' },
+        { name: 'Emma Wilson', points: 1800, color: '#10b981' },
+        { name: 'David Kim', points: 1650, color: '#f59e0b' },
+    ];
 
-  return (
-    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 bg-background/50">
-      <div className="flex items-center justify-between">
-        <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-        >
-            <h1 className="font-bold text-3xl tracking-tight">Student Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Welcome back, {user?.displayName?.split(' ')[0] || 'Student'}!</p>
-        </motion.div>
-        
-        <div className="flex items-center gap-3">
-             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-500 font-bold text-sm">
-                <Flame className="h-4 w-4 fill-orange-500" />
-                <span>7 Day Streak</span>
-            </div>
-             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-500 font-bold text-sm">
-                <Zap className="h-4 w-4 fill-blue-500" />
-                <span>1,250 XP</span>
-            </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4 md:gap-6">
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{upcomingEvents.length}</div>
-            <p className="text-xs text-muted-foreground">
-              exams and classes
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Assignments
-            </CardTitle>
-            <ClipboardList className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {loading ? <Skeleton className="h-8 w-8" /> : <div className="text-2xl font-bold">{pendingAssignmentsCount}</div>}
-            <p className="text-xs text-muted-foreground">
-              assignments to be completed
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Courses</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {loading ? <Skeleton className="h-8 w-8" /> : <div className="text-2xl font-bold">{activeCourses.length}</div>}
-            <p className="text-xs text-muted-foreground">
-              currently enrolled bootcamps
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-             <Target className="h-12 w-12 text-primary" />
-          </div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Career Path</CardTitle>
-            <Target className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold">Fullstack Developer</div>
-            <p className="text-xs text-muted-foreground mt-1">
-               75% of prerequisites met
-            </p>
-            <Button size="sm" variant="link" className="p-0 h-auto mt-2 text-xs" asChild>
-                <Link href="/path" className="flex items-center">
-                    Review Roadmap <ArrowRight className="ml-1 h-3 w-3" />
-                </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-2">
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle>Top Performers</CardTitle>
-                    <CardDescription>Global leaderboard ranking for this week.</CardDescription>
-                </div>
-                <Trophy className="h-5 w-5 text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-                <div className="h-[250px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={leaderboardData} layout="vertical" margin={{ left: 20, right: 30 }}>
-                            <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.1} />
-                            <XAxis type="number" hide />
-                            <YAxis 
-                                dataKey="name" 
-                                type="category" 
-                                tick={{ fontSize: 12, fill: 'currentColor' }} 
-                                width={100}
-                                axisLine={false}
-                                tickLine={false}
-                            />
-                            <RechartsTooltip 
-                                cursor={{ fill: 'transparent' }} 
-                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                            />
-                            <Bar dataKey="points" radius={[0, 4, 4, 0]} barSize={25}>
-                                {leaderboardData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader>
-                <CardTitle>Recent Insights</CardTitle>
-                <CardDescription>AI-generated learning tips.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
-                    <p className="text-xs font-semibold text-primary flex items-center gap-1.5 mb-1">
-                        <TrendingUp className="h-3 w-3" />
-                        PRO TIP
-                    </p>
-                    <p className="text-sm">You are 2x more likely to finish a module if you complete the lab exercises first.</p>
-                </div>
-                <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/10">
-                    <p className="text-xs font-semibold text-purple-500 flex items-center gap-1.5 mb-1">
-                         <Zap className="h-3 w-3" />
-                        STREAK BONUS
-                    </p>
-                    <p className="text-sm">You're on a 7-day streak! Keep it up to secure a 20% XP boost for the next 24 hours.</p>
-                </div>
-            </CardContent>
-            <CardFooter>
-                <Button variant="outline" className="w-full text-xs" asChild>
-                    <Link href="/path">Ask Elara for more <ArrowRight className="ml-1.5 h-3 w-3" /></Link>
-                </Button>
-            </CardFooter>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Upcoming Schedule</CardTitle>
-            <CardDescription>
-              Your classes, assignments, and deadlines.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {upcomingEvents.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Event</TableHead>
-                    <TableHead>Course</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {upcomingEvents.slice(0, 5).map((event) => (
-                    <TableRow key={event.title}>
-                      <TableCell>{event.title}</TableCell>
-                      <TableCell>{event.course}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            event.type === 'Assignment'
-                              ? 'destructive'
-                              : event.type === 'Live Session'
-                              ? 'default'
-                              : 'secondary'
-                          }
-                          className="capitalize"
-                        >
-                          {event.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{event.date}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                No upcoming events. Check the schedule page for details.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Your recent submissions and grades.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {recentActivity.length > 0 ? (
-              <ul className="space-y-4">
-                {recentActivity.map((activity) => (
-                  <li key={activity.title} className="flex items-center space-x-4">
-                    <div className="p-2 bg-accent rounded-full">
-                      <Activity className="h-5 w-5 text-accent-foreground" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">{activity.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {activity.course}
-                      </p>
-                    </div>
-                    <Badge variant={getStatusVariant(activity.status)}>
-                      {activity.grade}
-                    </Badge>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                No recent activity.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Courses</CardTitle>
-          <CardDescription>
-            An overview of the bootcamps you are enrolled in.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          {loading ? (
-             [...Array(2)].map((_, i) => (
-                <Card key={i}>
-                    <CardHeader>
-                        <div className="flex justify-between items-start mb-2">
-                            <Skeleton className="h-8 w-8" />
-                            <Skeleton className="h-6 w-24" />
+    return (
+        <main className="flex flex-1 flex-col gap-8 p-6 md:p-8 bg-slate-50 dark:bg-slate-950 min-h-screen text-slate-900 dark:text-slate-100 transition-colors duration-500">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/5 pb-8">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="px-2 py-0.5 rounded-md bg-orange-500/10 border border-orange-500/20 w-fit">
+                            <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Portal Online</span>
                         </div>
-                        <Skeleton className="h-6 w-3/4" />
-                        <Skeleton className="h-4 w-full" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    </div>
+                    <h1 className="font-black text-4xl tracking-tighter bg-gradient-to-br from-orange-600 via-orange-500 to-slate-900 dark:from-white dark:via-slate-200 dark:to-slate-500 bg-clip-text text-transparent italic uppercase text-shadow-glow">DASHBOARD</h1>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium mt-1 tracking-tight">Active session for user <span className="text-orange-500 dark:text-orange-400 font-mono">#{user?.uid?.substring(0, 6).toUpperCase()}</span></p>
+                </motion.div>
+
+                <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-end">
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-orange-500 transition-all hover:bg-orange-500/20">
+                            <Flame className="h-4 w-4 fill-orange-500" />
+                            <span className="font-black text-sm uppercase tracking-tighter">7 Day Streak</span>
+                        </div>
+                        <div className="mt-2 h-1 w-32 bg-slate-900 rounded-full overflow-hidden">
+                            <div className="h-full w-4/5 bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
+                        </div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-orange-500 transition-all hover:bg-orange-500/20">
+                            <Zap className="h-4 w-4 fill-orange-500" />
+                            <span className="font-black text-sm uppercase tracking-tighter">1,250 XP Points</span>
+                        </div>
+                        <div className="mt-2 h-1 w-32 bg-slate-900 rounded-full overflow-hidden">
+                            <div className="h-full w-2/3 bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                    { label: 'Upcoming Tasks', value: upcomingEvents.length, desc: 'Exams & Sessions', icon: <Calendar />, color: 'text-orange-500', bg: 'bg-orange-500/5', border: 'border-orange-500/10' },
+                    { label: 'Pending Work', value: pendingAssignmentsCount, desc: 'Assignments due soon', icon: <ClipboardList />, color: 'text-amber-500', bg: 'bg-amber-500/5', border: 'border-amber-500/10' },
+                    { label: 'My Courses', value: activeCourses.length, desc: 'Classes you joined', icon: <BookOpen />, color: 'text-emerald-400', bg: 'bg-emerald-500/5', border: 'border-emerald-500/10' },
+                    { label: 'Career Goal', value: '75%', desc: 'Fullstack Dev Path', icon: <Target />, color: 'text-purple-400', bg: 'bg-purple-500/5', border: 'border-purple-500/10' },
+                ].map((stat, i) => (
+                    <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className={cn("p-5 rounded-3xl border transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/5 dark:hover:shadow-black/20",
+                            stat.bg,
+                            "border-white/50 dark:border-white/5 bg-white/60 dark:bg-slate-900/40 backdrop-blur-3xl shadow-sm")}
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <div className={cn("p-2 rounded-xl border", "bg-slate-50 dark:bg-slate-950 border-orange-100/50 dark:border-white/5", stat.color)}>{React.cloneElement(stat.icon as React.ReactElement, { className: "h-4 w-4" })}</div>
+                            <ChevronRight className="h-3 w-3 text-slate-300 dark:text-slate-700" />
+                        </div>
+                        <div className="text-3xl font-black tracking-tight text-slate-900 dark:text-white mb-1">{stat.value}</div>
+                        <div className="text-[10px] uppercase font-bold tracking-widest text-slate-400 dark:text-orange-500">{stat.label}</div>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-600 mt-2 font-mono italic">{stat.desc}</p>
+                    </motion.div>
+                ))}
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-3">
+                <Card className="md:col-span-2 bg-white/60 dark:bg-slate-900/40 border-white/50 dark:border-slate-800 backdrop-blur-3xl rounded-[2.5rem] overflow-hidden shadow-xl dark:shadow-2xl">
+                    <CardHeader className="flex flex-row items-start justify-between border-b border-orange-50 dark:border-white/5 bg-orange-50/20 dark:bg-slate-950/20 px-8 py-6">
+                        <div>
+                            <CardTitle className="text-xl font-black tracking-tight uppercase flex items-center gap-2 text-slate-200">
+                                <Trophy className="h-5 w-5 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]" />
+                                Top Students
+                            </CardTitle>
+                            <CardDescription className="text-slate-500 font-medium">Weekly points ranking</CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-950 border border-white/5">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-tighter">Live Audit</span>
+                        </div>
                     </CardHeader>
-                     <CardContent>
-                       <Skeleton className="h-2.5 w-full rounded-full mb-2" />
-                       <Skeleton className="h-4 w-24" />
+                    <CardContent className="px-6 py-8">
+                        <div className="h-[280px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={leaderboardData} layout="vertical" margin={{ left: 30, right: 40 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} strokeOpacity={0.05} />
+                                    <XAxis type="number" hide />
+                                    <YAxis
+                                        dataKey="name"
+                                        type="category"
+                                        tick={{ fontSize: 10, fill: '#64748b', fontWeight: 800 }}
+                                        width={120}
+                                        axisLine={false}
+                                        tickLine={false}
+                                    />
+                                    <RechartsTooltip
+                                        cursor={{ fill: 'rgba(255,255,255,0.02)' }}
+                                        contentStyle={{ backgroundColor: '#020617', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.5)', color: '#fff' }}
+                                    />
+                                    <Bar dataKey="points" radius={[0, 10, 10, 0]} barSize={28}>
+                                        {leaderboardData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.8} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </CardContent>
-                    <CardFooter>
-                       <Skeleton className="h-10 w-full" />
+                </Card>
+
+                <Card className="bg-slate-900/40 border-slate-800 backdrop-blur-xl rounded-3xl shadow-xl border-t-orange-500/20">
+                    <CardHeader className="px-8 pt-8">
+                        <CardTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2 text-slate-200">
+                            <SparklesIcon className="h-5 w-5 text-orange-400" />
+                            Learning Tips
+                        </CardTitle>
+                        <CardDescription className="text-slate-500 font-medium italic">Handy advice from Elara</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6 px-8 py-6">
+                        {[
+                            { label: 'Study Tip', text: 'You learn faster when you try the coding practice before the notes.', icon: <TrendingUpIcon />, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-500/10' },
+                            { label: 'Weekly Goal', text: 'You are on track for a great 14-day streak. Keep it up!', icon: <Zap />, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-500/10' },
+                            { label: 'Skill Suggestions', text: 'Try learning some TypeScript next to level up your skills.', icon: <Layout />, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10' },
+                        ].map((insight, i) => (
+                            <div key={i} className="flex gap-4 p-4 rounded-2xl bg-white/60 dark:bg-slate-950/50 border border-orange-50 dark:border-white/5 transition-all hover:bg-slate-50 dark:hover:bg-slate-900">
+                                <div className={cn("shrink-0 p-2 h-fit rounded-xl", insight.bg, insight.color)}>{React.cloneElement(insight.icon as React.ReactElement, { className: "h-3.5 w-3.5" })}</div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{insight.label}</p>
+                                    <p className="text-xs text-slate-300 font-medium leading-relaxed italic opacity-80">{insight.text}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </CardContent>
+                    <CardFooter className="px-8 pb-8">
+                        <Button className="w-full h-11 bg-slate-950 hover:bg-orange-600 text-slate-300 hover:text-white border border-slate-800 hover:border-orange-500 rounded-2xl font-bold transition-all shadow-xl" asChild>
+                            <Link href="/path" className="flex items-center justify-center gap-2">
+                                Initialize Elara <ArrowRight className="h-3.5 w-3.5" />
+                            </Link>
+                        </Button>
                     </CardFooter>
                 </Card>
-            ))
-          ) : activeCourses.length > 0 ? (
-            activeCourses.map((course) => (
-              <Card key={course.id}>
-                <CardHeader>
-                  <div className="flex justify-between items-start mb-2">
-                    <BookOpen className="h-8 w-8 text-primary" />
-                    <Badge variant="default">In Progress</Badge>
-                  </div>
-                  <CardTitle>{course.title}</CardTitle>
-                  <CardDescription>{course.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="w-full bg-muted rounded-full h-2.5 mb-2">
-                    <div
-                      className="bg-primary h-2.5 rounded-full"
-                      style={{ width: `${course.progress}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {course.progress}% complete
-                  </p>
-                </CardContent>
-                <CardFooter>
-                  <Button asChild className="w-full">
-                    <Link href={`/courses/${course.id}`}>
-                      Continue Course <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))
-          ) : (
-            <div className="text-center text-muted-foreground py-12 col-span-2">
-              <p>You are not enrolled in any courses yet.</p>
-              <Button asChild variant="link">
-                <Link href="/courses">Browse Courses</Link>
-              </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </main>
-  );
+
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                <Card className="lg:col-span-2 bg-slate-900 font-medium rounded-3xl border-slate-800 backdrop-blur-xl overflow-hidden group">
+                    <CardHeader className="px-8 py-6 border-b border-white/5 bg-slate-950/20">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-lg font-black uppercase tracking-tight flex items-center gap-2 text-slate-200">
+                                    <Calendar className="h-5 w-5 text-orange-500" />
+                                    Weekly Schedule
+                                </CardTitle>
+                                <CardDescription className="text-slate-500">Upcoming classes and deadlines</CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        {upcomingEvents.length > 0 ? (
+                            <Table>
+                                <TableHeader className="bg-slate-950/40">
+                                    <TableRow className="hover:bg-transparent border-slate-800">
+                                        <TableHead className="pl-8 text-[11px] font-bold uppercase text-slate-500 tracking-widest">Protocol</TableHead>
+                                        <TableHead className="text-[11px] font-bold uppercase text-slate-500 tracking-widest">Base Module</TableHead>
+                                        <TableHead className="text-[11px] font-bold uppercase text-slate-500 tracking-widest">Directive</TableHead>
+                                        <TableHead className="pr-8 text-right text-[11px] font-bold uppercase text-slate-500 tracking-widest">Deadline</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {upcomingEvents.slice(0, 5).map((event) => (
+                                        <TableRow key={event.title} className="border-slate-800 hover:bg-slate-800/30 transition-colors group/row">
+                                            <TableCell className="pl-8 font-black text-sm text-slate-200">{event.title}</TableCell>
+                                            <TableCell className="text-slate-400 font-bold italic">{event.course}</TableCell>
+                                            <TableCell>
+                                                <Badge
+                                                    className={cn(
+                                                        "px-3 py-1 rounded-lg text-[10px] font-black uppercase border-none",
+                                                        event.type === 'Assignment' ? 'bg-orange-500/20 text-orange-400' : 'bg-amber-500/20 text-amber-400'
+                                                    )}
+                                                >
+                                                    {event.type}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="pr-8 text-right font-mono text-xs text-slate-500 italic font-bold">{event.date}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-3 py-20 text-slate-600 opacity-40">
+                                <Clock className="h-12 w-12" />
+                                <p className="font-black uppercase tracking-widest text-sm italic">Clear Horizon: No Pending Deployments</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-slate-900 border-slate-800 backdrop-blur-xl rounded-3xl overflow-hidden">
+                    <CardHeader className="px-8 py-6 border-b border-white/5 bg-slate-950/20">
+                        <CardTitle className="text-lg font-black uppercase tracking-tight flex items-center gap-2 text-slate-200">
+                            <MousePointer2 className="h-5 w-5 text-emerald-500" />
+                            Recent Progress
+                        </CardTitle>
+                        <CardDescription className="text-slate-500">Your latest activities and grades</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-8 space-y-6">
+                        {recentActivity.length > 0 ? (
+                            <div className="space-y-4">
+                                {recentActivity.map((activity) => (
+                                    <div key={activity.title} className="flex items-center gap-4 group/item">
+                                        <div className="h-10 w-10 shrink-0 flex items-center justify-center bg-slate-800 text-slate-100 rounded-xl group-hover/item:bg-emerald-500 transition-all shadow-xl group-hover/item:text-white">
+                                            <CheckCircle2 className="h-5 w-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-black text-slate-200 truncate">{activity.title}</p>
+                                            <p className="text-[10px] font-bold text-slate-500 italic truncate tracking-tight uppercase opacity-70">{activity.course}</p>
+                                        </div>
+                                        <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] h-6 px-2 font-black">{activity.grade}</Badge>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-4 py-12 text-slate-600 opacity-40">
+                                <LineChartIcon className="h-12 w-12" />
+                                <p className="text-xs font-black uppercase tracking-widest text-slate-600">Trace Silent: No Recents Recorded</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="space-y-6 pt-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-2xl font-black italic uppercase tracking-tighter text-slate-900 dark:text-slate-200">My Courses</h3>
+                        <p className="text-slate-500 dark:text-slate-400 font-medium">Bootcamps you are currently learning</p>
+                    </div>
+                    <Button variant="outline" className="rounded-2xl bg-white dark:bg-slate-900 border-orange-100 dark:border-slate-800 hover:bg-orange-50 dark:hover:bg-slate-800 text-slate-400 px-6 font-bold" asChild>
+                        <Link href="/courses">Catalog <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                    </Button>
+                </div>
+                <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                    {loading ? (
+                        [...Array(3)].map((_, i) => (
+                            <Card key={i} className="bg-slate-900/40 border-slate-800 rounded-3xl p-6">
+                                <Skeleton className="h-12 w-12 rounded-2xl mb-4 bg-slate-800" />
+                                <Skeleton className="h-6 w-3/4 mb-2 bg-slate-800" />
+                                <Skeleton className="h-4 w-full mb-6 bg-slate-800" />
+                                <Skeleton className="h-2 w-full rounded-full mb-8 bg-slate-800" />
+                                <Skeleton className="h-11 w-full rounded-2xl bg-slate-800" />
+                            </Card>
+                        ))
+                    ) : activeCourses.length > 0 ? (
+                        activeCourses.map((course) => (
+                            <Card key={course.id} className="bg-slate-900/60 border-slate-800 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl transition-all hover:-translate-y-2 group overflow-hidden flex flex-col border-t-white/5">
+                                <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity rotate-12">
+                                    <BookOpen className="h-32 w-32" />
+                                </div>
+                                <CardHeader className="px-8 pt-8 flex-1">
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div className="p-3 bg-orange-600 rounded-2xl shadow-xl shadow-orange-500/20 group-hover:scale-110 transition-transform">
+                                            <BookOpen className="h-6 w-6 text-white" />
+                                        </div>
+                                        <Badge className="bg-slate-950 text-emerald-400 border border-emerald-500/30 text-[10px] px-3 h-7 rounded-full font-black tracking-widest shadow-lg">ACTIVE</Badge>
+                                    </div>
+                                    <CardTitle className="text-xl font-black text-white italic truncate">{course.title}</CardTitle>
+                                    <CardDescription className="text-slate-500 font-medium leading-relaxed italic line-clamp-2 mt-2 opacity-80">{course.description}</CardDescription>
+                                </CardHeader>
+                                <CardContent className="px-8 pb-4">
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                            <span>Course Progress</span>
+                                            <span className="text-orange-500 dark:text-orange-400">{course.progress}%</span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 dark:bg-slate-950 rounded-full h-2 shadow-inner border border-orange-50 dark:border-white/5 overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${course.progress}%` }}
+                                                transition={{ duration: 1, ease: 'easeOut' }}
+                                                className="bg-gradient-to-r from-orange-600 to-amber-500 h-full rounded-full shadow-[0_0_8px_rgba(249,115,22,0.5)]"
+                                            />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                                <CardFooter className="px-8 pb-8 pt-4">
+                                    <Button asChild className="w-full h-12 bg-slate-900 dark:bg-white hover:bg-orange-600 text-white dark:text-slate-950 hover:text-white rounded-[1.25rem] font-black italic uppercase tracking-tighter transition-all group-hover:shadow-2xl group-hover:shadow-orange-500/20 active:scale-95">
+                                        <Link href={`/courses/${course.id}`} className="flex items-center justify-center">
+                                            Continue Learning <ChevronRight className="ml-2 h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        ))
+                    ) : (
+                        <div className="col-span-full py-16 flex flex-col items-center justify-center gap-6 bg-slate-950/40 rounded-[3rem] border border-dashed border-slate-800">
+                            <div className="p-6 bg-slate-900 rounded-full border border-slate-800 shadow-2xl">
+                                <Search className="h-10 w-10 text-slate-600" />
+                            </div>
+                            <div className="text-center space-y-2">
+                                <p className="font-black italic uppercase tracking-tighter text-slate-500 text-lg">No Active Syncs Detected</p>
+                                <p className="text-slate-600 font-medium max-w-xs mx-auto">Neural pathways are clear. Initialize a catalog search to begin synchronization.</p>
+                            </div>
+                            <Button asChild className="bg-orange-600 hover:bg-orange-500 text-white px-8 h-12 rounded-2xl font-black italic uppercase tracking-tighter shadow-xl shadow-orange-500/20 active:scale-95 transition-all">
+                                <Link href="/courses">Probe Courses</Link>
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </main>
+    );
 }

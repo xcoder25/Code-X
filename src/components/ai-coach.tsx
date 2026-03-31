@@ -18,7 +18,7 @@ interface Message {
 
 const initialMessage = `Hi there! My name is Elara, and I'm your AI learning coach here on the Code-X platform. I'm excited to help you on your coding journey! To best assist you, tell me, what are you hoping to learn or accomplish today?`;
 
-export default function AiCoach() {
+export default function AiCoach({ hideHeader = false }: { hideHeader?: boolean }) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([{ role: 'model', content: initialMessage }]);
   const [input, setInput] = useState('');
@@ -43,48 +43,76 @@ export default function AiCoach() {
     if (!input.trim() || isLoading) return;
 
     const userMessage: Message = { role: 'user', content: input };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    const historyBefore = messages;
+    setMessages([...messages, userMessage]);
+    
     const currentInput = input;
     setInput('');
     setIsLoading(true);
 
     try {
-      // We pass the history *before* the new user message
-      const response = await chatWithElaraAction({
-        userName,
-        message: currentInput,
-        history: messages,
+      const response = await fetch('/api/chat/elara', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: currentInput,
+          history: historyBefore,
+        }),
       });
 
-      const elaraMessage: Message = { role: 'model', content: response.reply };
+      if (!response.ok) throw new Error('Neural link failure.');
+
+      // Prepare a new model message
+      const elaraMessage: Message = { role: 'model', content: '' };
       setMessages((prev) => [...prev, elaraMessage]);
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedContent = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          accumulatedContent += chunk;
+
+          // Update the last message (which is the model message)
+          setMessages((prev) => {
+            const next = [...prev];
+            next[next.length - 1] = { ...elaraMessage, content: accumulatedContent };
+            return next;
+          });
+        }
+      }
     } catch (error) {
        toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to get a response. Please try again.',
+        title: 'Neural Link Error',
+        description: 'Elara is temporarily out of sync. Please try again.',
       });
-      // remove the user message if the API fails
-      setMessages(newMessages.slice(0, newMessages.length -1));
+      setMessages(historyBefore);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-full rounded-lg border bg-card text-card-foreground shadow-sm">
-      <div className="p-4 border-b flex items-center gap-3">
-        <Avatar>
-            <AvatarFallback className="bg-primary text-primary-foreground">
-                <Sparkles />
-            </AvatarFallback>
-        </Avatar>
-        <div>
-            <h3 className="text-lg font-semibold">Elara</h3>
-            <p className="text-sm text-muted-foreground">Your Personal AI Coach</p>
+    <div className={cn("flex flex-col h-full", !hideHeader && "rounded-lg border bg-card text-card-foreground shadow-sm")}>
+      {!hideHeader && (
+        <div className="p-4 border-b flex items-center gap-3">
+            <Avatar>
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                    <Sparkles />
+                </AvatarFallback>
+            </Avatar>
+            <div>
+                <h3 className="text-lg font-semibold">Elara</h3>
+                <p className="text-sm text-muted-foreground">Your Personal AI Coach</p>
+            </div>
         </div>
-      </div>
+      )}
       <ScrollArea className="flex-1 p-4" viewportRef={scrollAreaRef}>
         <div className="space-y-6">
           {messages.map((message, index) => (

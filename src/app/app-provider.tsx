@@ -6,8 +6,9 @@ import AppSidebar from '@/components/app-sidebar';
 import { usePathname } from 'next/navigation';
 import AppHeader from '@/components/app-header';
 import { useAuth } from './auth-provider';
+import FloatingElara from '@/components/floating-elara';
 
-const NO_SIDEBAR_ROUTES = ['/login', '/signup', '/'];
+const NO_SIDEBAR_ROUTES = ['/login', '/signup', '/', '/lab'];
 
 export default function AppProvider({
   children,
@@ -30,6 +31,7 @@ export default function AppProvider({
         <SidebarInset>
             <AppHeader />
             {children}
+            <FloatingElara />
         </SidebarInset>
       </SidebarProvider>
     );

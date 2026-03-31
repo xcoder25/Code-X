@@ -11,7 +11,7 @@ import {
   createCourseAction, deleteCourseAction, generateAccessCodesAction,
   deleteExamAction, updateExamAction
 } from '@/app/actions';
-import { ChatWithAdminAgentInput, ChatWithAdminAgentOutput } from '@/app/schema';
+import type { ChatWithAdminAgentInput, ChatWithAdminAgentOutput } from '@/app/schema';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SYSTEM PROMPT — Full platform knowledgebase + owner capabilities
@@ -77,10 +77,12 @@ You can propose these actions:
 - GRADE_SUBMISSION: Grade a pending submission
 - SEND_NOTIFICATION: Broadcast or direct message
 - CREATE_COURSE: New course with modules
+- GENERATE_COURSE_CONTENT: Generate full module/lesson structure for existing course
 - DELETE_COURSE: Remove a course
 - DELETE_EXAM: Remove an exam
 - DELETE_ASSIGNMENT: Remove an assignment
 - GENERATE_ACCESS_CODES: Enrollment codes
+- NAVIGATE: Send the admin to a different dashboard page (students, courses, etc)
 - NONE: Informational response, no action needed
 `;
 
@@ -132,6 +134,8 @@ function extractIntent(msg: string) {
     auditStudents: lower.includes('audit') || lower.includes('failing') || lower.includes('struggling') || lower.includes('at risk') || lower.includes('performance'),
     platformStatus: lower.includes('how many') || lower.includes('status') || lower.includes('overview') || lower.includes('summary') || lower.includes('report') || lower.includes('stats'),
     pendingSubmissions: lower.includes('pending') || lower.includes('ungraded') || lower.includes('waiting'),
+    generateLessons: (lower.includes('lesson') || lower.includes('note') || lower.includes('content') || lower.includes('fill') || lower.includes('populate')) && 
+                    (lower.includes('generate') || lower.includes('make') || lower.includes('build') || lower.includes('create')),
   };
 }
 
@@ -173,10 +177,20 @@ You MUST respond strictly with a valid JSON object matching this schema. Write N
   "reply": "Your conversational response as NEXUS",
   "suggestedAction": {
     "type": "ACTION_TYPE_HERE",
-    "data": { /* necessary payload fields for the action */ }
+    "data": { 
+      // Payload for the action. 
+      // If CREATE_COURSE: {"title": "String", "description": "String", "tags": "String", "modules": [{"id": "m1", "title": "String", "lessons": [{"id": "l1", "title": "String", "content": "String"}]}]}
+      // If GENERATE_COURSE_CONTENT: {"courseId": "String", "modules": [{"id": "m1", "title": "String", "lessons": [{"id": "l1", "title": "String", "content": "String"}]}]}
+      // If CREATE_EXAM: {"title": "String", "courseId": "String", "duration": Number, "questions": [{"id": "q1", "text": "String", "options": ["A","B","C","D"], "correctAnswer": "A"}]}
+      // If GRADE_SUBMISSION: {"userId": "String", "submissionId": "String", "grade": "String", "feedback": "String"}
+      // If NAVIGATE: {"path": "String"} (Paths: /admin, /admin/students, /admin/courses, /admin/assignments, /admin/exams, /admin/messages)
+    }
   }
 }
 If no action is needed, return {"type": "NONE"} for suggestedAction.
+
+[CONVERSATION HISTORY]
+${history ? history.map((h: any) => `${h.role === 'model' ? 'NEXUS' : 'Admin'}: ${h.content}`).join('\n') : 'No previous history.'}
 
 Admin Name: ${firstName}
 Admin Request: "${message}"`;
@@ -423,20 +437,31 @@ Admin Request: "${message}"`;
 
   // ── Generate Access Codes ─────────────────────────────────────────────────
   if (intent.generateCodes) {
-    const firstCourse = ctx.courses[0] as any;
-    if (!firstCourse) {
-      return { reply: `I need a course to generate codes for. Create a course first.`, suggestedAction: { type: 'NONE' } };
+    // Search for specifically mentioned courses first
+    const mentionedCourse = ctx.courses.find((c: any) => 
+        message.toLowerCase().includes(c.title?.toLowerCase())
+    ) as any;
+
+    const targetCourse = mentionedCourse || ctx.courses[0] as any;
+    
+    if (!targetCourse) {
+      return { reply: `I need an active course to generate enrollment keys for. Create a course first, ${firstName}.`, suggestedAction: { type: 'NONE' } };
     }
-    const quantityMatch = message.match(/(\d+)\s*(?:code|key)/i);
-    const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 10;
+
+    const quantityMatch = message.match(/(\d+)\s*(?:code|key|access)/i);
+    const quantity = quantityMatch ? Math.min(parseInt(quantityMatch[1]), 100) : 10;
+    
+    const redemptionMatch = message.match(/(\d+)\s*(?:redemption|use|seat|limit)/i);
+    const maxRedemptions = redemptionMatch ? parseInt(redemptionMatch[1]) : 1;
+
     return {
-      reply: `Ready to generate **${quantity} access codes** for **"${firstCourse.title}"**. Each code allows 1 redemption. Deploy to mint them.`,
+      reply: `I'm minting **${quantity} access keys** for **"${targetCourse.title}"**. Redemption limit set to **${maxRedemptions} seat(s)** per key. These will be deployed with the 'CX' protocol prefix. Send them when ready.`,
       suggestedAction: {
         type: 'GENERATE_ACCESS_CODES',
         data: {
-          courseId: firstCourse.id,
+          courseId: targetCourse.id,
           quantity,
-          maxRedemptions: 1,
+          maxRedemptions,
           prefix: 'CX'
         }
       }
@@ -457,6 +482,59 @@ Admin Request: "${message}"`;
         ? `Audit complete — no pending submissions. All students are graded and up to date.`
         : `Real-time audit complete, ${firstName}. Found **${pendingCount} ungraded submission(s)**:\n\n${detailLines}\n\nSay "grade the submissions" and I'll process the queue, or specify a grade like "give everyone B+" to batch grade.`,
       suggestedAction: { type: 'NONE' }
+    };
+  }
+
+  // ── Generate Lessons Content ─────────────────────────────────────────────
+  if (intent.generateLessons) {
+    const mentionedCourse = ctx.courses.find((c: any) => 
+        message.toLowerCase().includes(c.title?.toLowerCase())
+    ) as any;
+    const targetCourse = mentionedCourse || ctx.courses[0] as any;
+
+    if (!targetCourse) {
+      return { reply: `I need an existing course to populate with content. Create a shell first, then I'll generate the full curriculum.`, suggestedAction: { type: 'NONE' } };
+    }
+
+    return {
+      reply: `I've architected a full 4-module curriculum for **"${targetCourse.title}"**, complete with deep technical notes and practical exercises. Review the content map and deploy to push it into the platform.`,
+      suggestedAction: {
+        type: 'GENERATE_COURSE_CONTENT',
+        data: {
+          courseId: targetCourse.id,
+          modules: [
+            {
+              id: 'm1',
+              title: 'Module 1: Foundations & Core Architecture',
+              lessons: [
+                { id: 'l1', title: 'Introduction & Ecosystem', content: `Focus on the environment, history, and why this technology matters in the modern stack.\n\n**Practical:** Audit your current setup and identify hardware/software requirements.` },
+                { id: 'l2', title: 'Syntax & Primitive Structures', content: `Deep dive into the base units of the language. Variables, types, and memory management.\n\n**Note:** Understand the stack vs heap allocation.` }
+              ]
+            },
+            {
+              id: 'm2',
+              title: 'Module 2: Logic, Algorithms & Workflow',
+              lessons: [
+                { id: 'l3', title: 'Control Flow Optimization', content: `Master conditionals and loops. Focus on performance and clean code patterns (DRY).\n\n**Practical:** Refactor a nested if-else into a clean switch or object mapping.` }
+              ]
+            },
+            {
+              id: 'm3',
+              title: 'Module 3: Advanced Patterns & Scaling',
+              lessons: [
+                { id: 'l4', title: 'Data Orchestration', content: `Handling large sets of information. Objects, mapping, and state transition fundamentals.\n\n**Note:** Guard against side effects in your functions.` }
+              ]
+            },
+            {
+              id: 'm4',
+              title: 'Module 4: Practical Integration & Deployment',
+              lessons: [
+                { id: 'l5', title: 'Real-World Project Implementation', content: `Bridging the gap between theory and production. Build a responsive, interactive component.\n\n**Final Practical:** Deploy your mini-project to the platform sandbox.` }
+              ]
+            }
+          ]
+        }
+      }
     };
   }
 
@@ -527,6 +605,15 @@ export async function executeAdminAction(action: { type: string; data: any }): P
     case 'GENERATE_ACCESS_CODES': {
       const result = await generateAccessCodesAction(action.data);
       return { success: true, message: `${result.count} access codes generated for enrollment.` };
+    }
+    case 'GENERATE_COURSE_CONTENT': {
+      // Use existing updateCourseModulesAction logic directly
+      const courseRef = doc(db, 'courses', action.data.courseId);
+      await updateDoc(courseRef, {
+        modules: action.data.modules,
+        updatedAt: serverTimestamp(),
+      });
+      return { success: true, message: `Curriculum and lessons generated for the course.` };
     }
     default:
       throw new Error(`Unknown action type: ${action.type}`);

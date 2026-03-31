@@ -22,8 +22,9 @@ import {
   runTransaction,
 } from 'firebase/firestore';
 import { z } from 'zod';
-import { analyzeCode, AnalyzeCodeOutput, AnalyzeCodeInput } from '@/ai/flows/analyze-code';
-import { chatWithElara, ChatWithElaraOutput, ChatWithElaraInput } from '@/ai/flows/ai-coach-flow';
+import { analyzeCode } from '@/ai/flows/analyze-code';
+import { chatWithElara } from '@/ai/flows/ai-coach-flow';
+import type { AnalyzeCodeOutput, AnalyzeCodeInput, ChatWithElaraOutput, ChatWithElaraInput } from '@/app/schema';
 import { sendMessageFormSchema } from './schema';
 import { getDownloadURL, ref, uploadString, deleteObject } from 'firebase/storage';
 import { auth } from '@/lib/firebase';
@@ -110,7 +111,19 @@ export async function createCourseAction(
     resources: [], // Initialize with empty resources
   });
 
-  return { id: courseRef.id };
+  // AUTO-GENERATE internal master code for the new course
+  const masterCode = `${title.substring(0, 3).toUpperCase()}-${generateRandomCode(6)}`;
+  await addDoc(collection(db, 'accessCodes'), {
+    code: masterCode,
+    courseId: courseRef.id,
+    courseTitle: title,
+    maxRedemptions: 100, // Default for master code
+    redemptions: 0,
+    status: 'Active',
+    createdAt: serverTimestamp(),
+  });
+
+  return { id: courseRef.id, masterCode };
 }
 
 const updateCourseSchema = z.object({

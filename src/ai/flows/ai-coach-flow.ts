@@ -12,8 +12,6 @@
 
 import type { ChatWithElaraInput, ChatWithElaraOutput } from '@/app/schema';
 
-export type { ChatWithElaraInput, ChatWithElaraOutput };
-
 export async function chatWithElara(
   input: ChatWithElaraInput,
 ): Promise<ChatWithElaraOutput> {

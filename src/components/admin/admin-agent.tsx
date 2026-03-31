@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
     Bot, Loader2, Send, Sparkles, User, 
     FileQuestion, ClipboardCheck, Bell, Zap,
     Trash2, BookOpen, KeyRound, CheckCircle2,
-    AlertTriangle, PlusCircle, BarChart3
+    AlertTriangle, PlusCircle, BarChart3, Compass, Mic,
+    Volume2, VolumeX
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -25,7 +27,7 @@ type ActionType =
   | 'CREATE_ASSIGNMENT' | 'DELETE_ASSIGNMENT'
   | 'GRADE_SUBMISSION' | 'SEND_NOTIFICATION'
   | 'CREATE_COURSE' | 'DELETE_COURSE'
-  | 'GENERATE_ACCESS_CODES' | 'NONE';
+  | 'GENERATE_ACCESS_CODES' | 'NAVIGATE' | 'NONE';
 
 const ACTION_META: Record<ActionType, { icon: React.ReactNode; label: string; color: string; bgColor: string; danger?: boolean }> = {
   CREATE_EXAM:           { icon: <FileQuestion className="h-5 w-5" />, label: 'Create Exam',           color: 'text-blue-400',    bgColor: 'bg-blue-500/10 border-blue-500/20' },
@@ -37,6 +39,7 @@ const ACTION_META: Record<ActionType, { icon: React.ReactNode; label: string; co
   CREATE_COURSE:         { icon: <BookOpen className="h-5 w-5" />,      label: 'Create Course',        color: 'text-purple-400',  bgColor: 'bg-purple-500/10 border-purple-500/20' },
   DELETE_COURSE:         { icon: <Trash2 className="h-5 w-5" />,        label: 'Delete Course',        color: 'text-red-400',     bgColor: 'bg-red-500/10 border-red-500/20',   danger: true },
   GENERATE_ACCESS_CODES: { icon: <KeyRound className="h-5 w-5" />,      label: 'Generate Access Codes',color: 'text-yellow-400',  bgColor: 'bg-yellow-500/10 border-yellow-500/20' },
+  NAVIGATE:              { icon: <Compass className="h-5 w-5" />,       label: 'Navigate to Page',     color: 'text-sky-400',     bgColor: 'bg-sky-500/10 border-sky-500/20' },
   NONE:                  { icon: null, label: '', color: '', bgColor: '' },
 };
 
@@ -63,6 +66,7 @@ const QUICK_COMMANDS = [
 // ─── Component ──────────────────────────────────────────────────────────────
 export default function AdminAgent() {
   const { user } = useAdminAuth();
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([{
     role: 'model',
     content: `Hello Commander ${user?.displayName?.split(' ')[0] || ''}. NEXUS is online with full platform privileges.\n\nI have complete knowledge of every course, student, exam, assignment, and submission on Code-X — and owner-level authority to make any change. What shall we do?`
@@ -70,14 +74,122 @@ export default function AdminAgent() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isExecuting, setIsExecuting] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(true);
   const { toast } = useToast();
   const viewportRef = useRef<HTMLDivElement>(null);
+  const isListeningRef = useRef(false);
+  const wakeWordActiveRef = useRef(false);
+  const recognitionRef = useRef<any>(null);
+  const silenceTimerRef = useRef<any>(null);
+
+  // Initialize voices on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.getVoices();
+    }
+  }, []);
 
   // Auto-scroll to bottom
   useEffect(() => {
     const el = viewportRef.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages, isLoading]);
+
+  const toggleVoiceCommand = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({ variant: 'destructive', title: 'Not Supported', description: 'Voice commands are not supported in your browser.' });
+      return;
+    }
+
+    if (isListeningRef.current) {
+      setIsListening(false);
+      isListeningRef.current = false;
+      recognitionRef.current?.stop();
+      toast({ title: '🎙️ Hands-Free Disabled', description: 'Wake word Engine offline.' });
+      return;
+    }
+
+    setIsListening(true);
+    isListeningRef.current = true;
+    toast({ title: '🎙️ Wake Word Active', description: 'Say "Nexus" or "Hey Max" at any time...' });
+
+    const initSpeech = () => {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognitionRef.current = recognition;
+      
+      recognition.onresult = async (e: any) => {
+        let sessionTranscript = '';
+        let isFinal = false;
+
+        // Process full session transcript for better context
+        for (let i = 0; i < e.results.length; ++i) {
+          sessionTranscript += e.results[i][0].transcript;
+          if (e.results[i].isFinal && i === e.results.length - 1) isFinal = true;
+        }
+        
+        const rawText = sessionTranscript.toLowerCase();
+        
+        // Immediate visual feedback
+        if (!wakeWordActiveRef.current) {
+          const words = rawText.trim().split(' ');
+          setInput(words.length > 0 ? `🎙️ ${words.slice(-4).join(' ')}` : '');
+        }
+
+        const wakeRegex = /(nexus|next is|lexus|next us|necklace|max|macs|hey max|hey macs|computer|hey computer)/i;
+        const match = rawText.match(wakeRegex);
+
+        if (match) {
+          wakeWordActiveRef.current = true;
+          const splitIdx = rawText.lastIndexOf(match[0]) + match[0].length;
+          const command = rawText.substring(splitIdx).trim();
+
+          if (command) {
+            setInput(`⚡ NEXUS: ${command}...`);
+            
+            if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+
+            // AGGRESSIVE EXECUTION: 450ms of silence = Action
+            silenceTimerRef.current = setTimeout(async () => {
+               if (command.length > 1) {
+                  const finalCommand = command;
+                  wakeWordActiveRef.current = false;
+                  setInput('');
+                  recognitionRef.current?.stop();
+                  await handleSubmit(undefined, finalCommand);
+               }
+            }, 450);
+
+            // Force immediate on browser "Final" signal
+            if (isFinal && command.length > 1) {
+              if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+              const finalCommand = command;
+              wakeWordActiveRef.current = false;
+              setInput('');
+              recognitionRef.current?.stop();
+              await handleSubmit(undefined, finalCommand);
+            }
+          }
+        }
+      };
+      
+      recognition.onerror = () => {};
+      recognition.onend = () => {
+        // Auto-restart if we didn't explicitly turn it off!
+        if (isListeningRef.current) {
+          initSpeech();
+        }
+      };
+      
+      try { recognition.start(); } catch (err) {}
+    };
+
+    initSpeech();
+  };
 
   const handleSubmit = async (e?: React.FormEvent, overrideInput?: string) => {
     e?.preventDefault();
@@ -104,6 +216,21 @@ export default function AdminAgent() {
           status: 'Pending'
         } : undefined
       }]);
+
+      if (voiceMode && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        
+        // Clean markdown out of the reply for spoken text
+        const spokenText = response.reply.replace(/[*_~`]/g, '').replace(/\[([^[\]]+)\]\([^)]+\)/g, '$1');
+        
+        const utterance = new SpeechSynthesisUtterance(spokenText);
+        const voices = window.speechSynthesis.getVoices();
+        const idealVoice = voices.find(v => v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('English'));
+        if (idealVoice) utterance.voice = idealVoice;
+        utterance.rate = 1.05;
+        
+        window.speechSynthesis.speak(utterance);
+      }
     } catch {
       toast({ variant: 'destructive', title: 'Neural Link Failure', description: 'Could not reach NEXUS. Try again.' });
     } finally {
@@ -114,6 +241,21 @@ export default function AdminAgent() {
   const deployAction = async (msgIndex: number) => {
     const msg = messages[msgIndex];
     if (!msg.suggestedAction || msg.suggestedAction.status !== 'Pending') return;
+
+    if (msg.suggestedAction.type === 'NAVIGATE') {
+      const path = msg.suggestedAction.data?.path;
+      if (path) {
+        toast({ title: '✅ Redirecting...', description: `Taking you to ${path}` });
+        setMessages(prev => prev.map((m, i) => i !== msgIndex ? m : {
+          ...m,
+          suggestedAction: m.suggestedAction ? { ...m.suggestedAction, status: 'Completed' } : undefined
+        }));
+        router.push(path);
+      } else {
+        toast({ variant: 'destructive', title: 'Navigation Failed', description: 'No path specified.' });
+      }
+      return;
+    }
 
     setIsExecuting(msg.suggestedAction.type);
     try {
@@ -134,6 +276,14 @@ export default function AdminAgent() {
     }
   };
 
+  const cancelAction = (msgIndex: number) => {
+    setMessages(prev => prev.map((m, i) => i !== msgIndex ? m : {
+      ...m,
+      suggestedAction: m.suggestedAction ? { ...m.suggestedAction, status: 'Failed' } : undefined
+    }));
+    toast({ title: '🚫 Action Discarded', description: 'Swiped to dismiss.' });
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-950 text-slate-100">
       {/* Header */}
@@ -152,7 +302,15 @@ export default function AdminAgent() {
         </div>
         <div className="hidden md:flex items-center gap-6 text-[10px] font-mono uppercase text-slate-500">
           <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />All Systems Nominal</div>
-          <div>Owner Privileges Active</div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setVoiceMode(!voiceMode)}
+            className={cn("h-7 px-2 text-[10px] rounded-full", voiceMode ? "bg-purple-500/10 text-purple-400" : "text-slate-500")}
+          >
+            {voiceMode ? <Volume2 className="h-3 w-3 mr-1.5" /> : <VolumeX className="h-3 w-3 mr-1.5" />}
+            {voiceMode ? 'Voice ON' : 'Voice OFF'}
+          </Button>
         </div>
       </div>
 
@@ -197,7 +355,24 @@ export default function AdminAgent() {
                     const isDanger = meta.danger;
                     const status = message.suggestedAction.status;
                     return (
-                      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-sm">
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }} 
+                        animate={{ opacity: 1, scale: 1 }} 
+                        drag={status === 'Pending' ? "x" : false}
+                        dragConstraints={{ left: 0, right: 0 }}
+                        dragElastic={0.2}
+                        onDragEnd={(e, info) => {
+                          if (info.offset.x > 100) deployAction(index);
+                          else if (info.offset.x < -100) cancelAction(index);
+                        }}
+                        className="w-full max-w-sm cursor-grab active:cursor-grabbing relative"
+                      >
+                        {status === 'Pending' && (
+                          <div className="absolute -top-6 left-0 right-0 flex justify-between text-[9px] font-mono text-slate-500 opacity-60 pointer-events-none">
+                            <span>← SWIPE DISCARD</span>
+                            <span>SWIPE DEPLOY →</span>
+                          </div>
+                        )}
                         <Card className={cn('overflow-hidden border', meta.bgColor, 'bg-slate-900/70 backdrop-blur-sm')}>
                           <CardHeader className={cn('py-3 px-4 border-b', meta.bgColor)}>
                             <div className="flex items-center justify-between">
@@ -331,12 +506,22 @@ export default function AdminAgent() {
               <Input
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                placeholder="Issue a command — e.g. Create an exam for Python Basics..."
+                placeholder="Issue a command or tap Mic to speak..."
                 className="w-full bg-slate-950 border-slate-800 focus:border-purple-500/50 rounded-full pl-11 pr-4 h-12 text-sm placeholder:text-slate-600"
                 disabled={isLoading}
               />
             </div>
-            <Button type="submit" size="icon" className="rounded-full h-12 w-12 bg-purple-600 hover:bg-purple-500 shadow-lg shadow-purple-900/30 shrink-0" disabled={isLoading}>
+            <Button 
+              type="button" 
+              size="icon" 
+              variant="ghost" 
+              className={cn("rounded-full h-12 w-12 hover:bg-slate-800 shrink-0", isListening && "text-red-400 bg-red-500/10")} 
+              disabled={isLoading} 
+              onClick={toggleVoiceCommand}
+            >
+              {isListening ? <Mic className="h-5 w-5 animate-pulse" /> : <Mic className="h-5 w-5" />}
+            </Button>
+            <Button type="submit" size="icon" className="rounded-full h-12 w-12 bg-purple-600 hover:bg-purple-500 shadow-lg shadow-purple-900/30 shrink-0" disabled={isLoading || isListening}>
               {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
             </Button>
           </form>
