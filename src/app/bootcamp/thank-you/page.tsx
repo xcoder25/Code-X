@@ -49,7 +49,7 @@ function ThankYouPageContent() {
             alt="Code-X Logo"
             width={32}
             height={32}
-            className="text-primary"
+            className="text-primary rounded-full"
           />
           <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">Code-X</span>
         </Link>

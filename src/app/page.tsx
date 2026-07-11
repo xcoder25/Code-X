@@ -15,7 +15,7 @@ export default function LandingPage() {
             alt="Code-X Logo"
             width={32}
             height={32}
-            className="text-primary"
+            className="text-primary rounded-full"
           />
           <span className="ml-2 text-lg font-semibold">Code-X</span>
         </Link>
@@ -51,23 +51,23 @@ export default function LandingPage() {
               
               {/* Left Column: Headline & CTA */}
               <div className="lg:col-span-7 space-y-8 text-left">
-                <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 px-3.5 py-1.5 rounded-full text-orange-500 text-xs font-semibold uppercase tracking-widest">
+                <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 px-3.5 py-1.5 rounded-full text-orange-500 text-xs font-semibold uppercase tracking-widest animate-fade-slide-up">
                   <Sparkles className="h-3.5 w-3.5 animate-pulse" />
                   Next-Gen Coding Academy
                 </div>
                 
-                <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight text-white">
+                <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight text-white animate-fade-slide-up animation-delay-100">
                   Build the Future of <br />
                   <span className="bg-gradient-to-r from-orange-500 via-orange-400 to-amber-300 bg-clip-text text-transparent">
                     Software & AI
                   </span>
                 </h1>
                 
-                <p className="text-zinc-400 text-base sm:text-lg max-w-xl leading-relaxed">
+                <p className="text-zinc-400 text-base sm:text-lg max-w-xl leading-relaxed animate-fade-slide-up animation-delay-200">
                   Join our immersive, project-based bootcamps. Access personalized learning paths, collaborate with Elara—our 1-on-1 AI coach—and gain the skills to deploy production-ready applications.
                 </p>
                 
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row gap-4 animate-fade-slide-up animation-delay-300">
                   <Button asChild size="lg" className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl px-8 w-full sm:w-auto shadow-lg shadow-orange-500/20">
                      <Link href="/courses">Explore Courses</Link>
                   </Button>

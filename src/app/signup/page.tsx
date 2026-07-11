@@ -97,7 +97,7 @@ export default function SignupPage() {
             alt="Code-X Logo"
             width={48}
             height={48}
-            className="mx-auto text-primary"
+            className="mx-auto text-primary rounded-full"
           />
           <CardTitle className="text-2xl mt-4">Create an Account</CardTitle>
           <CardDescription>
