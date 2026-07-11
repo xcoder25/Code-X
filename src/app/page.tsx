@@ -37,7 +37,7 @@ export default function LandingPage() {
           </Button>
         </nav>
       </header>
-      <main className="flex-1">
+      <main className="flex-1 flex flex-col">
         <section className="relative overflow-hidden bg-black py-20 lg:py-32 border-b border-zinc-900 w-full">
           {/* Glowing Radial Gradients */}
           <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-orange-500/10 rounded-full blur-[120px] pointer-events-none"></div>
@@ -194,8 +194,10 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-        <SkillsSection />
-        <section id="testimonials" className="w-full py-12 md:py-24 lg:py-32 bg-muted/30">
+        <div className="order-2 md:order-1">
+          <SkillsSection />
+        </div>
+        <section id="testimonials" className="w-full py-12 md:py-24 lg:py-32 bg-muted/30 order-1 md:order-2">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">

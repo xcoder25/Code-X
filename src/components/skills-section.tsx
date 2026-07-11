@@ -48,9 +48,9 @@ export default function SkillsSection() {
           </div>
         </div>
         <div className="mx-auto grid max-w-4xl grid-cols-1 gap-8 py-12 sm:grid-cols-2">
-          <div className="flex flex-col items-start space-y-4">
-            <h3 className="text-2xl font-bold">Technical Skills</h3>
-            <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-muted-foreground text-left">
+          <div className="flex flex-col items-center sm:items-start space-y-4 w-full">
+            <h3 className="text-xl sm:text-2xl font-bold">Technical Skills</h3>
+            <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-muted-foreground text-left text-sm w-full">
               {technicalSkills.map((skill) => (
                 <li key={skill}>
                   <Link href={`/courses/${toKebabCase(skill)}`} className="hover:underline hover:text-primary">
@@ -60,9 +60,9 @@ export default function SkillsSection() {
               ))}
             </ul>
           </div>
-          <div className="flex flex-col items-start space-y-4">
-            <h3 className="text-2xl font-bold">Analytical Skills</h3>
-            <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-muted-foreground text-left">
+          <div className="flex flex-col items-center sm:items-start space-y-4 w-full">
+            <h3 className="text-xl sm:text-2xl font-bold">Analytical Skills</h3>
+            <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-muted-foreground text-left text-sm w-full">
               {analyticalSkills.map((skill) => (
                 <li key={skill}>
                   <Link href={`/courses/${toKebabCase(skill)}`} className="hover:underline hover:text-primary">
