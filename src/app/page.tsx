@@ -21,6 +21,12 @@ export default function LandingPage() {
         </Link>
         <nav className="ml-auto flex items-center gap-4 sm:gap-6">
           <Link
+            href="/bootcamp"
+            className="text-sm font-semibold text-orange-500 hover:text-orange-600 transition-colors px-2 py-1"
+          >
+            AI Bootcamp 🚀
+          </Link>
+          <Link
             href="/login"
             className="text-sm font-medium hover:underline underline-offset-4 px-2 py-1 transition-colors rounded-md hover:bg-accent"
           >
@@ -43,9 +49,12 @@ export default function LandingPage() {
                   Join our immersive bootcamps and gain the skills to build amazing applications. Personalized learning paths, expert mentorship, and hands-on projects.
                 </p>
               </div>
-              <div className="space-x-4">
-                <Button asChild size="lg" variant="secondary">
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+                <Button asChild size="lg" variant="secondary" className="w-full sm:w-auto">
                    <Link href="/courses">Explore Courses</Link>
+                </Button>
+                <Button asChild size="lg" className="bg-zinc-950 hover:bg-zinc-900 text-orange-500 hover:text-orange-400 font-bold border border-orange-500/30 w-full sm:w-auto shadow-lg shadow-orange-500/10">
+                   <Link href="/bootcamp">Join AI Bootcamp 🚀</Link>
                 </Button>
               </div>
             </div>
