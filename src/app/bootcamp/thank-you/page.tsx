@@ -3,6 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Suspense } from 'react';
 import { 
   CheckCircle2, 
   ArrowRight, 
@@ -13,14 +14,13 @@ import {
   Bookmark,
   Receipt,
   User,
-  Child,
   Tag
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
-export default function ThankYouPage() {
+function ThankYouPageContent() {
   const searchParams = useSearchParams();
   
   const regId = searchParams.get('regId') || 'CX-2607-XXXX';
@@ -165,5 +165,20 @@ export default function ThankYouPage() {
         <p>© 2026 CODE-X Tech. All rights reserved.</p>
       </footer>
     </div>
+  );
+}
+
+export default function ThankYouPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="animate-pulse space-y-2 text-center">
+          <p className="text-orange-500 font-bold">Verifying Registration...</p>
+          <p className="text-zinc-500 text-xs">Please hold on, loading your confirmation summary.</p>
+        </div>
+      </div>
+    }>
+      <ThankYouPageContent />
+    </Suspense>
   );
 }

@@ -114,6 +114,61 @@ export default function LandingPage() {
           </div>
         </section>
         <SkillsSection />
+        <section id="testimonials" className="w-full py-12 md:py-24 lg:py-32 bg-muted/30">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary font-semibold">Testimonials</div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Trusted by Learners Worldwide</h2>
+                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  Hear from our students about their experience and how Code-X helped them achieve their goals.
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+              {[
+                {
+                  name: 'Sarah L.',
+                  role: 'Full-Stack Developer',
+                  initials: 'SL',
+                  gradient: 'from-orange-400 to-amber-500',
+                  quote: 'The Web Development Bootcamp was a game-changer. The hands-on projects gave me the confidence to build real applications and land my dream job.',
+                },
+                {
+                  name: 'Michael B.',
+                  role: 'Data Scientist',
+                  initials: 'MB',
+                  gradient: 'from-blue-400 to-indigo-500',
+                  quote: 'I was new to programming, but the Python course was so well-structured. The AI coach, Elara, was incredibly helpful for explaining complex topics.',
+                },
+                {
+                  name: 'Jessica P.',
+                  role: 'UX/UI Designer',
+                  initials: 'JP',
+                  gradient: 'from-pink-400 to-rose-500',
+                  quote: 'As a designer, I wanted to understand the fundamentals of code. Code-X made it accessible and fun. I can now collaborate so much better with my engineering team.',
+                },
+              ].map((t) => (
+                <div key={t.name} className="flex flex-col justify-between p-6 bg-card border rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                  <div className="space-y-4">
+                    <p className="text-muted-foreground italic text-sm sm:text-base leading-relaxed">
+                      "{t.quote}"
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 mt-6">
+                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white text-xs font-bold font-sans shadow-sm`}>
+                      {t.initials}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-foreground">{t.name}</h4>
+                      <p className="text-xs text-muted-foreground">{t.role}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
       </main>
       <LandingPageFooter />
     </div>
