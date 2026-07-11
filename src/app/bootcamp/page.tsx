@@ -121,7 +121,7 @@ export default function BootcampLandingPage() {
         {/* Layout Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Left Column: Details & Curriculum */}
-          <div className="lg:col-span-7 space-y-12">
+          <div className="lg:col-span-7 space-y-12 order-2 lg:order-1">
             
             {/* Quick Details Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -236,7 +236,7 @@ export default function BootcampLandingPage() {
           </div>
 
           {/* Right Column: Timer & Form */}
-          <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-6">
+          <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-6 order-1 lg:order-2">
             <CountdownTimer />
             <BootcampForm />
           </div>

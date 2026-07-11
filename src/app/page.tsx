@@ -50,24 +50,24 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
               
               {/* Left Column: Headline & CTA */}
-              <div className="lg:col-span-7 space-y-8 text-left">
+              <div className="lg:col-span-7 space-y-8 text-center lg:text-left flex flex-col items-center lg:items-start">
                 <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 px-3.5 py-1.5 rounded-full text-orange-500 text-xs font-semibold uppercase tracking-widest animate-fade-slide-up">
                   <Sparkles className="h-3.5 w-3.5 animate-pulse" />
                   Next-Gen Coding Academy
                 </div>
                 
-                <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight text-white animate-fade-slide-up animation-delay-100">
+                <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight text-white animate-fade-slide-up animation-delay-100 text-center lg:text-left font-sans">
                   Build the Future of <br />
                   <span className="bg-gradient-to-r from-orange-500 via-orange-400 to-amber-300 bg-clip-text text-transparent">
                     Software & AI
                   </span>
                 </h1>
                 
-                <p className="text-zinc-400 text-base sm:text-lg max-w-xl leading-relaxed animate-fade-slide-up animation-delay-200">
+                <p className="text-zinc-400 text-base sm:text-lg max-w-xl leading-relaxed animate-fade-slide-up animation-delay-200 text-center lg:text-left mx-auto lg:mx-0">
                   Join our immersive, project-based bootcamps. Access personalized learning paths, collaborate with Elara—our 1-on-1 AI coach—and gain the skills to deploy production-ready applications.
                 </p>
                 
-                <div className="flex flex-col sm:flex-row gap-4 animate-fade-slide-up animation-delay-300">
+                <div className="flex flex-col sm:flex-row gap-4 animate-fade-slide-up animation-delay-300 w-full sm:w-auto justify-center lg:justify-start items-center">
                   <Button asChild size="lg" className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl px-8 w-full sm:w-auto shadow-lg shadow-orange-500/20">
                      <Link href="/courses">Explore Courses</Link>
                   </Button>
@@ -77,7 +77,7 @@ export default function LandingPage() {
                 </div>
                 
                 {/* Benefits List */}
-                <div className="pt-4 border-t border-zinc-900 flex flex-wrap gap-x-8 gap-y-3 text-xs text-zinc-500">
+                <div className="pt-4 border-t border-zinc-900 flex flex-wrap gap-x-8 gap-y-3 text-xs text-zinc-500 justify-center lg:justify-start w-full">
                   <div className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
                     1-on-1 AI Mentor
