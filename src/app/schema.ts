@@ -76,6 +76,7 @@ export const ChatWithAdminAgentOutputSchema = z.object({
       'DELETE_COURSE',
       'GENERATE_ACCESS_CODES',
       'NAVIGATE',
+      'GENERATE_COURSE_CONTENT',
       'NONE'
     ]),
     data: z.any().optional(),

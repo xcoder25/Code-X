@@ -73,7 +73,17 @@ export default function AppSidebar() {
     }
   };
 
-  const menuGroups = [
+  interface SidebarMenuItemType {
+    label: string;
+    icon: React.ReactNode;
+    href: string;
+    desc: string;
+    active: boolean;
+    badge?: number;
+    highlight?: boolean;
+  }
+
+  const menuGroups: { title: string; items: SidebarMenuItemType[] }[] = [
     {
       title: "Navigation",
       items: [

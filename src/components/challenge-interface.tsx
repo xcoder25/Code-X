@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, Code, Loader2, Sparkles, Eye, Play } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { analyzeCodeAction } from '@/app/actions';
-import type { AnalyzeCodeOutput } from '@/ai/flows/analyze-code';
+import type { AnalyzeCodeOutput } from '@/app/schema';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Challenge {

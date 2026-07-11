@@ -27,7 +27,7 @@ type ActionType =
   | 'CREATE_ASSIGNMENT' | 'DELETE_ASSIGNMENT'
   | 'GRADE_SUBMISSION' | 'SEND_NOTIFICATION'
   | 'CREATE_COURSE' | 'DELETE_COURSE'
-  | 'GENERATE_ACCESS_CODES' | 'NAVIGATE' | 'NONE';
+  | 'GENERATE_ACCESS_CODES' | 'NAVIGATE' | 'GENERATE_COURSE_CONTENT' | 'NONE';
 
 const ACTION_META: Record<ActionType, { icon: React.ReactNode; label: string; color: string; bgColor: string; danger?: boolean }> = {
   CREATE_EXAM:           { icon: <FileQuestion className="h-5 w-5" />, label: 'Create Exam',           color: 'text-blue-400',    bgColor: 'bg-blue-500/10 border-blue-500/20' },
@@ -40,6 +40,7 @@ const ACTION_META: Record<ActionType, { icon: React.ReactNode; label: string; co
   DELETE_COURSE:         { icon: <Trash2 className="h-5 w-5" />,        label: 'Delete Course',        color: 'text-red-400',     bgColor: 'bg-red-500/10 border-red-500/20',   danger: true },
   GENERATE_ACCESS_CODES: { icon: <KeyRound className="h-5 w-5" />,      label: 'Generate Access Codes',color: 'text-yellow-400',  bgColor: 'bg-yellow-500/10 border-yellow-500/20' },
   NAVIGATE:              { icon: <Compass className="h-5 w-5" />,       label: 'Navigate to Page',     color: 'text-sky-400',     bgColor: 'bg-sky-500/10 border-sky-500/20' },
+  GENERATE_COURSE_CONTENT: { icon: <BookOpen className="h-5 w-5" />,    label: 'Generate Course Content', color: 'text-indigo-400', bgColor: 'bg-indigo-500/10 border-indigo-500/20' },
   NONE:                  { icon: null, label: '', color: '', bgColor: '' },
 };
 
@@ -48,7 +49,7 @@ interface Message {
   content: string;
   suggestedAction?: {
     type: ActionType;
-    data: any;
+    data?: any;
     status?: 'Pending' | 'Completed' | 'Failed';
   };
 }
