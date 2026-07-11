@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Target, Code, Users } from 'lucide-react';
+import { BookOpen, Target, Code, Users, BrainCircuit, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import LandingPageFooter from '@/components/landing-page-footer';
 import SkillsSection from '@/components/skills-section';
@@ -38,25 +38,106 @@ export default function LandingPage() {
         </nav>
       </header>
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-primary text-primary-foreground">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-                  Unlock Your Potential in Software Development
+        <section className="relative overflow-hidden bg-black py-20 lg:py-32 border-b border-zinc-900 w-full">
+          {/* Glowing Radial Gradients */}
+          <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-orange-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+          <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[400px] h-[400px] bg-orange-600/5 rounded-full blur-[150px] pointer-events-none"></div>
+          
+          {/* Subtle Grid Overlay */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none"></div>
+          
+          <div className="container px-4 md:px-6 relative z-10 mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+              
+              {/* Left Column: Headline & CTA */}
+              <div className="lg:col-span-7 space-y-8 text-left">
+                <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 px-3.5 py-1.5 rounded-full text-orange-500 text-xs font-semibold uppercase tracking-widest">
+                  <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+                  Next-Gen Coding Academy
+                </div>
+                
+                <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight text-white">
+                  Build the Future of <br />
+                  <span className="bg-gradient-to-r from-orange-500 via-orange-400 to-amber-300 bg-clip-text text-transparent">
+                    Software & AI
+                  </span>
                 </h1>
-                <p className="mx-auto max-w-[700px] text-primary-foreground/80 md:text-xl">
-                  Join our immersive bootcamps and gain the skills to build amazing applications. Personalized learning paths, expert mentorship, and hands-on projects.
+                
+                <p className="text-zinc-400 text-base sm:text-lg max-w-xl leading-relaxed">
+                  Join our immersive, project-based bootcamps. Access personalized learning paths, collaborate with Elara—our 1-on-1 AI coach—and gain the skills to deploy production-ready applications.
                 </p>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button asChild size="lg" className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl px-8 w-full sm:w-auto shadow-lg shadow-orange-500/20">
+                     <Link href="/courses">Explore Courses</Link>
+                  </Button>
+                  <Button asChild size="lg" className="bg-zinc-950 hover:bg-zinc-900 text-orange-500 hover:text-orange-400 font-bold border border-orange-500/30 rounded-xl px-8 w-full sm:w-auto shadow-lg shadow-orange-500/10">
+                     <Link href="/bootcamp">Join AI Bootcamp 🚀</Link>
+                  </Button>
+                </div>
+                
+                {/* Benefits List */}
+                <div className="pt-4 border-t border-zinc-900 flex flex-wrap gap-x-8 gap-y-3 text-xs text-zinc-500">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                    1-on-1 AI Mentor
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                    Project-Based Curriculum
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                    Career-Ready Projects
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-                <Button asChild size="lg" variant="secondary" className="w-full sm:w-auto">
-                   <Link href="/courses">Explore Courses</Link>
-                </Button>
-                <Button asChild size="lg" className="bg-zinc-950 hover:bg-zinc-900 text-orange-500 hover:text-orange-400 font-bold border border-orange-500/30 w-full sm:w-auto shadow-lg shadow-orange-500/10">
-                   <Link href="/bootcamp">Join AI Bootcamp 🚀</Link>
-                </Button>
+              
+              {/* Right Column: Code Editor Mockup */}
+              <div className="lg:col-span-5 relative">
+                {/* Glowing glow backdrop for editor */}
+                <div className="absolute inset-0 bg-orange-500/10 rounded-2xl blur-3xl pointer-events-none transform -rotate-3 scale-95"></div>
+                
+                <div className="p-1 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-2xl border border-zinc-800 shadow-2xl relative overflow-hidden group hover:border-orange-500/30 transition-all duration-500">
+                  {/* Mac style header */}
+                  <div className="flex items-center justify-between px-4 py-3 bg-zinc-950/80 rounded-t-[14px] border-b border-zinc-900">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-500/80"></span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-green-500/80"></span>
+                    </div>
+                    <span className="text-[10px] text-zinc-500 font-mono">elara-coach.js</span>
+                    <div className="w-8"></div>
+                  </div>
+                  
+                  {/* Editor content */}
+                  <div className="p-5 bg-zinc-950 font-mono text-xs text-zinc-400 space-y-4 h-[280px]">
+                    <div className="space-y-1">
+                      <p className="text-zinc-500">// 1. Initialize Code-X Learn session</p>
+                      <p><span className="text-orange-400">const</span> learner = <span className="text-amber-300">new</span> <span className="text-blue-400">CodeXLearner</span>();</p>
+                      <p>await learner.<span className="text-blue-400">initialize</span>(<span className="text-green-400">"Full-Stack"</span>);</p>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <p className="text-zinc-500">// 2. Connect to Elara AI Assistant</p>
+                      <p><span className="text-orange-400">const</span> assistant = learner.<span className="text-blue-400">getCoach</span>();</p>
+                      <p>await assistant.<span className="text-blue-400">optimizeCode</span>(myProjectCode);</p>
+                    </div>
+
+                    {/* Elara Chat Bubble */}
+                    <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl space-y-1.5 mt-4">
+                      <div className="flex items-center gap-1.5 text-[9px] text-orange-400 font-bold uppercase tracking-wider">
+                        <BrainCircuit className="h-3.5 w-3.5 text-orange-500" />
+                        Elara AI Coach
+                      </div>
+                      <p className="text-[11px] text-zinc-300 leading-relaxed">
+                        "Great job! Your React component matches all specs. Let's add Framer Motion for premium animations. Ready to try?"
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
+              
             </div>
           </div>
         </section>
