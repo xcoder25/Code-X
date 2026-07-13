@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { registrationSchema, type RegistrationData, processRegistration } from '@/app/bootcamp/actions';
+import { processRegistration } from '@/app/bootcamp/actions';
+import { registrationSchema, type RegistrationData } from '@/app/bootcamp/schema';
 
 // Dynamic Paystack import wrapper to prevent SSR issues
 const getPaystackPop = async () => {
