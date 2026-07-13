@@ -130,7 +130,7 @@ export default function BootcampForm() {
                 title: 'Payment Confirmed!',
                 description: `Registration completed. ID: ${result.registrationId}`,
               });
-              router.push(`/bootcamp/thank-you?regId=${result.registrationId}&name=${encodeURIComponent(formData.parentName)}&child=${encodeURIComponent(formData.childName)}&amount=${amountNgn}&ref=${transaction.reference}&age=${formData.childAge}`);
+              router.push(`/bootcamp/thank-you?regId=${result.registrationId}&name=${encodeURIComponent(formData.parentName)}&child=${encodeURIComponent(formData.childName)}&amount=${amountNgn}&ref=${transaction.reference}&age=${formData.childAge}&session=${formData.preferredSession}`);
             }
           } catch (err: any) {
             console.error('Error saving registration:', err);

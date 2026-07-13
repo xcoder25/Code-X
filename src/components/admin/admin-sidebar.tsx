@@ -43,6 +43,7 @@ const NAV_GROUPS = [
     label: 'People',
     items: [
       { href: '/admin/users',         label: 'Students',       icon: Users },
+      { href: '/admin/bootcamp',      label: 'Bootcamp Regs',  icon: GraduationCap },
       { href: '/admin/messages',      label: 'Messages',       icon: MessageSquare },
       { href: '/admin/subscriptions', label: 'Subscriptions',  icon: CreditCard },
       { href: '/admin/access-codes',  label: 'Access Codes',   icon: KeyRound },
