@@ -36,14 +36,12 @@ interface ProcessRegistrationParams {
   formData: RegistrationData;
   amount: number;
   paymentReference: string;
-  isSimulated: boolean;
 }
 
 export async function processRegistration({
   formData,
   amount,
   paymentReference,
-  isSimulated,
 }: ProcessRegistrationParams) {
   // Validate incoming form data
   const validated = registrationSchema.safeParse(formData);
@@ -61,7 +59,7 @@ export async function processRegistration({
       amountPaid: amount / 100, // convert kobo back to NGN
       paymentReference,
       paymentStatus: 'success',
-      paymentMethod: isSimulated ? 'simulated' : 'paystack',
+      paymentMethod: 'paystack',
       paymentDate: new Date().toISOString(),
       createdAt: serverTimestamp(),
     };
@@ -110,7 +108,7 @@ export async function processRegistration({
 
     // Also print to the server console for developers to inspect
     console.log('============================================================');
-    console.log(`[SIMULATED EMAIL SENT] to ${validated.data.email}`);
+    console.log(`[EMAIL LOGGED TO FIRESTORE] to ${validated.data.email}`);
     console.log(`Subject: ${emailPayload.subject}`);
     console.log(`Body excerpt: \n${emailPayload.body.trim().substring(0, 400)}...`);
     console.log('============================================================');

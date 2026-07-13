@@ -68,111 +68,90 @@ export default function BootcampForm() {
 
   // Check if public key is available
   const paystackPublicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '';
-  const isSimulationMode = !paystackPublicKey;
 
   const onSubmit = async (formData: RegistrationData) => {
+    if (!paystackPublicKey) {
+      toast({
+        variant: 'destructive',
+        title: 'Configuration Error',
+        description: 'Payment system is not properly configured. Please contact support.',
+      });
+      return;
+    }
+
     setIsLoading(true);
     setPaymentStage('payment');
 
     try {
-      if (isSimulationMode) {
-        // Run simulated payment flow
-        toast({
-          title: 'Simulation Mode Active',
-          description: 'No Paystack API key found. Simulating payment...',
-        });
-
-        // Artificially wait 2 seconds
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        setPaymentStage('processing');
-
-        const reference = `SIM-REF-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        const result = await processRegistration({
-          formData,
-          amount: amountKobo,
-          paymentReference: reference,
-          isSimulated: true,
-        });
-
-        if (result.success) {
-          toast({
-            title: 'Registration Successful!',
-            description: `Generated Registration ID: ${result.registrationId}`,
-          });
-          router.push(`/bootcamp/thank-you?regId=${result.registrationId}&name=${encodeURIComponent(formData.parentName)}&child=${encodeURIComponent(formData.childName)}&amount=${amountNgn}&age=${formData.childAge}`);
-        }
-      } else {
-        // Real Paystack Flow
-        // Step 1: Initialize transaction with backend
-        const response = await fetch('/api/paystack/initialize', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: formData.email,
-            amount: amountKobo.toString(),
-          }),
-        });
-
-        const initResult = await response.json();
-
-        if (!response.ok || !initResult.status || !initResult.data?.access_code) {
-          throw new Error(initResult.message || 'Failed to initialize payment transaction.');
-        }
-
-        const accessCode = initResult.data.access_code;
-        setPaymentStage('processing');
-
-        // Step 2: Load Paystack Pop and trigger modal
-        const PaystackPop = await getPaystackPop();
-        const paystack = new PaystackPop();
-
-        paystack.newTransaction({
-          key: paystackPublicKey,
+      // Real Paystack Flow
+      // Step 1: Initialize transaction with backend
+      const response = await fetch('/api/paystack/initialize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           email: formData.email,
-          amount: amountKobo,
-          access_code: accessCode,
-          onSuccess: async (transaction: any) => {
-            setIsLoading(true);
-            try {
-              // Save to Database via Server Action
-              const result = await processRegistration({
-                formData,
-                amount: amountKobo,
-                paymentReference: transaction.reference,
-                isSimulated: false,
-              });
+          amount: amountKobo.toString(),
+        }),
+      });
 
-              if (result.success) {
-                toast({
-                  title: 'Payment Confirmed!',
-                  description: `Registration completed. ID: ${result.registrationId}`,
-                });
-                router.push(`/bootcamp/thank-you?regId=${result.registrationId}&name=${encodeURIComponent(formData.parentName)}&child=${encodeURIComponent(formData.childName)}&amount=${amountNgn}&ref=${transaction.reference}&age=${formData.childAge}`);
-              }
-            } catch (err: any) {
-              console.error('Error saving registration:', err);
+      const initResult = await response.json();
+
+      if (!response.ok || !initResult.status || !initResult.data?.access_code) {
+        throw new Error(initResult.message || 'Failed to initialize payment transaction.');
+      }
+
+      const accessCode = initResult.data.access_code;
+      setPaymentStage('processing');
+
+      // Step 2: Load Paystack Pop and trigger modal
+      const PaystackPop = await getPaystackPop();
+      const paystack = new PaystackPop();
+
+      paystack.newTransaction({
+        key: paystackPublicKey,
+        email: formData.email,
+        amount: amountKobo,
+        access_code: accessCode,
+        onSuccess: async (transaction: any) => {
+          setIsLoading(true);
+          try {
+            // Save to Database via Server Action
+            const result = await processRegistration({
+              formData,
+              amount: amountKobo,
+              paymentReference: transaction.reference,
+            });
+
+            if (result.success) {
               toast({
-                variant: 'destructive',
-                title: 'Database Save Error',
-                description: err.message || 'Payment succeeded but registration failed to save. Please contact support.',
+                title: 'Payment Confirmed!',
+                description: `Registration completed. ID: ${result.registrationId}`,
               });
-            } finally {
-              setIsLoading(false);
+              router.push(`/bootcamp/thank-you?regId=${result.registrationId}&name=${encodeURIComponent(formData.parentName)}&child=${encodeURIComponent(formData.childName)}&amount=${amountNgn}&ref=${transaction.reference}&age=${formData.childAge}`);
             }
-          },
-          onCancel: () => {
-            setIsLoading(false);
-            setPaymentStage('form');
+          } catch (err: any) {
+            console.error('Error saving registration:', err);
             toast({
               variant: 'destructive',
-              title: 'Payment Cancelled',
-              description: 'You closed the payment window.',
+              title: 'Database Save Error',
+              description: err.message || 'Payment succeeded but registration failed to save. Please contact support.',
             });
-          },
-        } as any);
-      }
+          } finally {
+            setIsLoading(false);
+          }
+        },
+        onCancel: () => {
+          setIsLoading(false);
+          setPaymentStage('form');
+          toast({
+            variant: 'destructive',
+            title: 'Payment Cancelled',
+            description: 'You closed the payment window.',
+          });
+        },
+      } as any);
     } catch (error: any) {
       console.error('Registration/Payment Error:', error);
       toast({
@@ -201,16 +180,6 @@ export default function BootcampForm() {
       </CardHeader>
 
       <CardContent>
-        {isSimulationMode && (
-          <Alert className="mb-6 bg-amber-500/10 border-amber-500/30 text-amber-400">
-            <Info className="h-4 w-4 stroke-amber-400" />
-            <AlertTitle className="font-semibold text-amber-300">Developer Simulation Active</AlertTitle>
-            <AlertDescription className="text-xs text-amber-400/90">
-              No Paystack Public Key found in environment. Submitting this form will run a simulated payment checkout and create actual registration records in your database.
-            </AlertDescription>
-          </Alert>
-        )}
-
         {paymentStage === 'form' ? (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

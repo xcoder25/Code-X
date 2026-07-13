@@ -28,7 +28,7 @@ function ThankYouPageContent() {
   const childName = searchParams.get('child') || 'Student';
   const amount = searchParams.get('amount') || '35,000';
   const ageString = searchParams.get('age');
-  const reference = searchParams.get('ref') || 'SIMULATED';
+  const reference = searchParams.get('ref') || 'N/A';
 
   // Determine age group if age is provided
   let ageGroup = '';
