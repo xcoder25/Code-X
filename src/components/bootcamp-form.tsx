@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter as useAppRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter as useAppRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, CreditCard, Sparkles, CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import { Loader2, CreditCard, Sparkles, CheckCircle2, AlertCircle, Info, UserCircle2, Phone, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { processRegistration } from '@/app/bootcamp/actions';
 import { registrationSchema, type RegistrationData } from '@/app/bootcamp/schema';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 // Dynamic Paystack import wrapper to prevent SSR issues
 const getPaystackPop = async () => {
@@ -32,6 +34,8 @@ export default function BootcampForm() {
   const [paymentStage, setPaymentStage] = useState<'form' | 'payment' | 'processing'>('form');
   const { toast } = useToast();
   const router = useAppRouter();
+  const searchParams = useSearchParams();
+  const refParam = searchParams.get('ref') || '';
 
   const {
     register,
@@ -45,8 +49,87 @@ export default function BootcampForm() {
       numberOfChildren: 1,
       preferredSession: 'morning',
       howDidYouHear: '',
+      referredBy: refParam || '',
     },
   });
+
+  // Sync ref param if it changes or loads asynchronously
+  useEffect(() => {
+    if (refParam) {
+      setValue('referredBy', refParam);
+    }
+  }, [refParam, setValue]);
+
+  // Referrer resolved identity
+  const [referrerInfo, setReferrerInfo] = useState<{
+    name: string;
+    email?: string;
+    phone?: string;
+    type: 'parent' | 'student' | 'teacher' | 'unknown';
+  } | null>(null);
+  const [referrerLoading, setReferrerLoading] = useState(false);
+
+  useEffect(() => {
+    if (!refParam) return;
+
+    const resolveReferrer = async () => {
+      setReferrerLoading(true);
+      try {
+        // 1. Is it a parent registration ID? (e.g. CX-2607-XXXX)
+        const regQuery = query(
+          collection(db, 'bootcamp_registrations'),
+          where('registrationId', '==', refParam)
+        );
+        const regSnap = await getDocs(regQuery);
+        if (!regSnap.empty) {
+          const data = regSnap.docs[0].data();
+          setReferrerInfo({
+            type: 'parent',
+            name: data.parentName || 'A Parent',
+            email: data.email,
+            phone: data.phone,
+          });
+          return;
+        }
+
+        // 2. Is it a student UID?
+        const userDoc = await getDoc(doc(db, 'users', refParam));
+        if (userDoc.exists()) {
+          const u = userDoc.data();
+          setReferrerInfo({
+            type: 'student',
+            name: u.displayName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'A Student',
+            email: u.email,
+            phone: u.phone,
+          });
+          return;
+        }
+
+        // 3. Is it a teacher UID?
+        const teacherDoc = await getDoc(doc(db, 'teachers', refParam));
+        if (teacherDoc.exists()) {
+          const t = teacherDoc.data();
+          setReferrerInfo({
+            type: 'teacher',
+            name: t.displayName || `${t.firstName || ''} ${t.lastName || ''}`.trim() || 'A Teacher',
+            email: t.email,
+            phone: t.phone,
+          });
+          return;
+        }
+
+        // 4. Fallback — code exists but we couldn't resolve identity
+        setReferrerInfo({ type: 'unknown', name: 'Someone' });
+      } catch (err) {
+        console.error('Referrer lookup failed:', err);
+        setReferrerInfo({ type: 'unknown', name: 'Someone' });
+      } finally {
+        setReferrerLoading(false);
+      }
+    };
+
+    resolveReferrer();
+  }, [refParam]);
 
   const watchEmail = watch('email');
   const watchNumChildren = watch('numberOfChildren') || 1;
@@ -183,6 +266,57 @@ export default function BootcampForm() {
       <CardContent>
         {paymentStage === 'form' ? (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {refParam && (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                {referrerLoading ? (
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 flex items-center gap-3">
+                    <div className="w-4 h-4 border-2 border-t-orange-500 border-r-transparent border-zinc-700 rounded-full animate-spin shrink-0" />
+                    <span className="text-xs text-zinc-500">Verifying referral link...</span>
+                  </div>
+                ) : referrerInfo ? (
+                  <div className="bg-gradient-to-r from-emerald-500/10 to-orange-500/5 border border-emerald-500/25 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                      <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">You were referred by a friend!</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
+                        <UserCircle2 className="h-5 w-5 text-orange-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-extrabold text-white truncate">{referrerInfo.name}</p>
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">
+                          {referrerInfo.type === 'parent' ? '👨‍👩‍👦 Bootcamp Parent' :
+                           referrerInfo.type === 'teacher' ? '👩‍🏫 Code-X Teacher' :
+                           referrerInfo.type === 'student' ? '🎓 Code-X Student' : '🔗 Referral Partner'}
+                        </p>
+                      </div>
+                    </div>
+                    {(referrerInfo.email || referrerInfo.phone) && (
+                      <div className="flex flex-wrap gap-3 pt-1 border-t border-emerald-500/10">
+                        {referrerInfo.email && (
+                          <a
+                            href={`mailto:${referrerInfo.email}`}
+                            className="flex items-center gap-1.5 text-[10px] font-semibold text-zinc-400 hover:text-orange-400 transition-colors"
+                          >
+                            <Mail className="h-3 w-3" /> {referrerInfo.email}
+                          </a>
+                        )}
+                        {referrerInfo.phone && (
+                          <a
+                            href={`tel:${referrerInfo.phone}`}
+                            className="flex items-center gap-1.5 text-[10px] font-semibold text-zinc-400 hover:text-emerald-400 transition-colors"
+                          >
+                            <Phone className="h-3 w-3" /> {referrerInfo.phone}
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            )}
+            <input type="hidden" {...register('referredBy')} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="parentName" className="text-zinc-300 text-sm font-medium">Parent Name</Label>

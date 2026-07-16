@@ -22,6 +22,9 @@ import {
     Trophy,
     TrendingUp,
     Zap,
+    Copy,
+    Share2,
+    Gift,
 } from 'lucide-react';
 import {
     BarChart,
@@ -55,7 +58,8 @@ import {
     LineChart as LineChartIcon
 } from 'lucide-react';
 import { useAuth } from '@/app/auth-provider';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, getDocs, doc, getDoc, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { cn } from '@/lib/utils';
@@ -74,9 +78,26 @@ interface Course {
 
 export default function DashboardPage() {
     const { user } = useAuth();
+    const { toast } = useToast();
     const [activeCourses, setActiveCourses] = useState<Course[]>([]);
     const [pendingAssignmentsCount, setPendingAssignmentsCount] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [referralLink, setReferralLink] = useState('');
+
+    useEffect(() => {
+        if (user?.uid && typeof window !== 'undefined') {
+            setReferralLink(`${window.location.origin}/bootcamp?ref=${user.uid}`);
+        }
+    }, [user]);
+
+    const copyReferralLink = useCallback(() => {
+        if (!referralLink) return;
+        navigator.clipboard.writeText(referralLink);
+        toast({
+            title: 'Referral Link Copied!',
+            description: 'Share it with friends so they can register for the bootcamp.',
+        });
+    }, [referralLink, toast]);
 
     useEffect(() => {
         if (!user) {
@@ -480,6 +501,49 @@ export default function DashboardPage() {
                     )}
                 </div>
             </div>
+
+            {/* Referral Card */}
+            {referralLink && (
+                <div className="p-6 md:p-8 rounded-[2.5rem] bg-gradient-to-br from-orange-600/10 via-slate-900/60 to-slate-950 border border-orange-500/20 shadow-2xl relative overflow-hidden">
+                    <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
+                    <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                        <div className="space-y-1.5">
+                            <div className="flex items-center gap-2 text-orange-400 mb-2">
+                                <Gift className="h-5 w-5" />
+                                <span className="text-xs font-black uppercase tracking-widest">Refer & Earn</span>
+                            </div>
+                            <h3 className="text-xl font-black italic uppercase tracking-tight text-white">
+                                Know someone who'd love the Bootcamp?
+                            </h3>
+                            <p className="text-sm text-slate-400 font-medium max-w-md">
+                                Share your unique referral link. Every parent who registers through your link counts as your referral!
+                            </p>
+                        </div>
+                        <div className="flex flex-col gap-3 w-full md:w-auto shrink-0">
+                            <div className="flex items-center gap-2 bg-slate-950 border border-zinc-800 rounded-2xl p-2 min-w-0 md:min-w-[320px]">
+                                <span className="text-[10px] font-mono text-zinc-500 truncate flex-1 pl-2 select-all">
+                                    {referralLink}
+                                </span>
+                                <Button
+                                    size="sm"
+                                    onClick={copyReferralLink}
+                                    className="shrink-0 h-9 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-[11px] shadow-lg shadow-orange-500/20 px-4"
+                                >
+                                    <Copy className="h-3.5 w-3.5 mr-1" /> Copy
+                                </Button>
+                            </div>
+                            <a
+                                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Hey! Check out the CODE-X AI Holiday Bootcamp for kids – my referral link: ${referralLink}`)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-center gap-2 text-[11px] font-bold text-emerald-400 border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 rounded-2xl px-4 py-2.5 transition-colors"
+                            >
+                                <Share2 className="h-3.5 w-3.5" /> Share on WhatsApp
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
         </main>
     );
 }

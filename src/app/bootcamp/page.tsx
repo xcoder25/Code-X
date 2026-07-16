@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
@@ -13,7 +14,8 @@ import {
   Clock, 
   ArrowLeft, 
   CheckCircle2, 
-  HelpCircle 
+  HelpCircle,
+  Loader2
 } from 'lucide-react';
 import BootcampForm from '@/components/bootcamp-form';
 import CountdownTimer from '@/components/countdown-timer';
@@ -238,7 +240,14 @@ export default function BootcampLandingPage() {
           {/* Right Column: Timer & Form */}
           <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-6 order-1 lg:order-2">
             <CountdownTimer />
-            <BootcampForm />
+            <Suspense fallback={
+              <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-3xl flex flex-col items-center justify-center text-center space-y-4">
+                <Loader2 className="h-8 w-8 text-orange-500 animate-spin" />
+                <p className="text-sm text-zinc-400">Loading registration form...</p>
+              </div>
+            }>
+              <BootcampForm />
+            </Suspense>
           </div>
         </div>
       </main>

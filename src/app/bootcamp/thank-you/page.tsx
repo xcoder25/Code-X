@@ -20,17 +20,27 @@ import {
   Share2,
   Lock,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Copy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
 
 function ThankYouPageContent() {
   const searchParams = useSearchParams();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const { toast } = useToast();
+  const [referralLink, setReferralLink] = useState('');
   
   const regId = searchParams.get('regId') || 'CX-2607-XXXX';
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setReferralLink(`${window.location.origin}/bootcamp?ref=${regId}`);
+    }
+  }, [regId]);
   const parentName = searchParams.get('name') || 'Parent';
   const childName = searchParams.get('child') || 'Student';
   const amountRaw = searchParams.get('amount') || '35000';
@@ -263,9 +273,9 @@ function ThankYouPageContent() {
   };
 
   // 5. Social Share Actions
-  const shareText = `My child is registered for the CODE-X AI Holiday Bootcamp starting July 27th! 🚀 Empowering young innovators with AI and coding. Check it out at www.codextech.com`;
-  const shareOnWhatsApp = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
-  const shareOnTwitter = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+  const referralText = `My child is registered for the CODE-X AI Holiday Bootcamp starting July 27th! 🚀 Use my referral link to register yours: ${referralLink || 'https://www.codextech.com/bootcamp'}`;
+  const shareOnWhatsApp = `https://api.whatsapp.com/send?text=${encodeURIComponent(referralText)}`;
+  const shareOnTwitter = `https://twitter.com/intent/tweet?text=${encodeURIComponent(referralText)}`;
 
   return (
     <div className="min-h-screen bg-[#060608] text-zinc-100 flex flex-col justify-between selection:bg-orange-500 selection:text-white relative overflow-hidden font-body">
@@ -590,13 +600,37 @@ function ThankYouPageContent() {
             </div>
 
             {/* Share / Social seat referral */}
-            <div className="bg-zinc-950/40 border border-zinc-900 rounded-2xl p-5 space-y-3">
+            <div className="bg-zinc-950/40 border border-zinc-900 rounded-2xl p-5 space-y-4">
               <h3 className="text-xs font-black uppercase tracking-wider text-zinc-500 flex items-center gap-2">
-                <Share2 className="h-4 w-4 text-orange-500" /> SPREAD THE WORD
+                <Share2 className="h-4 w-4 text-orange-500" /> REFER & SPREAD THE WORD
               </h3>
               <p className="text-xs text-zinc-400">
-                Let your friends and network know your child is preparing to build with AI!
+                Invite other parents using your unique referral link. Anyone who registers through your link will count as your referral!
               </p>
+
+              {referralLink && (
+                <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl p-2 select-all">
+                  <span className="text-[11px] font-mono text-zinc-400 truncate flex-1 pl-1">
+                    {referralLink}
+                  </span>
+                  <Button 
+                    size="sm" 
+                    variant="secondary"
+                    className="h-8 rounded-lg text-[10px] font-bold bg-zinc-800 hover:bg-zinc-700 text-zinc-200"
+                    onClick={() => {
+                      navigator.clipboard.writeText(referralLink);
+                      toast({
+                        title: "Link Copied!",
+                        description: "Your referral link has been copied to your clipboard.",
+                      });
+                    }}
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy
+                  </Button>
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <Button 
                   asChild

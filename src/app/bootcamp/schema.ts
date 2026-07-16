@@ -13,6 +13,7 @@ export const registrationSchema = z.object({
     required_error: 'Please select a preferred session.',
   }),
   howDidYouHear: z.string().optional(),
+  referredBy: z.string().optional(),
 });
 
 export type RegistrationData = z.infer<typeof registrationSchema>;

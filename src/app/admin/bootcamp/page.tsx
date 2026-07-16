@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +19,7 @@ import {
 import {
   GraduationCap, Search, Calendar, Phone, Mail,
   BookOpen, Coins, Clock4, Filter, Download, Eye, School,
-  Sparkles, Layers
+  Sparkles, Layers, Users2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -35,6 +35,7 @@ interface BootcampRegistration {
   numberOfChildren: number;
   preferredSession: 'morning' | 'afternoon';
   howDidYouHear?: string;
+  referredBy?: string;
   registrationId: string;
   amountPaid: number;
   paymentReference: string;
@@ -67,6 +68,83 @@ export default function AdminBootcampPage() {
   const [selectedReg, setSelectedReg] = useState<BootcampRegistration | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const { toast } = useToast();
+
+  const [referrerProfile, setReferrerProfile] = useState<{
+    type: 'parent' | 'student' | 'teacher' | 'custom';
+    name: string;
+    email?: string;
+    phone?: string;
+  } | null>(null);
+  const [referrerLoading, setReferrerLoading] = useState(false);
+
+  useEffect(() => {
+    if (!selectedReg || !selectedReg.referredBy) {
+      setReferrerProfile(null);
+      return;
+    }
+
+    const refCode = selectedReg.referredBy;
+
+    // 1. Is it a Parent registration?
+    const parentReferrer = registrations.find(r => r.registrationId === refCode);
+    if (parentReferrer) {
+      setReferrerProfile({
+        type: 'parent',
+        name: parentReferrer.parentName,
+        email: parentReferrer.email,
+        phone: parentReferrer.phone
+      });
+      return;
+    }
+
+    // 2. Is it a Student UID or Teacher UID?
+    const fetchUserReferrer = async () => {
+      setReferrerLoading(true);
+      try {
+        // Try user collection first
+        const userDoc = await getDoc(doc(db, 'users', refCode));
+        if (userDoc.exists()) {
+          const u = userDoc.data();
+          setReferrerProfile({
+            type: 'student',
+            name: u.displayName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Student Partner',
+            email: u.email,
+            phone: u.phone || 'N/A'
+          });
+          return;
+        }
+
+        // Try teacher collection
+        const teacherDoc = await getDoc(doc(db, 'teachers', refCode));
+        if (teacherDoc.exists()) {
+          const t = teacherDoc.data();
+          setReferrerProfile({
+            type: 'teacher',
+            name: t.displayName || `${t.firstName || ''} ${t.lastName || ''}`.trim() || 'Teacher Partner',
+            email: t.email,
+            phone: t.phone || 'N/A'
+          });
+          return;
+        }
+
+        // It is a custom/affiliate promo code
+        setReferrerProfile({
+          type: 'custom',
+          name: refCode
+        });
+      } catch (err) {
+        console.error("Error looking up referrer:", err);
+        setReferrerProfile({
+          type: 'custom',
+          name: refCode
+        });
+      } finally {
+        setReferrerLoading(false);
+      }
+    };
+
+    fetchUserReferrer();
+  }, [selectedReg, registrations]);
 
   // Listen to Firestore registrations in real time
   useEffect(() => {
@@ -157,7 +235,9 @@ export default function AdminBootcampPage() {
       'Amount Paid (NGN)',
       'Payment Reference',
       'Payment Date',
-      'Referral'
+      'Referral Source',
+      'Referred By Code',
+      'Referred By Parent Name'
     ];
 
     const rows = filtered.map(r => {
@@ -166,6 +246,10 @@ export default function AdminBootcampPage() {
       const createdDate = r.createdAt?.seconds 
         ? new Date(r.createdAt.seconds * 1000).toISOString()
         : r.paymentDate || '';
+
+      const referrer = r.referredBy 
+        ? filtered.find(x => x.registrationId === r.referredBy)
+        : null;
 
       return [
         r.registrationId || '',
@@ -181,7 +265,9 @@ export default function AdminBootcampPage() {
         r.amountPaid || 0,
         r.paymentReference || '',
         createdDate,
-        `"${r.howDidYouHear?.replace(/"/g, '""') || ''}"`
+        `"${r.howDidYouHear?.replace(/"/g, '""') || ''}"`,
+        r.referredBy || '',
+        referrer ? `"${referrer.parentName?.replace(/"/g, '""') || ''}"` : ''
       ];
     });
 
@@ -519,15 +605,54 @@ export default function AdminBootcampPage() {
                 </div>
               </div>
 
-              {/* Referral survey */}
-              {selectedReg.howDidYouHear && (
+              {/* Referral survey & tracking */}
+              {(selectedReg.howDidYouHear || selectedReg.referredBy) && (
                 <div className="space-y-4">
                   <h4 className="text-xs font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1.5">
                     <BookOpen className="h-3.5 w-3.5 text-orange-500" /> SURVEY & REFERRAL
                   </h4>
-                  <div className="bg-muted/20 border border-border/60 rounded-2xl p-4 text-xs">
-                    <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider block">How did you hear about Code-X?</span>
-                    <p className="text-sm font-semibold text-zinc-300 mt-1">"{selectedReg.howDidYouHear}"</p>
+                  <div className="bg-muted/20 border border-border/60 rounded-2xl p-4 space-y-3 text-xs">
+                    {selectedReg.howDidYouHear && (
+                      <div>
+                        <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider block">How did you hear about Code-X?</span>
+                        <p className="text-sm font-semibold text-zinc-300 mt-0.5">"{selectedReg.howDidYouHear}"</p>
+                      </div>
+                    )}
+                    {selectedReg.referredBy && (
+                      <div className="pt-2 border-t border-border/40">
+                        <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider block">Referred By Code</span>
+                        <p className="text-sm font-mono font-bold text-orange-500 mt-0.5">{selectedReg.referredBy}</p>
+                        {referrerLoading ? (
+                          <div className="mt-1.5 p-3 flex justify-center bg-zinc-950 border border-zinc-800 rounded-lg">
+                            <div className="w-4 h-4 border-2 border-t-orange-500 border-r-transparent border-zinc-800 rounded-full animate-spin"></div>
+                          </div>
+                        ) : referrerProfile ? (
+                          <div className="mt-1.5 p-3 bg-zinc-950 border border-zinc-850 rounded-xl space-y-1">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Referrer Identity</span>
+                              <Badge className={cn(
+                                "text-[9px] font-bold px-1.5 py-0 rounded-md border-none uppercase tracking-wider h-auto text-center shrink-0",
+                                referrerProfile.type === 'parent' && "bg-blue-500/10 text-blue-400",
+                                referrerProfile.type === 'student' && "bg-emerald-500/10 text-emerald-400",
+                                referrerProfile.type === 'teacher' && "bg-purple-500/10 text-purple-400",
+                                referrerProfile.type === 'custom' && "bg-zinc-800 text-zinc-400"
+                              )}>
+                                {referrerProfile.type}
+                              </Badge>
+                            </div>
+                            <p className="text-xs font-extrabold text-zinc-200">{referrerProfile.name}</p>
+                            {referrerProfile.email && (
+                              <p className="text-[10px] text-zinc-400">{referrerProfile.email}</p>
+                            )}
+                            {referrerProfile.phone && referrerProfile.phone !== 'N/A' && (
+                              <p className="text-[10px] text-zinc-500">{referrerProfile.phone}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-[10px] text-zinc-500 italic mt-0.5">No referrer details found</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
